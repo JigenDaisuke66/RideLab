@@ -1,0 +1,168 @@
+# RideLab Roadmap
+
+## Phase 0 - Project skeleton
+
+Status: current
+
+Acceptance:
+
+- project builds
+- project launches
+- localization works
+- BLE permissions declared
+- package structure established
+
+Do not implement BLE connection yet.
+
+---
+
+## Phase 1 - BLE Scanner
+
+Goal:
+
+Discover nearby BLE cycling devices.
+
+Requirements:
+
+- runtime Bluetooth permission handling
+- BLE scanning
+- display device name
+- display Bluetooth address
+- display signal RSSI
+- detect advertised services when available
+- classify possible:
+    - trainer
+    - heart rate sensor
+    - power meter
+
+Acceptance:
+
+ThinkRider X2 MAX appears in scan results.
+
+No trainer control yet.
+
+---
+
+## Phase 2 - FTMS Connection
+
+Goal:
+
+Connect to a smart trainer.
+
+Requirements:
+
+- connect GATT
+- discover services
+- print/log available services and characteristics
+- verify FTMS service 0x1826
+- subscribe to Indoor Bike Data
+- parse:
+    - power
+    - cadence
+    - speed
+
+Acceptance:
+
+RideLab continuously displays live trainer data.
+
+---
+
+## Phase 3 - Heart Rate
+
+Connect to Heart Rate Service 0x180D.
+
+Acceptance:
+
+Live heart rate displayed simultaneously with trainer data.
+
+---
+
+## Phase 4 - Cycling Power Meter
+
+Connect to Cycling Power Service 0x1818.
+
+Keep trainer power and external meter power separate.
+
+Acceptance:
+
+Both power values can coexist.
+
+---
+
+## Phase 5 - Trainer Control
+
+Implement FTMS Control Point.
+
+Initial feature:
+
+ERG target power.
+
+Acceptance:
+
+User changes target power and X2 MAX changes resistance accordingly.
+
+---
+
+## Phase 6 - Foreground Ride Service
+
+Move long-running BLE ride ownership out of Activity.
+
+Acceptance test:
+
+1. Start ride.
+2. Lock phone.
+3. Leave RideLab in background for 20 minutes.
+4. Return to RideLab.
+5. BLE connection remained active.
+6. No ride samples were lost because the Activity was backgrounded.
+
+---
+
+## Phase 7 - Local Storage
+
+Use Room.
+
+Store ride sessions and raw ride samples.
+
+---
+
+## Phase 8 - Ride History
+
+Display saved sessions and charts.
+
+---
+
+## Phase 9 - Training Analytics
+
+Later metrics:
+
+- average power
+- max power
+- normalized power
+- IF
+- TSS
+- heart-rate zones
+- power zones
+- Pw:Hr / aerobic decoupling
+- best 5 s
+- best 15 s
+- best 30 s
+- best 1 min
+- best 5 min
+- best 20 min
+- best 60 min
+
+---
+
+## Phase 10 - Fitness Profile
+
+Later:
+
+- FTP
+- eFTP
+- W/kg
+- power curve
+- aerobic efficiency
+- long-term trends
+
+Do not implement until core recording is stable.

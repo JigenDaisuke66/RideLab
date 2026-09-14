@@ -1,3 +1,27 @@
 <resources>
     <string name="app_name">RideLab</string>
+    <string name="devices_title">Devices</string>
+    <string name="scan_description">Scan nearby BLE devices for 15 seconds. Device types are based on advertised services only.</string>
+    <string name="scan_idle">Ready to scan.</string>
+    <string name="scan_scanning">Scanning…</string>
+    <string name="scan_finished">Scan stopped. Start another scan to refresh results.</string>
+    <string name="scan_permission_required">Allow Nearby devices permission to scan. If the prompt no longer appears, enable it in app settings.</string>
+    <string name="scan_bluetooth_off">Turn on Bluetooth to scan.</string>
+    <string name="scan_unsupported">Bluetooth LE is unavailable on this device.</string>
+    <string name="scan_failed">Bluetooth scan failed. Wait a moment and try again.</string>
+    <string name="scan_error_code">Bluetooth error code: %1$d</string>
+    <string name="start_scan">Start scan</string>
+    <string name="stop_scan">Stop scan</string>
+    <string name="open_app_settings">App settings</string>
+    <string name="open_bluetooth_settings">Bluetooth settings</string>
+    <string name="scan_empty">No devices found yet. Keep your trainer or sensor awake and nearby.</string>
+    <string name="unnamed_device">Unnamed device</string>
+    <string name="device_address">Address: %1$s</string>
+    <string name="device_rssi">Signal: %1$d dBm</string>
+    <string name="device_type_unknown">Device type unknown</string>
+    <string name="possible_trainer">Possible trainer</string>
+    <string name="possible_heart_rate">Possible heart rate sensor</string>
+    <string name="possible_power_meter">Possible power meter</string>
+    <string name="advertised_services">Advertised services</string>
+    <string name="services_unavailable">No service UUIDs advertised</string>
 </resources>
