@@ -110,4 +110,11 @@
     <string name="fec_minus">−5 W</string>
     <string name="fec_plus">+5 W</string>
     <string name="fec_send">Send %1$d W test</string>
+    <string name="role_trainer">Trainer</string>
+    <string name="hr_source">Heart rate sensor: %1$s</string>
+    <string name="hr_value">%1$d bpm</string>
+    <string name="hr_connect">Connect as heart rate sensor</string>
+    <string name="hr_disconnect">Disconnect heart rate sensor</string>
+    <string name="hr_selected_badge">Selected heart rate source</string>
+    <string name="hr_missing">Heart Rate Service 0x180D or Measurement 0x2A37 not found</string>
 </resources>

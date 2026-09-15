@@ -31,6 +31,9 @@ import com.isaac.ridelab.ble.ScanStatus
 import com.isaac.ridelab.data.model.DeviceType
 import com.isaac.ridelab.data.model.DiscoveredDevice
 import com.isaac.ridelab.data.model.GattDeviceState
+import com.isaac.ridelab.data.model.HeartRateState
+import com.isaac.ridelab.data.model.DeviceConnectionRole
+import com.isaac.ridelab.data.model.defaultConnectionRole
 import kotlinx.coroutines.launch
 
 @Composable
@@ -45,6 +48,9 @@ fun DevicesScreen(
     onBluetoothSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onFecTarget: (Int) -> Unit = {},
+    heartRate: HeartRateState = HeartRateState(),
+    onConnectHeartRate: (DiscoveredDevice) -> Unit = {},
+    onDisconnectHeartRate: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -53,6 +59,7 @@ fun DevicesScreen(
         connection.device?.let { selectedDevice ->
             Card(Modifier.fillMaxWidth().testTag("connection_summary")) {
                 Column(Modifier.padding(12.dp)) {
+                    Text(stringResource(R.string.role_trainer))
                     Text(stringResource(R.string.selected_device, selectedDevice.name ?: stringResource(R.string.unnamed_device)),
                         maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
                     Text(stringResource(R.string.device_address, selectedDevice.address))
@@ -71,6 +78,7 @@ fun DevicesScreen(
                 }
             }
         }
+        HeartRateSummary(heartRate, onConnectHeartRate, onDisconnectHeartRate)
         LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("device_list"), state = listState,
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item(key = "scan_header") {
@@ -104,12 +112,17 @@ fun DevicesScreen(
                 item(key = "connection_details") { ConnectionDetails(connection, onDisconnect, onFecTarget) }
             }
             items(state.devices, key = { it.address }) { device ->
-                val isSelected = connection.device?.address == device.address
-                val canConnect = !(isSelected && connection.isActive)
+                val heartRateRole = device.defaultConnectionRole(heartRate.device?.address) == DeviceConnectionRole.HEART_RATE
+                val trainerSelected = connection.device?.address == device.address
+                val heartRateSelected = heartRate.device?.address == device.address
+                val isSelected = trainerSelected || heartRateSelected
+                val canConnect = if (heartRateRole) !(heartRateSelected && heartRate.isActive)
+                    else !(trainerSelected && connection.isActive)
+                val connectDevice = { if (heartRateRole) onConnectHeartRate(device) else onConnect(device) }
                 val containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
                     else MaterialTheme.colorScheme.surfaceVariant
                 Card(
-                    onClick = { onConnect(device) },
+                    onClick = connectDevice,
                     enabled = canConnect,
                     modifier = Modifier.fillMaxWidth().testTag("device_card_${device.address}")
                         .semantics { selected = isSelected },
@@ -120,12 +133,15 @@ fun DevicesScreen(
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(device.name ?: stringResource(R.string.unnamed_device), style = MaterialTheme.typography.titleMedium)
-                        if (isSelected) Text(stringResource(R.string.selected_device_badge))
+                        if (trainerSelected) Text(stringResource(R.string.selected_device_badge))
+                        if (heartRateSelected) Text(stringResource(R.string.hr_selected_badge))
                         Text(stringResource(R.string.device_address, device.address))
                         Text(stringResource(R.string.device_rssi, device.rssi))
-                        Button(onClick = { onConnect(device) }, enabled = canConnect) {
-                            Text(stringResource(R.string.connect_device))
+                        Button(onClick = connectDevice, enabled = canConnect) {
+                            Text(stringResource(if (heartRateRole) R.string.hr_connect else R.string.connect_device))
                         }
+                        if (!heartRateRole) TextButton(onClick = { onConnectHeartRate(device) },
+                            enabled = !(heartRateSelected && heartRate.isActive)) { Text(stringResource(R.string.hr_connect)) }
                         if (device.possibleTypes.isEmpty()) Text(stringResource(R.string.device_type_unknown))
                         device.possibleTypes.forEach { type ->
                             Text(stringResource(when (type) {

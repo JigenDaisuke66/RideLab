@@ -52,15 +52,16 @@ No trainer control yet.
 
 ## Phase 2 - FTMS Connection
 
-Status: current. ThinkRider X2 MAX connection and GATT service discovery passed
+Status: ThinkRider X2 MAX trainer path physically verified. Connection and GATT service discovery passed
 physical-device verification. FTMS 0x1826 and Indoor Bike Data 0x2AD2 were absent.
 Cycling Power 0x1818 exposes 0x2A63 Notify, 0x2A65 Read, 0x2A5D Read and
 0x2A66 Write/Indicate. The requested Phase 2 extension reads standard 0x2A63
-power/revolution notifications; live power/cadence verification is pending.
+power/revolution notifications; live trainer power is physically verified.
 An explicitly requested Phase 2 FE-C over BLE experiment adds manual 50–200 W
 target-power writes, separate from FTMS/Cycling Power. The physical FEC1 service,
 FEC2 Notify + CCCD, and FEC3 Write/Write Without Response layout is verified.
-Actual FE-C ERG acceptance remains pending physical testing; see FEC_EXPERIMENT.md.
+FE-C notifications, writes and ERG target-power control are physically verified.
+See FEC_EXPERIMENT.md for the original protocol/test notes.
 No FTMS/Cycling Power control point writes or later roadmap phases are included.
 
 Goal:
@@ -87,7 +88,14 @@ RideLab continuously displays live trainer data.
 
 ## Phase 3 - Heart Rate
 
-Connect to Heart Rate Service 0x180D.
+Status: current implementation; simultaneous trainer + heart-rate physical verification pending.
+
+Connect independently to Heart Rate Service 0x180D and subscribe to 0x2A37.
+HeartRateClient owns a separate BluetoothGatt and typed state; connecting,
+disconnecting or failing this sensor does not replace the trainer session.
+Parse unsigned 8/16-bit BPM according to flags and validate optional fields.
+Preserve the existing foreground-only lifecycle; no recording or later phases.
+See PHASE3_VERIFICATION.md.
 
 Acceptance:
 

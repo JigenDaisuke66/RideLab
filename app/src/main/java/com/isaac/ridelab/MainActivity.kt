@@ -40,12 +40,15 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
         val selected = devices.pendingConnection
+        val heartRateSelected = devices.pendingHeartRateConnection
         devices.pendingConnection = null
+        devices.pendingHeartRateConnection = null
         val canScan = devices.scanner.refreshAvailability()
         Log.i("RideLabGatt", "Permission result address=${selected?.address} permissions=$it")
         if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
             // Retry the exact selection even on denial, so the client publishes a visible failure.
-            if (selected != null) devices.connect(selected) else if (canScan) devices.scanner.start()
+            if (heartRateSelected != null) devices.connectHeartRate(heartRateSelected)
+            else if (selected != null) devices.connect(selected) else if (canScan) devices.scanner.start()
         } else {
             Log.i("RideLabGatt", "Permission result received outside foreground; connection not started")
         }
@@ -58,6 +61,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val state by devices.scanner.state.collectAsState()
             val connection by devices.client.state.collectAsState()
+            val heartRate by devices.heartRateClient.state.collectAsState()
             RideLabTheme {
                 Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
                     Row(Modifier.statusBarsPadding()) {
@@ -75,8 +79,12 @@ class MainActivity : ComponentActivity() {
                         onConnect = ::onDeviceSelected,
                         onDisconnect = devices.client::disconnect,
                         onFecTarget = devices::sendFecTarget,
+                        heartRate = heartRate,
+                        onConnectHeartRate = ::onHeartRateSelected,
+                        onDisconnectHeartRate = devices.heartRateClient::disconnect,
                         onStart = {
                             devices.pendingConnection = null
+                            devices.pendingHeartRateConnection = null
                             if (devices.scanner.hasPermissions()) devices.scanner.start()
                             else requestBluetoothPermissions()
                         },
@@ -108,11 +116,23 @@ class MainActivity : ComponentActivity() {
     internal fun onDeviceSelected(selected: DiscoveredDevice) {
         Log.i("RideLabGatt", "Device tapped address=${selected.address} name=${selected.name}")
         devices.pendingConnection = null
+        devices.pendingHeartRateConnection = null
         // The client immediately publishes selection + CONNECTING (or a typed permission failure).
         devices.connect(selected)
         if (devices.client.state.value.issue?.reason == GattFailure.PERMISSION_REQUIRED) {
             devices.pendingConnection = selected
             Log.i("RideLabGatt", "Requesting Bluetooth permission address=${selected.address}")
+            requestBluetoothPermissions()
+        }
+    }
+
+    internal fun onHeartRateSelected(selected: DiscoveredDevice) {
+        Log.i("RideLabHeartRate", "Device tapped address=${selected.address} name=${selected.name}")
+        devices.pendingConnection = null
+        devices.pendingHeartRateConnection = null
+        devices.connectHeartRate(selected)
+        if (devices.heartRateClient.state.value.issue?.reason == GattFailure.PERMISSION_REQUIRED) {
+            devices.pendingHeartRateConnection = selected
             requestBluetoothPermissions()
         }
     }

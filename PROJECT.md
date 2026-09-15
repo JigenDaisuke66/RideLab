@@ -21,6 +21,11 @@ ThinkRider X2 MAX.
 
 Bluetooth Heart Rate Service.
 
+Phase 3 uses an independent HeartRateClient (0x180D / 0x2A37) alongside the
+verified ThinkRider Cycling Power / FE-C trainer client. DevicesViewModel exposes
+separate trainer and heart-rate state flows, selected sources and disconnect actions.
+Both sessions remain foreground-only until the recording-service phase.
+
 ### Power meter
 
 Bluetooth Cycling Power Service.

@@ -110,4 +110,11 @@
     <string name="fec_minus">−5 W</string>
     <string name="fec_plus">+5 W</string>
     <string name="fec_send">发送 %1$d W 测试指令</string>
+    <string name="role_trainer">骑行台</string>
+    <string name="hr_source">心率传感器：%1$s</string>
+    <string name="hr_value">%1$d bpm</string>
+    <string name="hr_connect">连接为心率传感器</string>
+    <string name="hr_disconnect">断开心率传感器</string>
+    <string name="hr_selected_badge">已选为心率来源</string>
+    <string name="hr_missing">未发现心率服务 0x180D 或测量特征 0x2A37</string>
 </resources>
