@@ -34,7 +34,7 @@
     <string name="gatt_subscribing">Enabling measurement notifications…</string>
     <string name="gatt_streaming">Notifications enabled</string>
     <string name="gatt_failed">Connection or GATT operation failed</string>
-    <string name="foreground_connection_note">Connections are foreground-only in this phase. Leaving the app disconnects the device; reconnect when you return.</string>
+    <string name="foreground_connection_note">Start a ride to keep connections through app switching and screen lock. Before a ride starts, leaving the app disconnects preview connections.</string>
     <string name="gatt_permission_error">Bluetooth permission is missing. Allow Nearby devices in app settings and reconnect.</string>
     <string name="gatt_bluetooth_error">Bluetooth is unavailable. Enable Bluetooth and reconnect.</string>
     <string name="gatt_connect_error">Connection failed. Wake the device and disconnect it from other apps before retrying.</string>
@@ -117,4 +117,18 @@
     <string name="hr_disconnect">Disconnect heart rate sensor</string>
     <string name="hr_selected_badge">Selected heart rate source</string>
     <string name="hr_missing">Heart Rate Service 0x180D or Measurement 0x2A37 not found</string>
+    <string name="ride_start">Start ride</string>
+    <string name="ride_end">End ride</string>
+    <string name="ride_idle">No active ride</string>
+    <string name="ride_starting">Starting ride</string>
+    <string name="ride_active">Ride active</string>
+    <string name="ride_stopping">Ending ride</string>
+    <string name="ride_error">Ride service error</string>
+    <string name="ride_elapsed">%1$02d:%2$02d:%3$02d</string>
+    <string name="ride_channel">Active ride</string>
+    <string name="ride_notification_text">Keeping trainer and heart rate connected. Tap to return to RideLab.</string>
+    <string name="ride_start_failed">Could not start the ride service. Return to the app, retry and check logs.</string>
+    <string name="ride_notifications_required">Allow RideLab notifications and enable the ride notification channel, then retry Start ride.</string>
+    <string name="ride_service_lost">Ride service unavailable. Reopen the app and check device connections.</string>
+    <string name="ride_service_waiting">Connecting to ride service…</string>
 </resources>

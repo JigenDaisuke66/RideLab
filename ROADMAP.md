@@ -88,13 +88,13 @@ RideLab continuously displays live trainer data.
 
 ## Phase 3 - Heart Rate
 
-Status: current implementation; simultaneous trainer + heart-rate physical verification pending.
+Status: simultaneous trainer + heart-rate foreground operation physically verified.
 
 Connect independently to Heart Rate Service 0x180D and subscribe to 0x2A37.
 HeartRateClient owns a separate BluetoothGatt and typed state; connecting,
 disconnecting or failing this sensor does not replace the trainer session.
 Parse unsigned 8/16-bit BPM according to flags and validate optional fields.
-Preserve the existing foreground-only lifecycle; no recording or later phases.
+The original foreground-only lifecycle is superseded by the requested Phase 6 service work.
 See PHASE3_VERIFICATION.md.
 
 Acceptance:
@@ -131,7 +131,14 @@ User changes target power and X2 MAX changes resistance accordingly.
 
 ## Phase 6 - Foreground Ride Service
 
-Move long-running BLE ride ownership out of Activity.
+Status: current implementation; background/locked-screen physical acceptance pending.
+
+RideRecordingService owns both BLE clients from initial preview connection onward.
+Start ride promotes the same bound service to a started connectedDevice foreground
+service, without new GATT connections. ACTIVE sessions survive UI lifecycle changes.
+One bounded reconnect per role per ride; explicit End closes both sessions.
+No sample recording/persistence or Phase 4/5 implementation is added by this task.
+See FOREGROUND_SERVICE_VERIFICATION.md.
 
 Acceptance test:
 
@@ -140,7 +147,8 @@ Acceptance test:
 3. Leave RideLab in background for 20 minutes.
 4. Return to RideLab.
 5. BLE connection remained active.
-6. No ride samples were lost because the Activity was backgrounded.
+6. Elapsed time includes the full background period; live data and ERG work on return.
+7. Ride sample recording/data-loss verification is deferred until recording exists.
 
 ---
 

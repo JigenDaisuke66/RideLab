@@ -34,7 +34,7 @@
     <string name="gatt_subscribing">正在启用测量数据通知…</string>
     <string name="gatt_streaming">通知已启用</string>
     <string name="gatt_failed">连接或 GATT 操作失败</string>
-    <string name="foreground_connection_note">本阶段仅支持前台连接。离开应用会断开连接；返回后可重新连接。</string>
+    <string name="foreground_connection_note">开始骑行后可切换应用或锁屏，连接由骑行服务保持。未开始骑行时，离开应用会断开预览连接。</string>
     <string name="gatt_permission_error">缺少蓝牙权限。请在应用设置中允许“附近的设备”，然后重试连接。</string>
     <string name="gatt_bluetooth_error">蓝牙不可用，请开启蓝牙后重新连接。</string>
     <string name="gatt_connect_error">连接失败。请确认设备已唤醒，并关闭其他应用的设备连接后重试。</string>
@@ -117,4 +117,18 @@
     <string name="hr_disconnect">断开心率传感器</string>
     <string name="hr_selected_badge">已选为心率来源</string>
     <string name="hr_missing">未发现心率服务 0x180D 或测量特征 0x2A37</string>
+    <string name="ride_start">开始骑行</string>
+    <string name="ride_end">结束骑行</string>
+    <string name="ride_idle">未骑行</string>
+    <string name="ride_starting">正在开始骑行</string>
+    <string name="ride_active">骑行中</string>
+    <string name="ride_stopping">正在结束骑行</string>
+    <string name="ride_error">骑行服务错误</string>
+    <string name="ride_elapsed">%1$02d:%2$02d:%3$02d</string>
+    <string name="ride_channel">进行中的骑行</string>
+    <string name="ride_notification_text">保持骑行台和心率连接。点按返回 RideLab。</string>
+    <string name="ride_start_failed">无法启动骑行服务，请返回应用重试并查看日志。</string>
+    <string name="ride_notifications_required">请允许 RideLab 通知并启用骑行通知频道，然后重试开始骑行。</string>
+    <string name="ride_service_lost">骑行服务不可用，请重新打开应用并检查设备连接。</string>
+    <string name="ride_service_waiting">正在连接骑行服务…</string>
 </resources>

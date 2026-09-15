@@ -39,8 +39,10 @@ RideLab must support:
 
 BLE communication must NOT live inside Activity or Compose UI.
 
-Long-running connections and recording must eventually be owned by
-RideRecordingService.
+RideRecordingService owns trainer and heart-rate connections, including preview
+connections before a ride. ACTIVE rides retain those connections in a connectedDevice
+foreground service. Activity/ViewModel teardown must not disconnect an active ride.
+Recording/persistence is not implemented yet; future recording must also be service-owned.
 
 Compose is presentation only.
 

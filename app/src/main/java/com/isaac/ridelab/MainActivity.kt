@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -36,6 +39,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private lateinit var devices: DevicesViewModel
+    private val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) devices.startRide()
+    }
     private val permissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) {
@@ -60,8 +66,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val state by devices.scanner.state.collectAsState()
-            val connection by devices.client.state.collectAsState()
-            val heartRate by devices.heartRateClient.state.collectAsState()
+            val connection by devices.trainerState.collectAsState()
+            val heartRate by devices.heartRateState.collectAsState()
+            val ride by devices.rideState.collectAsState()
+            val ready by devices.serviceReady.collectAsState()
             RideLabTheme {
                 Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
                     Row(Modifier.statusBarsPadding()) {
@@ -77,11 +85,15 @@ class MainActivity : ComponentActivity() {
                         state = state,
                         connection = connection,
                         onConnect = ::onDeviceSelected,
-                        onDisconnect = devices.client::disconnect,
+                        onDisconnect = devices::disconnectTrainer,
                         onFecTarget = devices::sendFecTarget,
                         heartRate = heartRate,
                         onConnectHeartRate = ::onHeartRateSelected,
-                        onDisconnectHeartRate = devices.heartRateClient::disconnect,
+                        onDisconnectHeartRate = devices::disconnectHeartRate,
+                        ride = ride,
+                        serviceReady = ready,
+                        onStartRide = ::onStartRide,
+                        onEndRide = devices::endRide,
                         onStart = {
                             devices.pendingConnection = null
                             devices.pendingHeartRateConnection = null
@@ -104,6 +116,11 @@ class MainActivity : ComponentActivity() {
         devices.scanner.refreshAvailability()
     }
 
+    override fun onStart() {
+        super.onStart()
+        devices.enterForeground()
+    }
+
     override fun onStop() {
         if (!isChangingConfigurations) devices.leaveForeground()
         super.onStop()
@@ -119,7 +136,7 @@ class MainActivity : ComponentActivity() {
         devices.pendingHeartRateConnection = null
         // The client immediately publishes selection + CONNECTING (or a typed permission failure).
         devices.connect(selected)
-        if (devices.client.state.value.issue?.reason == GattFailure.PERMISSION_REQUIRED) {
+        if (!devices.scanner.hasPermissions()) {
             devices.pendingConnection = selected
             Log.i("RideLabGatt", "Requesting Bluetooth permission address=${selected.address}")
             requestBluetoothPermissions()
@@ -131,10 +148,17 @@ class MainActivity : ComponentActivity() {
         devices.pendingConnection = null
         devices.pendingHeartRateConnection = null
         devices.connectHeartRate(selected)
-        if (devices.heartRateClient.state.value.issue?.reason == GattFailure.PERMISSION_REQUIRED) {
+        if (!devices.scanner.hasPermissions()) {
             devices.pendingHeartRateConnection = selected
             requestBluetoothPermissions()
         }
+    }
+
+    private fun onStartRide() {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this,
+                Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else devices.startRide()
     }
 
     private fun selectLanguage(language: String) {

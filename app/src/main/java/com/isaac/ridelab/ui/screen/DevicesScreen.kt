@@ -35,6 +35,7 @@ import com.isaac.ridelab.data.model.HeartRateState
 import com.isaac.ridelab.data.model.DeviceConnectionRole
 import com.isaac.ridelab.data.model.defaultConnectionRole
 import kotlinx.coroutines.launch
+import com.isaac.ridelab.service.RideState
 
 @Composable
 fun DevicesScreen(
@@ -51,10 +52,19 @@ fun DevicesScreen(
     heartRate: HeartRateState = HeartRateState(),
     onConnectHeartRate: (DiscoveredDevice) -> Unit = {},
     onDisconnectHeartRate: () -> Unit = {},
+    ride: RideState = RideState(),
+    serviceReady: Boolean = true,
+    onStartRide: () -> Unit = {},
+    onEndRide: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     Column(modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        RideControls(ride, serviceReady, onStartRide, onEndRide, onSettings)
+        if (!serviceReady) {
+            Text(stringResource(R.string.ride_service_waiting))
+            return@Column
+        }
         // Kept outside the scrolling list: tapping a lower row must still reveal immediate status.
         connection.device?.let { selectedDevice ->
             Card(Modifier.fillMaxWidth().testTag("connection_summary")) {

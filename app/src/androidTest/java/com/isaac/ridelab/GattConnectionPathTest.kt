@@ -54,18 +54,19 @@ class GattConnectionPathTest {
             // Only the scan-result fixture is supplied by the test. All event handlers,
             // ViewModel, client and BluetoothDevice.connectGatt are the production path.
             activity.setContent {
-                val connection by viewModel.client.state.collectAsState()
+                val connection by viewModel.trainerState.collectAsState()
                 RideLabTheme {
                     DevicesScreen(BleScanState(devices = listOf(selected)), connection,
-                        onConnect = activity::onDeviceSelected, onDisconnect = viewModel.client::disconnect,
+                        onConnect = activity::onDeviceSelected, onDisconnect = viewModel::disconnectTrainer,
                         onStart = {}, onStop = {}, onSettings = {}, onBluetoothSettings = {})
                 }
             }
         }
         try {
+            compose.waitUntil(timeoutMillis = 5_000) { viewModel.serviceReady.value }
             compose.onNodeWithText(selected.name!!, useUnmergedTree = true)
                 .performScrollTo().performTouchInput { click() }
-            compose.runOnIdle { assertEquals(selected, viewModel.client.state.value.device) }
+            compose.runOnIdle { assertEquals(selected, viewModel.trainerState.value.device) }
             compose.onNodeWithTag("connection_status").assertIsDisplayed()
             val log = ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(
                 "logcat -d --pid=${Process.myPid()} -s RideLabGatt:I",
@@ -79,7 +80,7 @@ class GattConnectionPathTest {
             assertTrue("Native connectGatt was not invoked for the tapped address\n$log", invoked > dispatched)
             assertTrue("Native connectGatt did not return a GATT instance\n$log", returned > invoked)
         } finally {
-            compose.runOnIdle { viewModel.client.disconnect() }
+            compose.runOnIdle { viewModel.disconnectTrainer() }
         }
     }
 }

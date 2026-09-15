@@ -24,7 +24,10 @@ Bluetooth Heart Rate Service.
 Phase 3 uses an independent HeartRateClient (0x180D / 0x2A37) alongside the
 verified ThinkRider Cycling Power / FE-C trainer client. DevicesViewModel exposes
 separate trainer and heart-rate state flows, selected sources and disconnect actions.
-Both sessions remain foreground-only until the recording-service phase.
+RideRecordingService now owns both clients. The ViewModel binds to its typed state
+flows and forwards commands; it never owns a BluetoothGatt. Preview connections
+close when the UI disappears, but starting a ride promotes the existing service
+and retains the same sessions through Home, screen lock and UI recreation.
 
 ### Power meter
 
@@ -132,7 +135,12 @@ Active rides must continue recording while:
 - Activity is destroyed/recreated
 - user switches apps
 
-A Foreground Service will own active ride recording.
+A connectedDevice Foreground Service owns active ride BLE connections and elapsed
+time (SystemClock.elapsedRealtime). Start/End ride is explicit. A notification and
+partial wake lock last only for the active ride; End disconnects both devices,
+cancels recovery and removes foreground mode. Each device gets one automatic
+reconnect attempt per ride after an unexpected disconnect. No automatic ERG target
+replay, ride samples or recording persistence is implemented in this phase.
 
 The UI observes service/application state.
 
