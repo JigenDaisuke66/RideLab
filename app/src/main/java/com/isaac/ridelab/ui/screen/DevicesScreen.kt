@@ -44,6 +44,7 @@ fun DevicesScreen(
     onSettings: () -> Unit,
     onBluetoothSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onFecTarget: (Int) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -100,7 +101,7 @@ fun DevicesScreen(
                 if (state.devices.isEmpty()) Text(stringResource(R.string.scan_empty))
             }
             if (connection.device != null) {
-                item(key = "connection_details") { ConnectionDetails(connection, onDisconnect) }
+                item(key = "connection_details") { ConnectionDetails(connection, onDisconnect, onFecTarget) }
             }
             items(state.devices, key = { it.address }) { device ->
                 val isSelected = connection.device?.address == device.address

@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
                         connection = connection,
                         onConnect = ::onDeviceSelected,
                         onDisconnect = devices.client::disconnect,
+                        onFecTarget = devices::sendFecTarget,
                         onStart = {
                             devices.pendingConnection = null
                             if (devices.scanner.hasPermissions()) devices.scanner.start()

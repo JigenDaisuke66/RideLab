@@ -4,7 +4,10 @@ import com.isaac.ridelab.ble.BleUuids
 import com.isaac.ridelab.ble.ftms.FtmsConstants
 import com.isaac.ridelab.ble.ftms.IndoorBikeData
 import com.isaac.ridelab.ble.ftms.PacketError
+import com.isaac.ridelab.ble.power.CyclingPowerMeasurement
+import com.isaac.ridelab.ble.power.CyclingPowerParser
 import java.util.UUID
+import com.isaac.ridelab.ble.fec.FecState
 
 data class GattCharacteristicInfo(val uuid: UUID, val properties: Int, val descriptorUuids: List<UUID>)
 data class GattServiceInfo(val uuid: UUID, val instanceId: Int, val characteristics: List<GattCharacteristicInfo>)
@@ -16,6 +19,13 @@ enum class GattFailure {
 }
 
 data class GattIssue(val reason: GattFailure, val statusCode: Int? = null)
+
+enum class MeasurementSource { FTMS, CYCLING_POWER }
+data class CyclingPowerLiveData(
+    val measurement: CyclingPowerMeasurement,
+    val receivedAtMs: Long,
+    val cadenceRpm: TimedMetric<Double>?,
+)
 
 data class TimedMetric<T>(val value: T, val receivedAtMs: Long) {
     fun isStale(nowMs: Long): Boolean = nowMs - receivedAtMs >= 5_000
@@ -44,9 +54,15 @@ data class GattDeviceState(
     val notificationCount: Int = 0,
     val malformedPacketCount: Int = 0,
     val lastPacketError: PacketError? = null,
+    val measurementSource: MeasurementSource? = null,
+    val cyclingPower: CyclingPowerLiveData? = null,
+    val fec: FecState = FecState(),
 ) {
     val hasFtms: Boolean get() = services.any { it.uuid == BleUuids.FITNESS_MACHINE }
     val hasCyclingPower: Boolean get() = services.any { it.uuid == BleUuids.CYCLING_POWER }
+    val hasCyclingPowerMeasurement: Boolean get() = services.any { service ->
+        service.uuid == BleUuids.CYCLING_POWER && service.characteristics.any { it.uuid == CyclingPowerParser.MEASUREMENT_UUID }
+    }
     val hasIndoorBikeData: Boolean get() = services.any { service ->
         service.uuid == BleUuids.FITNESS_MACHINE && service.characteristics.any { it.uuid == FtmsConstants.INDOOR_BIKE_DATA }
     }

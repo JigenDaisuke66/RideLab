@@ -31,7 +31,7 @@
     <string name="gatt_connecting">Connecting to GATT…</string>
     <string name="gatt_discovering">Connected; discovering GATT services…</string>
     <string name="gatt_connected">Connected; service discovery complete</string>
-    <string name="gatt_subscribing">Enabling Indoor Bike Data notifications…</string>
+    <string name="gatt_subscribing">Enabling measurement notifications…</string>
     <string name="gatt_streaming">Notifications enabled</string>
     <string name="gatt_failed">Connection or GATT operation failed</string>
     <string name="foreground_connection_note">Connections are foreground-only in this phase. Leaving the app disconnects the device; reconnect when you return.</string>
@@ -40,7 +40,7 @@
     <string name="gatt_connect_error">Connection failed. Wake the device and disconnect it from other apps before retrying.</string>
     <string name="gatt_connection_lost">Device connection was lost. Reconnect to try again.</string>
     <string name="gatt_discovery_error">GATT discovery failed or the service database changed. Reconnect to discover services again.</string>
-    <string name="gatt_notify_unsupported">Indoor Bike Data does not support notifications. Capture the services and characteristics for diagnosis.</string>
+    <string name="gatt_notify_unsupported">The measurement characteristic does not support notifications. Capture the services and characteristics for diagnosis.</string>
     <string name="gatt_cccd_missing">Notification configuration descriptor 0x2902 is missing; data cannot be subscribed to.</string>
     <string name="gatt_subscription_error">Enabling notifications failed. Reconnect and capture the status code in Logcat.</string>
     <string name="gatt_timeout">Connection, discovery, or notification subscription timed out. Reconnect to try again.</string>
@@ -53,8 +53,8 @@
     <string name="indoor_bike_detection">FTMS Indoor Bike Data (0x2AD2): %1$s</string>
     <string name="service_found">Found</string>
     <string name="service_not_found">Not found</string>
-    <string name="ftms_absent">GATT discovery did not find FTMS. Capture the complete service list below. This phase does not parse Cycling Power or vendor-specific protocols.</string>
-    <string name="indoor_bike_absent">FTMS was found, but it has no Indoor Bike Data characteristic, so live ride data is unavailable.</string>
+    <string name="ftms_absent">GATT discovery did not find FTMS. Standard Cycling Power data will be used if 0x2A63 is available.</string>
+    <string name="indoor_bike_absent">FTMS has no Indoor Bike Data characteristic. Standard Cycling Power data will be used if 0x2A63 is available.</string>
     <string name="live_trainer_data">Live trainer data</string>
     <string name="live_value_note">Each field shows its latest reading; readings older than 5 seconds are marked stale. Missing fields are not treated as zero.</string>
     <string name="speed">Speed</string>
@@ -67,7 +67,7 @@
     <string name="metric_line">%1$s: %2$s</string>
     <string name="stale_value">%1$s (stale)</string>
     <string name="packet_counts">Notifications received: %1$d; invalid packets: %2$d</string>
-    <string name="waiting_for_data">Waiting for Indoor Bike Data notifications. Try pedaling.</string>
+    <string name="waiting_for_data">Waiting for measurement notifications. Try pedaling.</string>
     <string name="malformed_packet">The latest packet was invalid; readings were not updated. Capture the raw data in Logcat.</string>
     <string name="discovered_gatt_services">Discovered GATT services and characteristics</string>
     <string name="gatt_no_services">Service discovery returned an empty list.</string>
@@ -89,4 +89,25 @@
     <string name="language_english">English</string>
     <string name="selected_device_badge">Selected</string>
     <string name="view_connection_details">Connection details</string>
+    <string name="cycling_power_measurement_detection">Cycling Power Measurement (0x2A63): %1$s</string>
+    <string name="source_cycling_power">Data source: Cycling Power Measurement (0x2A63)</string>
+    <string name="source_ftms">Data source: FTMS Indoor Bike Data (0x2AD2)</string>
+    <string name="cycling_power_cadence_note">Cadence requires two valid crank samples; repeated data does not refresh its age. Speed is not calculated without a configured wheel circumference.</string>
+    <string name="crank_unavailable">Crank revolution data: not provided</string>
+    <string name="wheel_unavailable">Wheel revolution data: not provided</string>
+    <string name="crank_raw">Cumulative crank revolutions: %1$d; event time: %2$d (1/1024 s)</string>
+    <string name="wheel_raw">Cumulative wheel revolutions: %1$d; event time: %2$d (1/2048 s)</string>
+    <string name="fec_detected">Experimental FE-C control channel detected</string>
+    <string name="fec_unavailable">FE-C unavailable: required service, characteristics or properties missing</string>
+    <string name="fec_experiment_note">Experimental: 50–200 W, sent only on button press. A successful GATT write does not confirm ERG acceptance.</string>
+    <string name="fec_subscribing">Preparing FE-C notifications</string>
+    <string name="fec_ready">FE-C ready; no target sent yet</string>
+    <string name="fec_writing">Writing or waiting for send cooldown</string>
+    <string name="fec_sent">GATT write completed; verify trainer response</string>
+    <string name="fec_failed">FE-C operation failed; check logs and reconnect</string>
+    <string name="fec_last_target">Last requested target: %1$d W</string>
+    <string name="fec_target">Target: %1$d W</string>
+    <string name="fec_minus">−5 W</string>
+    <string name="fec_plus">+5 W</string>
+    <string name="fec_send">Send %1$d W test</string>
 </resources>

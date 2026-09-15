@@ -6,6 +6,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GattDeviceStateTest {
+    @Test fun cyclingPowerMeasurementIsDetectedOnlyInsideCyclingPowerService() {
+        val characteristic = GattCharacteristicInfo(
+            com.isaac.ridelab.ble.power.CyclingPowerParser.MEASUREMENT_UUID, 0x10, emptyList())
+        assertTrue(GattDeviceState(services = listOf(
+            GattServiceInfo(BleUuids.CYCLING_POWER, 1, listOf(characteristic)),
+        )).hasCyclingPowerMeasurement)
+        assertFalse(GattDeviceState(services = listOf(
+            GattServiceInfo(BleUuids.FITNESS_MACHINE, 1, listOf(characteristic)),
+        )).hasCyclingPowerMeasurement)
+    }
     @Test fun splitNotificationsPreserveValuesAndIndividualAges() {
         val metrics = TrainerMetrics()
             .update(IndoorBikeData(0, 25.0, null, null), 100)

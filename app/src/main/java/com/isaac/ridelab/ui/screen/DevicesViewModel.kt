@@ -12,6 +12,8 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
     val client = FtmsClient(application)
     var pendingConnection: DiscoveredDevice? = null
 
+    fun sendFecTarget(watts: Int) = client.sendFecTarget(watts)
+
     fun connect(device: DiscoveredDevice) {
         Log.i("RideLabGatt", "ViewModel connect address=${device.address}")
         if (client.state.value.isActive && client.state.value.device?.address == device.address) {

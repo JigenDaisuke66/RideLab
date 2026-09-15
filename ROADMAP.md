@@ -52,9 +52,16 @@ No trainer control yet.
 
 ## Phase 2 - FTMS Connection
 
-Status: current; physical-device acceptance NOT passed. Device-card taps did not
-dispatch connection (only the nested button was wired). The interaction fix
-requires repeat physical-device GATT verification before Phase 2 is accepted.
+Status: current. ThinkRider X2 MAX connection and GATT service discovery passed
+physical-device verification. FTMS 0x1826 and Indoor Bike Data 0x2AD2 were absent.
+Cycling Power 0x1818 exposes 0x2A63 Notify, 0x2A65 Read, 0x2A5D Read and
+0x2A66 Write/Indicate. The requested Phase 2 extension reads standard 0x2A63
+power/revolution notifications; live power/cadence verification is pending.
+An explicitly requested Phase 2 FE-C over BLE experiment adds manual 50–200 W
+target-power writes, separate from FTMS/Cycling Power. The physical FEC1 service,
+FEC2 Notify + CCCD, and FEC3 Write/Write Without Response layout is verified.
+Actual FE-C ERG acceptance remains pending physical testing; see FEC_EXPERIMENT.md.
+No FTMS/Cycling Power control point writes or later roadmap phases are included.
 
 Goal:
 

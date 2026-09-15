@@ -31,7 +31,7 @@
     <string name="gatt_connecting">正在连接 GATT…</string>
     <string name="gatt_discovering">已连接，正在发现 GATT 服务…</string>
     <string name="gatt_connected">已连接，服务发现完成</string>
-    <string name="gatt_subscribing">正在启用 Indoor Bike Data 通知…</string>
+    <string name="gatt_subscribing">正在启用测量数据通知…</string>
     <string name="gatt_streaming">通知已启用</string>
     <string name="gatt_failed">连接或 GATT 操作失败</string>
     <string name="foreground_connection_note">本阶段仅支持前台连接。离开应用会断开连接；返回后可重新连接。</string>
@@ -40,7 +40,7 @@
     <string name="gatt_connect_error">连接失败。请确认设备已唤醒，并关闭其他应用的设备连接后重试。</string>
     <string name="gatt_connection_lost">设备连接已中断，请重新连接。</string>
     <string name="gatt_discovery_error">GATT 服务发现失败或服务数据库已变化，请重新连接。</string>
-    <string name="gatt_notify_unsupported">Indoor Bike Data 不支持通知，请保留服务及特征信息以供排查。</string>
+    <string name="gatt_notify_unsupported">测量特征不支持通知，请保留服务及特征信息以供排查。</string>
     <string name="gatt_cccd_missing">未找到通知配置描述符 0x2902，无法订阅数据。</string>
     <string name="gatt_subscription_error">启用通知失败，请重新连接，并记录 Logcat 中的状态码。</string>
     <string name="gatt_timeout">连接、服务发现或通知订阅超时，请重新连接。</string>
@@ -53,8 +53,8 @@
     <string name="indoor_bike_detection">FTMS Indoor Bike Data（0x2AD2）：%1$s</string>
     <string name="service_found">已发现</string>
     <string name="service_not_found">未发现</string>
-    <string name="ftms_absent">GATT 服务发现未找到 FTMS。请记录下方完整服务列表。本阶段不解析 Cycling Power 或厂商私有协议。</string>
-    <string name="indoor_bike_absent">已发现 FTMS，但其中没有 Indoor Bike Data，无法显示实时骑行数据。</string>
+    <string name="ftms_absent">GATT 服务发现未找到 FTMS。若提供 0x2A63，将使用标准 Cycling Power 数据。</string>
+    <string name="indoor_bike_absent">FTMS 中没有 Indoor Bike Data；若提供 0x2A63，将使用标准 Cycling Power 数据。</string>
     <string name="live_trainer_data">骑行台实时数据</string>
     <string name="live_value_note">显示各字段最近一次读数；超过 5 秒未更新会标记为过期。缺失字段不按零值处理。</string>
     <string name="speed">速度</string>
@@ -67,7 +67,7 @@
     <string name="metric_line">%1$s：%2$s</string>
     <string name="stale_value">%1$s（已过期）</string>
     <string name="packet_counts">已接收通知：%1$d；无效数据包：%2$d</string>
-    <string name="waiting_for_data">等待 Indoor Bike Data 通知，请尝试踩踏。</string>
+    <string name="waiting_for_data">等待测量数据通知，请尝试踩踏。</string>
     <string name="malformed_packet">最近的数据包无效，未更新读数。请记录 Logcat 中的原始数据。</string>
     <string name="discovered_gatt_services">已发现的 GATT 服务与特征</string>
     <string name="gatt_no_services">服务发现返回空列表。</string>
@@ -89,4 +89,25 @@
     <string name="language_english">英语</string>
     <string name="selected_device_badge">已选择</string>
     <string name="view_connection_details">查看连接详情</string>
+    <string name="cycling_power_measurement_detection">Cycling Power Measurement（0x2A63）：%1$s</string>
+    <string name="source_cycling_power">数据来源：Cycling Power Measurement（0x2A63）</string>
+    <string name="source_ftms">数据来源：FTMS Indoor Bike Data（0x2AD2）</string>
+    <string name="cycling_power_cadence_note">踏频需要两组有效曲柄数据；重复数据不会刷新读数时间。未配置轮周长，因此不计算速度。</string>
+    <string name="crank_unavailable">曲柄转数数据：未提供</string>
+    <string name="wheel_unavailable">车轮转数数据：未提供</string>
+    <string name="crank_raw">曲柄累计转数：%1$d；事件时间：%2$d（1/1024 秒）</string>
+    <string name="wheel_raw">车轮累计转数：%1$d；事件时间：%2$d（1/2048 秒）</string>
+    <string name="fec_detected">已检测到 FE-C 实验控制通道</string>
+    <string name="fec_unavailable">FE-C 控制不可用：缺少服务、特征或所需属性</string>
+    <string name="fec_experiment_note">实验功能：50–200 W，仅按按钮时发送。GATT 写入成功不代表骑行台已接受 ERG 指令。</string>
+    <string name="fec_subscribing">正在准备 FE-C 通知</string>
+    <string name="fec_ready">FE-C 已就绪，尚未发送目标功率</string>
+    <string name="fec_writing">正在写入或等待发送冷却</string>
+    <string name="fec_sent">GATT 写入完成；请验证骑行台响应</string>
+    <string name="fec_failed">FE-C 操作失败，请查看日志并重新连接</string>
+    <string name="fec_last_target">上次请求目标：%1$d W</string>
+    <string name="fec_target">目标：%1$d W</string>
+    <string name="fec_minus">−5 W</string>
+    <string name="fec_plus">+5 W</string>
+    <string name="fec_send">发送 %1$d W 测试指令</string>
 </resources>

@@ -23,6 +23,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.isaac.ridelab.ble.BleUuids
+import com.isaac.ridelab.ble.fec.FecOverBleTrainerController
 import com.isaac.ridelab.data.model.ConnectionState
 import com.isaac.ridelab.data.model.DiscoveredDevice
 import com.isaac.ridelab.data.model.GattCharacteristicInfo
@@ -31,11 +32,16 @@ import com.isaac.ridelab.data.model.GattFailure
 import com.isaac.ridelab.data.model.GattIssue
 import com.isaac.ridelab.data.model.GattServiceInfo
 import com.isaac.ridelab.data.model.TrainerMetrics
+import com.isaac.ridelab.data.model.MeasurementSource
+import com.isaac.ridelab.data.model.CyclingPowerLiveData
+import com.isaac.ridelab.ble.power.CyclingPowerParser
+import com.isaac.ridelab.ble.power.CyclingPowerParseResult
+import com.isaac.ridelab.ble.power.CrankCadenceCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** One selected device, native GATT discovery and passive FTMS data only.
- * Public calls and all state updates run on the main thread. No control point writes.
+/** One selected device, native GATT discovery and FTMS/Cycling Power data.
+ * Public calls and all state updates run on the main thread. Experimental FE-C is delegated.
  */
 @SuppressLint("MissingPermission") // Checked before connection; revocations are handled by guarded operations.
 class FtmsClient(context: Context) {
@@ -44,9 +50,15 @@ class FtmsClient(context: Context) {
     private val mutableState = MutableStateFlow(GattDeviceState())
     val state = mutableState.asStateFlow()
     private var gatt: BluetoothGatt? = null
-    private var bikeData: BluetoothGattCharacteristic? = null
+    private var measurementCharacteristic: BluetoothGattCharacteristic? = null
+    private val crankCadence = CrankCadenceCalculator()
     private var pendingCccd: BluetoothGattDescriptor? = null
     private var closed = false
+    private val fec = FecOverBleTrainerController(handler,
+        publish = { mutableState.value = state.value.copy(fec = it) },
+        onTimeout = { fail(GattFailure.TIMEOUT) })
+
+    fun sendFecTarget(watts: Int) = fec.sendTargetPower(watts)
     private val timeout = Runnable {
         Log.e(TAG, "Operation timeout phase=${state.value.connection} address=${state.value.device?.address}")
         fail(GattFailure.TIMEOUT)
@@ -135,12 +147,24 @@ class FtmsClient(context: Context) {
             mutableState.value = state.value.copy(services = services, discoveryComplete = true, connection = ConnectionState.CONNECTED)
             Log.i(TAG, "Capabilities FTMS=${state.value.hasFtms} CyclingPower=${state.value.hasCyclingPower} IndoorBikeData=${state.value.hasIndoorBikeData}")
             // Advertising is never used to gate connection or FTMS detection.
-            bikeData = gatt.services.filter { it.uuid == BleUuids.FITNESS_MACHINE }
+            measurementCharacteristic = gatt.services.filter { it.uuid == BleUuids.FITNESS_MACHINE }
                 .flatMap { it.characteristics }.firstOrNull { it.uuid == FtmsConstants.INDOOR_BIKE_DATA }
-            bikeData?.let { subscribe(gatt, it) }
+            var source = MeasurementSource.FTMS
+            if (measurementCharacteristic == null) {
+                measurementCharacteristic = gatt.services.filter { it.uuid == BleUuids.CYCLING_POWER }
+                    .flatMap { it.characteristics }.firstOrNull { it.uuid == CyclingPowerParser.MEASUREMENT_UUID }
+                source = MeasurementSource.CYCLING_POWER
+            }
+            mutableState.value = state.value.copy(measurementSource = if (measurementCharacteristic != null) source else null)
+            Log.i(TAG, "Measurement source=${state.value.measurementSource} characteristic=${measurementCharacteristic?.uuid}")
+            fec.detect(gatt, services)
+            // Serialize the two CCCD writes; the FE-C controller never discovers services itself.
+            if (measurementCharacteristic != null) subscribe(gatt, measurementCharacteristic!!)
+            else fec.subscribe()
         }
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) = dispatch(gatt) {
+            if (fec.onDescriptorWrite(descriptor, status)) return@dispatch
             if (descriptor !== pendingCccd || state.value.connection != ConnectionState.SUBSCRIBING) return@dispatch
             Log.i(TAG, "CCCD write completed uuid=${descriptor.uuid} status=$status")
             pendingCccd = null
@@ -149,8 +173,13 @@ class FtmsClient(context: Context) {
             } else {
                 handler.removeCallbacks(timeout)
                 mutableState.value = state.value.copy(connection = ConnectionState.STREAMING)
-                Log.i(TAG, "Indoor Bike Data notifications enabled; waiting for packets")
+                Log.i(TAG, "Notifications enabled characteristic=${measurementCharacteristic?.uuid}; waiting for packets")
+                fec.subscribe()
             }
+        }
+
+        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) = dispatch(gatt) {
+            fec.onCharacteristicWrite(characteristic, status)
         }
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
@@ -203,9 +232,28 @@ class FtmsClient(context: Context) {
     }
 
     private fun receive(characteristic: BluetoothGattCharacteristic, value: ByteArray) {
-        if (characteristic !== bikeData || state.value.connection !in setOf(ConnectionState.SUBSCRIBING, ConnectionState.STREAMING)) return
+        if (fec.receive(characteristic, value)) return
+        if (characteristic !== measurementCharacteristic || state.value.connection !in setOf(ConnectionState.SUBSCRIBING, ConnectionState.STREAMING)) return
         val hex = value.joinToString("") { "%02x".format(it.toInt() and 0xff) }
         val count = state.value.notificationCount + 1
+        if (state.value.measurementSource == MeasurementSource.CYCLING_POWER) {
+            when (val result = CyclingPowerParser.parse(value)) {
+                is CyclingPowerParseResult.Success -> {
+                    val data = result.measurement
+                    val now = SystemClock.elapsedRealtime()
+                    val cadence = crankCadence.update(data.crank, now)
+                    Log.d(TAG, "CyclingPowerMeasurement uuid=0x2A63 packet=$count raw=$hex flags=0x${data.flags.toString(16)} instantaneousPowerWatts=${data.instantaneousPowerWatts} crank=${data.crank} wheel=${data.wheel} cadenceRpm=${cadence?.value}")
+                    mutableState.value = state.value.copy(notificationCount = count, lastPacketError = null,
+                        cyclingPower = CyclingPowerLiveData(data, now, cadence))
+                }
+                is CyclingPowerParseResult.Invalid -> {
+                    Log.w(TAG, "Malformed CyclingPowerMeasurement uuid=0x2A63 packet=$count raw=$hex flags=${value.take(2)} reason=${result.reason} offset=${result.offset}")
+                    mutableState.value = state.value.copy(notificationCount = count,
+                        malformedPacketCount = state.value.malformedPacketCount + 1, lastPacketError = result.reason)
+                }
+            }
+            return
+        }
         when (val result = FtmsParser.parseIndoorBikeData(value)) {
             is IndoorBikeParseResult.Success -> {
                 val data = result.data
@@ -251,14 +299,16 @@ class FtmsClient(context: Context) {
         Log.e(TAG, "GATT failure reason=$reason code=$code phase=${state.value.connection} address=${state.value.device?.address}")
         releaseGatt()
         mutableState.value = state.value.copy(connection = ConnectionState.FAILED,
-            issue = GattIssue(reason, code), metrics = TrainerMetrics())
+            issue = GattIssue(reason, code), metrics = TrainerMetrics(), cyclingPower = null)
     }
 
     private fun releaseGatt(): Boolean {
         handler.removeCallbacks(timeout)
+        fec.reset()
         val previous = gatt
         gatt = null // Invalidate queued callbacks before disconnect/close.
-        bikeData = null
+        measurementCharacteristic = null
+        crankCadence.reset()
         pendingCccd = null
         var clean = true
         if (previous != null) {
@@ -279,7 +329,8 @@ class FtmsClient(context: Context) {
         val clean = releaseGatt()
         // Retain the discovered UUIDs for diagnosis, but never show old measurements as live.
         mutableState.value = state.value.copy(connection = ConnectionState.DISCONNECTED,
-            metrics = TrainerMetrics(), issue = if (clean) state.value.issue else GattIssue(GattFailure.CLEANUP_FAILED))
+            metrics = TrainerMetrics(), cyclingPower = null,
+            issue = if (clean) state.value.issue else GattIssue(GattFailure.CLEANUP_FAILED))
     }
 
     fun close() {
@@ -291,4 +342,3 @@ class FtmsClient(context: Context) {
 
     private companion object { const val TAG = "RideLabGatt" }
 }
-

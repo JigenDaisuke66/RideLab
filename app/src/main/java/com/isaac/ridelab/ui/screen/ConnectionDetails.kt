@@ -22,10 +22,12 @@ import com.isaac.ridelab.R
 import com.isaac.ridelab.data.model.ConnectionState
 import com.isaac.ridelab.data.model.GattDeviceState
 import com.isaac.ridelab.data.model.GattFailure
+import com.isaac.ridelab.data.model.MeasurementSource
+import com.isaac.ridelab.data.model.TimedMetric
 import kotlinx.coroutines.delay
 
 @Composable
-fun ConnectionDetails(state: GattDeviceState, onDisconnect: () -> Unit) {
+fun ConnectionDetails(state: GattDeviceState, onDisconnect: () -> Unit, onFecTarget: (Int) -> Unit = {}) {
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(state.isActive) {
         while (state.isActive) {
@@ -41,6 +43,7 @@ fun ConnectionDetails(state: GattDeviceState, onDisconnect: () -> Unit) {
             Text(connectionStatusText(state.connection))
             Text(stringResource(R.string.foreground_connection_note))
             if (state.isActive) TextButton(onClick = onDisconnect) { Text(stringResource(R.string.disconnect_device)) }
+            if (state.discoveryComplete) FecDebugControl(state.fec, state.isActive, onFecTarget)
             state.issue?.let { issue ->
                 Text(stringResource(when (issue.reason) {
                     GattFailure.PERMISSION_REQUIRED -> R.string.gatt_permission_error
@@ -62,18 +65,32 @@ fun ConnectionDetails(state: GattDeviceState, onDisconnect: () -> Unit) {
                 Text(stringResource(R.string.ftms_detection, detected(state.hasFtms)))
                 Text(stringResource(R.string.cycling_power_detection, detected(state.hasCyclingPower)))
                 Text(stringResource(R.string.indoor_bike_detection, detected(state.hasIndoorBikeData)))
+                Text(stringResource(R.string.cycling_power_measurement_detection, detected(state.hasCyclingPowerMeasurement)))
                 if (!state.hasFtms) Text(stringResource(R.string.ftms_absent))
                 else if (!state.hasIndoorBikeData) Text(stringResource(R.string.indoor_bike_absent))
             }
-            if (state.hasIndoorBikeData && state.isActive) {
+            if (state.measurementSource != null && state.isActive) {
                 Text(stringResource(R.string.live_trainer_data), style = MaterialTheme.typography.titleMedium)
                 Text(stringResource(R.string.live_value_note))
-                val speed = state.metrics.speedKph
-                val cadence = state.metrics.cadenceRpm
-                val power = state.metrics.trainerPowerWatts
+                val isCyclingPower = state.measurementSource == MeasurementSource.CYCLING_POWER
+                val cps = state.cyclingPower
+                Text(stringResource(if (isCyclingPower) R.string.source_cycling_power else R.string.source_ftms))
+                val speed = if (isCyclingPower) null else state.metrics.speedKph
+                val cadence = if (isCyclingPower) cps?.cadenceRpm else state.metrics.cadenceRpm
+                val power = if (isCyclingPower) cps?.let { TimedMetric(it.measurement.instantaneousPowerWatts, it.receivedAtMs) }
+                    else state.metrics.trainerPowerWatts
                 MetricLine(stringResource(R.string.speed), speed?.let { stringResource(R.string.speed_value, it.value) }, speed?.isStale(now) == true)
                 MetricLine(stringResource(R.string.cadence), cadence?.let { stringResource(R.string.cadence_value, it.value) }, cadence?.isStale(now) == true)
                 MetricLine(stringResource(R.string.trainer_power), power?.let { stringResource(R.string.power_value, it.value) }, power?.isStale(now) == true)
+                if (isCyclingPower) {
+                    Text(stringResource(R.string.cycling_power_cadence_note))
+                    val crank = cps?.measurement?.crank
+                    val wheel = cps?.measurement?.wheel
+                    Text(if (crank == null) stringResource(R.string.crank_unavailable)
+                        else stringResource(R.string.crank_raw, crank.revolutions, crank.lastEventTime1024))
+                    Text(if (wheel == null) stringResource(R.string.wheel_unavailable)
+                        else stringResource(R.string.wheel_raw, wheel.revolutions, wheel.lastEventTime2048))
+                }
                 Text(stringResource(R.string.packet_counts, state.notificationCount, state.malformedPacketCount))
                 if (state.notificationCount == 0) Text(stringResource(R.string.waiting_for_data))
                 if (state.lastPacketError != null) Text(stringResource(R.string.malformed_packet), color = MaterialTheme.colorScheme.error)
