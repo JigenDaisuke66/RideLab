@@ -143,11 +143,13 @@ Ride samples will later be stored using Room.
 
 ## Localization
 
-English is the fallback language.
+Simplified Chinese (zh-CN) is the default/fallback language.
 
-Initial translation:
+English remains fully supported as an alternative language.
 
-zh-CN
+Fresh installations explicitly select zh-CN on first startup regardless of system language. On Android 13+, a one-time app_locale/platform_initialized preference seeds LocaleManager only if no existing per-app choice exists; Android persists all subsequent choices, including System default. On Android 12/12L, app_locale/legacy_language stores the selection and the Activity uses a localized context. The in-app language buttons support Chinese and English on all supported versions. A saved legacy choice migrates once when upgrading to Android 13+.
+
+Chinese strings live in res/values/strings.xml; English translations live in res/values-en/strings.xml. Every visible string must exist in both languages. resources.properties declares unqualifiedResLocale=zh-CN.
 
 Architecture must support adding Japanese and other languages without
 changing business logic.

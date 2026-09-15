@@ -23,6 +23,12 @@ android {
     androidResources {
         generateLocaleConfig = true
     }
+    bundle {
+        language {
+            // Both languages must remain available for offline in-app switching.
+            enableSplit = false
+        }
+    }
 
     buildTypes {
         release {

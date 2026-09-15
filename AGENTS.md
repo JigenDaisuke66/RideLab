@@ -105,13 +105,13 @@ BLE failures should be logged and represented through state.
 
 ## Localization
 
-Default language: English.
+Default/fallback language: Simplified Chinese (zh-CN).
 
 Additional initial language:
 
-- zh-CN
+- English (en)
 
-All UI strings must use Android resources.
+All UI strings must use Android resources. Put default Chinese in res/values/strings.xml and complete English translations in res/values-en/strings.xml. Set unqualifiedResLocale=zh-CN in resources.properties.
 
 Compose example:
 

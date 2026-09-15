@@ -2,7 +2,7 @@
 
 ## Phase 0 - Project skeleton
 
-Status: current
+Status: complete
 
 Acceptance:
 
@@ -17,6 +17,13 @@ Do not implement BLE connection yet.
 ---
 
 ## Phase 1 - BLE Scanner
+
+Status: physically verified.
+
+ThinkRider X2 MAX was discovered as Think X211-0013186. Advertised services
+included 0x1818, 0xFFF0, and 6e40fec1-b5a3-f393-e0a9-e50e24dcca9e.
+FTMS 0x1826 was not advertised; Phase 2 must inspect the GATT database
+before concluding whether FTMS is available.
 
 Goal:
 
@@ -44,6 +51,10 @@ No trainer control yet.
 ---
 
 ## Phase 2 - FTMS Connection
+
+Status: current; physical-device acceptance NOT passed. Device-card taps did not
+dispatch connection (only the nested button was wired). The interaction fix
+requires repeat physical-device GATT verification before Phase 2 is accepted.
 
 Goal:
 
