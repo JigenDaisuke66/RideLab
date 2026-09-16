@@ -80,9 +80,11 @@ Controls:
 
 ### History
 
-Lists recorded ride sessions.
+Lists completed and interrupted local sessions newest first, with duration, status and sample count. A simple detail view shows stored timing, first/last sample elapsed time, and null-aware average/maximum trainer power, heart rate and cadence. Room query flows are exposed through the existing repository and a HistoryViewModel; history never owns recording.
 
-Detailed analytics will be added later.
+Ride details also show separate Canvas power, heart-rate and cadence charts from stored samples. Null values and elapsed sample gaps over three seconds break the lines; deterministic min/max time buckets reduce long rides without changing raw data. See RIDE_CHARTS_VERIFICATION.md.
+
+Training analytics phase 1 adds optional FTP settings and NP/IF/TSS. Schema v2 explicitly migrates v1 with one nullable session FTP snapshot, captured at Start ride (unset stays null; legacy nulls are not backfilled). Raw samples and recording are unchanged. See TRAINING_ANALYTICS_VERIFICATION.md. Further analytics remain deferred.
 
 ### Settings
 
@@ -140,7 +142,9 @@ time (SystemClock.elapsedRealtime). Start/End ride is explicit. A notification a
 partial wake lock last only for the active ride; End disconnects both devices,
 cancels recovery and removes foreground mode. Each device gets one automatic
 reconnect attempt per ride after an unexpected disconnect. No automatic ERG target
-replay, ride samples or recording persistence is implemented in this phase.
+replay is performed. Room recording is sampled by the service at approximately 1 Hz,
+independently of BLE notifications and Activity lifecycle. Explicit End first commits
+the last sample and COMPLETED session before disconnecting/stopping foreground mode.
 
 The UI observes service/application state.
 
@@ -152,7 +156,13 @@ No user account.
 No mandatory cloud.
 No server required.
 
-Ride samples will later be stored using Room.
+Room database ridelab.db (schema version 2) stores ride_sessions and ride_samples.
+Statuses are ACTIVE, COMPLETED and ABORTED, never localized strings. Samples preserve
+nullable trainer power, cadence, BPM, requested target, source addresses and optional
+external power/speed/resistance separately. Missing/disconnected/stale sensor data is
+null; no fabricated samples fill scheduling gaps. Duration uses monotonic elapsed time.
+Interrupted ACTIVE sessions are marked ABORTED on next service startup using the last
+saved checkpoint. No destructive migrations or advanced analytics. Minimal read-only history is available for persistence verification.
 
 ## Localization
 

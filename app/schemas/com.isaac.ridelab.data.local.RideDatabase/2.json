@@ -1,0 +1,189 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "d99ce3e1d305f9e674feb7f68813eeaa",
+    "entities": [
+      {
+        "tableName": "ride_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startTimeEpochMillis` INTEGER NOT NULL, `endTimeEpochMillis` INTEGER, `durationMillis` INTEGER NOT NULL, `status` TEXT NOT NULL, `trainerName` TEXT, `trainerAddress` TEXT, `heartRateSensorName` TEXT, `heartRateSensorAddress` TEXT, `lastTargetPowerWatts` INTEGER, `activeSlot` INTEGER, `analyticsFtpWatts` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTimeEpochMillis",
+            "columnName": "startTimeEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTimeEpochMillis",
+            "columnName": "endTimeEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "durationMillis",
+            "columnName": "durationMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trainerName",
+            "columnName": "trainerName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "trainerAddress",
+            "columnName": "trainerAddress",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "heartRateSensorName",
+            "columnName": "heartRateSensorName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "heartRateSensorAddress",
+            "columnName": "heartRateSensorAddress",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastTargetPowerWatts",
+            "columnName": "lastTargetPowerWatts",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "activeSlot",
+            "columnName": "activeSlot",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "analyticsFtpWatts",
+            "columnName": "analyticsFtpWatts",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ride_sessions_activeSlot",
+            "unique": true,
+            "columnNames": [
+              "activeSlot"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_ride_sessions_activeSlot` ON `${TABLE_NAME}` (`activeSlot`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ride_samples",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sessionId` INTEGER NOT NULL, `timestampEpochMillis` INTEGER NOT NULL, `elapsedMillis` INTEGER NOT NULL, `trainerPowerWatts` INTEGER, `cadenceRpm` REAL, `heartRateBpm` INTEGER, `targetPowerWatts` INTEGER, `externalPowerWatts` INTEGER, `speedKph` REAL, `resistanceLevel` REAL, `trainerAddress` TEXT, `heartRateSensorAddress` TEXT, PRIMARY KEY(`sessionId`, `elapsedMillis`), FOREIGN KEY(`sessionId`) REFERENCES `ride_sessions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestampEpochMillis",
+            "columnName": "timestampEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "elapsedMillis",
+            "columnName": "elapsedMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trainerPowerWatts",
+            "columnName": "trainerPowerWatts",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cadenceRpm",
+            "columnName": "cadenceRpm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "heartRateBpm",
+            "columnName": "heartRateBpm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "targetPowerWatts",
+            "columnName": "targetPowerWatts",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "externalPowerWatts",
+            "columnName": "externalPowerWatts",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "speedKph",
+            "columnName": "speedKph",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "resistanceLevel",
+            "columnName": "resistanceLevel",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "trainerAddress",
+            "columnName": "trainerAddress",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "heartRateSensorAddress",
+            "columnName": "heartRateSensorAddress",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sessionId",
+            "elapsedMillis"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "ride_sessions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "sessionId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd99ce3e1d305f9e674feb7f68813eeaa')"
+    ]
+  }
+}

@@ -49,7 +49,7 @@ class RideSessionTest {
         var disconnects = 0
         session = RideSession {
             assertEquals(RidePhase.STOPPING, session.state.value.phase)
-            assertFalse(session.keepsConnections)
+            assertTrue(session.keepsConnections) // STOPPING preserves BLE until storage finalization.
             disconnects++
         }
         session.begin(); session.activate(1000); session.end()
@@ -96,5 +96,19 @@ class RideSessionTest {
         assertTrue(trainer.take(true, GattFailure.CONNECTION_LOST))
         assertFalse(trainer.take(true, GattFailure.CONNECTION_LOST))
         assertTrue(heartRate.take(true, GattFailure.CONNECTION_LOST))
+    }
+
+    @Test fun stoppingRetainsConnectionsAndSessionIdUntilFinalSampleCommits() {
+        var disconnects = 0
+        val session = RideSession { disconnects++ }
+        session.begin(); session.activate(100, 42)
+        assertTrue(session.beginStop())
+        assertFalse(session.beginStop())
+        assertFalse(session.begin())
+        session.uiHidden()
+        assertEquals(0, disconnects)
+        assertEquals(42L, session.state.value.sessionId)
+        session.end()
+        assertEquals(1, disconnects)
     }
 }

@@ -41,6 +41,7 @@ internal fun RideControls(state: RideState, ready: Boolean, start: () -> Unit, e
             RideError.BLUETOOTH_PERMISSION -> R.string.gatt_permission_error
             RideError.NOTIFICATIONS_DISABLED -> R.string.ride_notifications_required
             RideError.SERVICE_LOST -> R.string.ride_service_lost
+            RideError.RECORDING_FAILED -> R.string.ride_recording_failed
         }))
         if (it == RideError.NOTIFICATIONS_DISABLED || it == RideError.BLUETOOTH_PERMISSION)
             TextButton(onClick = settings) { Text(stringResource(R.string.open_app_settings)) }

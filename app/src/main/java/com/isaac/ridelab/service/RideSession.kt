@@ -5,8 +5,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class RidePhase { IDLE, STARTING, ACTIVE, STOPPING, ERROR }
-enum class RideError { START_FAILED, BLUETOOTH_PERMISSION, NOTIFICATIONS_DISABLED, SERVICE_LOST }
-data class RideState(val phase: RidePhase = RidePhase.IDLE, val startedAtMs: Long? = null, val error: RideError? = null) {
+enum class RideError { START_FAILED, BLUETOOTH_PERMISSION, NOTIFICATIONS_DISABLED, SERVICE_LOST, RECORDING_FAILED }
+data class RideState(val phase: RidePhase = RidePhase.IDLE, val startedAtMs: Long? = null, val error: RideError? = null,
+    val sessionId: Long? = null) {
     fun elapsedMs(nowMs: Long): Long = startedAtMs?.let { (nowMs - it).coerceAtLeast(0) } ?: 0
 }
 
@@ -14,7 +15,7 @@ data class RideState(val phase: RidePhase = RidePhase.IDLE, val startedAtMs: Lon
 class RideSession(private val disconnectAll: () -> Unit) {
     private val mutableState = MutableStateFlow(RideState())
     val state = mutableState.asStateFlow()
-    val keepsConnections get() = state.value.phase in setOf(RidePhase.STARTING, RidePhase.ACTIVE)
+    val keepsConnections get() = state.value.phase in setOf(RidePhase.STARTING, RidePhase.ACTIVE, RidePhase.STOPPING)
 
     fun begin(): Boolean {
         if (state.value.phase !in setOf(RidePhase.IDLE, RidePhase.ERROR)) return false
@@ -22,8 +23,14 @@ class RideSession(private val disconnectAll: () -> Unit) {
         return true
     }
 
-    fun activate(nowMs: Long) {
-        if (state.value.phase == RidePhase.STARTING) mutableState.value = RideState(RidePhase.ACTIVE, nowMs)
+    fun activate(nowMs: Long, sessionId: Long? = null) {
+        if (state.value.phase == RidePhase.STARTING) mutableState.value = RideState(RidePhase.ACTIVE, nowMs, sessionId = sessionId)
+    }
+
+    fun beginStop(): Boolean {
+        if (state.value.phase !in setOf(RidePhase.STARTING, RidePhase.ACTIVE)) return false
+        mutableState.value = state.value.copy(phase = RidePhase.STOPPING)
+        return true
     }
 
     fun uiHidden() { if (!keepsConnections) disconnectAll() }

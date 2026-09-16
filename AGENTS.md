@@ -42,7 +42,9 @@ BLE communication must NOT live inside Activity or Compose UI.
 RideRecordingService owns trainer and heart-rate connections, including preview
 connections before a ride. ACTIVE rides retain those connections in a connectedDevice
 foreground service. Activity/ViewModel teardown must not disconnect an active ride.
-Recording/persistence is not implemented yet; future recording must also be service-owned.
+RideRecordingService also owns approximately 1 Hz Room recording. BLE callbacks must
+not write to the database. STOPPING retains connections until the final sample/session
+transaction finishes. Activity recreation/binding must never create a database session.
 
 Compose is presentation only.
 

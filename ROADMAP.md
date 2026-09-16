@@ -131,7 +131,7 @@ User changes target power and X2 MAX changes resistance accordingly.
 
 ## Phase 6 - Foreground Ride Service
 
-Status: current implementation; background/locked-screen physical acceptance pending.
+Status: physically verified, including Home, app switching and screen lock.
 
 RideRecordingService owns both BLE clients from initial preview connection onward.
 Start ride promotes the same bound service to a started connectedDevice foreground
@@ -148,25 +148,32 @@ Acceptance test:
 4. Return to RideLab.
 5. BLE connection remained active.
 6. Elapsed time includes the full background period; live data and ERG work on return.
-7. Ride sample recording/data-loss verification is deferred until recording exists.
+7. Ride sample persistence verification is tracked in Phase 7.
 
 ---
 
 ## Phase 7 - Local Storage
 
-Use Room.
+Status: current implementation; physical recording acceptance pending.
 
-Store ride sessions and raw ride samples.
+Room schema v1 stores service-owned sessions and approximately 1 Hz raw snapshots.
+Start creates one ACTIVE session. End commits a final sample and marks the same
+session COMPLETED before existing shutdown. Interrupted sessions recover as ABORTED.
+No UI-owned recording or advanced analytics. See LOCAL_PERSISTENCE_VERIFICATION.md and RIDE_HISTORY_VERIFICATION.md.
 
 ---
 
 ## Phase 8 - Ride History
 
-Display saved sessions and charts.
+Status: minimal history/detail implementation; physical UI/persistence acceptance pending.
+
+Display COMPLETED and ABORTED sessions, sample counts, timing and basic null-aware averages/maxima. ACTIVE sessions are excluded. Simple elapsed-time power/HR/cadence charts are implemented; physical chart verification is pending. Advanced analytics remain deferred. See RIDE_HISTORY_VERIFICATION.md and RIDE_CHARTS_VERIFICATION.md.
 
 ---
 
 ## Phase 9 - Training Analytics
+
+Phase 1 implemented: optional FTP, NP, IF and TSS; physical verification pending. Historical FTP is captured at Start ride using the existing v2 column; details never backfill nulls. The explicit v1-to-v2 migration remains unchanged. See TRAINING_ANALYTICS_VERIFICATION.md. Other analytics below remain deferred.
 
 Later metrics:
 

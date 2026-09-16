@@ -23,6 +23,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.isaac.ridelab.ui.screen.HistoryScreen
+import com.isaac.ridelab.ui.screen.HistoryViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
@@ -63,16 +68,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         devices = ViewModelProvider(this)[DevicesViewModel::class.java]
+        val ftp = ViewModelProvider(this)[com.isaac.ridelab.ui.screen.FtpViewModel::class.java]
+        val history = ViewModelProvider(this)[HistoryViewModel::class.java]
         enableEdgeToEdge()
         setContent {
+            var showSettings by rememberSaveable { mutableStateOf(false) }
+            val ftpState by ftp.state.collectAsState()
+            var showHistory by rememberSaveable { mutableStateOf(false) }
             val state by devices.scanner.state.collectAsState()
             val connection by devices.trainerState.collectAsState()
             val heartRate by devices.heartRateState.collectAsState()
             val ride by devices.rideState.collectAsState()
             val ready by devices.serviceReady.collectAsState()
             RideLabTheme {
+                if (showSettings) com.isaac.ridelab.ui.screen.SettingsScreen(ftpState,
+                    { value -> ftp.save(value) { showSettings = false; history.loadCharts(history.charts.value.sessionId) } },
+                    { showSettings = false })
                 Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
                     Row(Modifier.statusBarsPadding()) {
+                        TextButton(onClick = { showSettings = true }) { Text(stringResource(R.string.ftp_settings)) }
+                        TextButton(onClick = { showHistory = !showHistory }) {
+                            Text(stringResource(if (showHistory) R.string.devices_title else R.string.history_title))
+                        }
                         TextButton(onClick = { selectLanguage(AppLocale.CHINESE) }) {
                             Text(stringResource(R.string.language_chinese))
                         }
@@ -81,7 +98,11 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }) { innerPadding ->
-                    DevicesScreen(
+                    if (showHistory) {
+                        val historyState by history.state.collectAsState()
+                        val chartState by history.charts.collectAsState()
+                        HistoryScreen(historyState, { showHistory = false }, history::retry, chartState, history::loadCharts, Modifier.padding(innerPadding))
+                    } else DevicesScreen(
                         state = state,
                         connection = connection,
                         onConnect = ::onDeviceSelected,
