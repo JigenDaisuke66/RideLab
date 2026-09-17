@@ -218,4 +218,12 @@
     <string name="ui_select">Select</string>
     <string name="ui_disconnect">Disconnect</string>
 
+    <string name="ui_show_unknown">Show unidentified devices</string>
+    <string name="ui_no_matching_devices">No matching devices. Wake your device and search again.</string>
+    <string name="erg_set_target">Set target power</string>
+    <string name="erg_confirm">Confirm</string>
+    <string name="erg_cancel">Cancel</string>
+    <string name="erg_available_range">Available range: %1$d–%2$d W</string>
+    <string name="erg_preference_error">Could not read or save the preferred target. It may not restore next time.</string>
+    <string name="ui_last_duration">Last ride duration</string>
 </resources>

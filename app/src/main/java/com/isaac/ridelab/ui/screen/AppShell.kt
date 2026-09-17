@@ -21,7 +21,7 @@ import com.isaac.ridelab.locale.AppLocale
 private enum class Destination(val title: Int) { HOME(R.string.ui_home), RIDE(R.string.ui_ride), HISTORY(R.string.history_title), SETTINGS(R.string.ftp_settings) }
 
 @Composable
-fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewModel,
+fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewModel, erg: ErgTargetViewModel,
     connectTrainer: (DiscoveredDevice) -> Unit, connectHr: (DiscoveredDevice) -> Unit,
     startRide: () -> Unit, scan: () -> Unit, appSettings: () -> Unit, bluetoothSettings: () -> Unit,
     language: (String) -> Unit) {
@@ -35,6 +35,8 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     val scanState by devices.scanner.state.collectAsState()
     val historyState by history.state.collectAsState()
     val chartState by history.charts.collectAsState()
+    val ergState by erg.state.collectAsState()
+    LaunchedEffect(trainer.device?.address) { erg.select(trainer.device?.address, trainer.fec.lastTargetWatts) }
     val ftpState by ftp.state.collectAsState()
     BackHandler(destination != Destination.HOME) { destination = Destination.HOME }
     picker?.let { role ->
@@ -59,7 +61,7 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
                     devices::disconnectTrainer, devices::disconnectHeartRate,
                     { destination = Destination.RIDE; startRide() }, { destination = Destination.RIDE },
                     { destination = Destination.HISTORY }, modifier)
-                Destination.RIDE -> RideScreen(trainer, hr, ride, ready, startRide, devices::endRide, devices::sendFecTarget, appSettings, modifier)
+                Destination.RIDE -> RideScreen(trainer, hr, ride, ready, startRide, devices::endRide, devices::sendFecTarget, appSettings, modifier, ergState, erg::edit, erg::rememberApplied)
                 Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier)
                 Destination.SETTINGS -> SettingsDestination(ftpState, { value, done -> ftp.save(value, done) }, language, modifier)
             }

@@ -2,6 +2,8 @@ package com.isaac.ridelab.ui.screen
 
 import android.os.SystemClock
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -83,7 +85,10 @@ fun RideScreen(
     end: () -> Unit,
     send: (Int) -> Unit,
     appSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    ergTarget: ErgTargetUi = ErgTargetUi(loaded = true),
+    editTarget: (Int) -> Unit = {},
+    rememberApplied: (Int) -> Unit = {}
 ) {
     var now by remember {
         mutableLongStateOf(SystemClock.elapsedRealtime())
@@ -287,6 +292,9 @@ fun RideScreen(
             /* ---------- ERG ---------- */
             ErgControls(
                 trainer = trainer,
+                preference = ergTarget,
+                edit = editTarget,
+                rememberApplied = rememberApplied,
                 send = send
             )
 
@@ -310,107 +318,63 @@ fun RideScreen(
 @Composable
 internal fun ErgControls(
     trainer: GattDeviceState,
+    preference: ErgTargetUi = ErgTargetUi(target = trainer.fec.lastTargetWatts ?: 100, loaded = true),
+    edit: (Int) -> Unit = {},
+    rememberApplied: (Int) -> Unit = {},
     send: (Int) -> Unit
 ) {
     val state = trainer.fec
-
-    var target by rememberSaveable(
-        trainer.device?.address,
-        state.lastTargetWatts
-    ) {
-        mutableIntStateOf(
-            state.lastTargetWatts ?: 100
-        )
+    val target = preference.target
+    var dialog by rememberSaveable(trainer.device?.address) { mutableStateOf(false) }
+    var input by rememberSaveable(trainer.device?.address) { mutableStateOf("") }
+    val ready = preference.loaded && preference.address == trainer.device?.address
+    val enabled = ready && trainer.connection.readyForRide() && state.canSend
+    if (dialog) {
+        val valid = parseErgTarget(input)
+        AlertDialog(onDismissRequest = { dialog = false },
+            title = { Text(stringResource(R.string.erg_set_target)) },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.erg_available_range, FecProtocol.MIN_WATTS, FecProtocol.MAX_WATTS))
+                OutlinedTextField(value = input,
+                    onValueChange = { text -> if (text.all { it in '0'..'9' }) input = text },
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    label = { Text(stringResource(R.string.ui_watts)) }, isError = valid == null)
+            } },
+            confirmButton = { TextButton(enabled = valid != null && ready, onClick = { valid?.let(edit); dialog = false }) { Text(stringResource(R.string.erg_confirm)) } },
+            dismissButton = { TextButton(onClick = { dialog = false }) { Text(stringResource(R.string.erg_cancel)) } })
     }
-
-    val enabled = trainer.connection.readyForRide() && state.canSend
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.ui_erg),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(
-                            when (state.status) {
-                                FecStatus.WRITING -> R.string.ui_erg_sending
-                                FecStatus.SENT -> R.string.ui_erg_sent
-                                FecStatus.FAILED -> R.string.ui_erg_failed
-                                FecStatus.READY -> R.string.ui_erg_ready
-                                FecStatus.WAITING, FecStatus.SUBSCRIBING -> R.string.ui_erg_preparing
-                                else -> R.string.ui_erg_unavailable
-                            }
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.ui_erg), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_requested_target,
+                state.lastTargetWatts?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data)),
+                style = MaterialTheme.typography.bodySmall)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                FilledTonalIconButton(onClick = { edit(adjustedErgTarget(target, -5)) }, enabled = ready && target > FecProtocol.MIN_WATTS, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.fec_minus))
                 }
-
-                Text(
-                    text = "$target W",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                FilledTonalIconButton(
-                    onClick = { target = adjustedErgTarget(target, -5) },
-                    enabled = enabled && target > FecProtocol.MIN_WATTS,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(Icons.Rounded.Remove, contentDescription = "-5W")
+                TextButton(onClick = { input = target.toString(); dialog = true }, enabled = ready, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.power_value, target), style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
                 }
-
-                Button(
-                    onClick = { send(target) },
-                    enabled = enabled,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp)
-                        .padding(horizontal = 16.dp),
-                    shape = CircleShape
-                ) {
-                    Text(
-                        text = stringResource(R.string.ui_apply_target),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                FilledTonalIconButton(
-                    onClick = { target = adjustedErgTarget(target, 5) },
-                    enabled = enabled && target < FecProtocol.MAX_WATTS,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "+5W")
+                FilledTonalIconButton(onClick = { edit(adjustedErgTarget(target, 5)) }, enabled = ready && target < FecProtocol.MAX_WATTS, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.fec_plus))
                 }
             }
+            Button(onClick = { rememberApplied(target); send(target) }, enabled = enabled, modifier = Modifier.fillMaxWidth().height(56.dp), shape = CircleShape) {
+                Text(stringResource(R.string.ui_apply_target), fontWeight = FontWeight.Bold)
+            }
+            if (preference.failed) Text(stringResource(R.string.erg_preference_error))
+            Text(stringResource(when (state.status) {
+                FecStatus.WRITING -> R.string.ui_erg_sending
+                FecStatus.SENT -> R.string.ui_erg_sent
+                FecStatus.FAILED -> R.string.ui_erg_failed
+                FecStatus.READY -> R.string.ui_erg_ready
+                FecStatus.WAITING, FecStatus.SUBSCRIBING -> R.string.ui_erg_preparing
+                else -> R.string.ui_erg_unavailable
+            }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

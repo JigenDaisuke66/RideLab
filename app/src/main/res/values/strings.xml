@@ -219,4 +219,12 @@
     <string name="ui_disconnect">断开</string>
     <string name="ui_last_duration">上次时长</string>
 
+    <string name="ui_show_unknown">显示未识别设备</string>
+    <string name="ui_no_matching_devices">未找到匹配设备，请唤醒设备并重新搜索。</string>
+    <string name="erg_set_target">设置目标功率</string>
+    <string name="erg_confirm">确定</string>
+    <string name="erg_cancel">取消</string>
+    <string name="erg_available_range">可设置范围：%1$d–%2$d W</string>
+    <string name="erg_preference_error">无法读取或保存首选目标，下次启动时可能无法恢复。</string>
+    <string name="back">返回</string>
 </resources>

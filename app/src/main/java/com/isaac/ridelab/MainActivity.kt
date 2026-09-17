@@ -52,11 +52,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         devices = ViewModelProvider(this)[DevicesViewModel::class.java]
         val ftp = ViewModelProvider(this)[com.isaac.ridelab.ui.screen.FtpViewModel::class.java]
+        val erg = ViewModelProvider(this)[com.isaac.ridelab.ui.screen.ErgTargetViewModel::class.java]
         val history = ViewModelProvider(this)[HistoryViewModel::class.java]
         enableEdgeToEdge()
         setContent {
             RideLabTheme {
-                com.isaac.ridelab.ui.screen.AppShell(devices, history, ftp,
+                com.isaac.ridelab.ui.screen.AppShell(devices, history, ftp, erg,
                     ::onDeviceSelected, ::onHeartRateSelected, ::onStartRide,
                     scan = {
                         devices.pendingConnection = null

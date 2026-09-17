@@ -1,6 +1,7 @@
 package com.isaac.ridelab.ui.screen
 
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -42,6 +43,9 @@ internal fun DeviceStatusCard(title: Int, name: String?, state: ConnectionState,
 internal fun DevicePicker(role: Int, scan: BleScanState, selected: String?, active: Boolean,
     connect: (DiscoveredDevice) -> Unit, start: () -> Unit, stop: () -> Unit,
     appSettings: () -> Unit, bluetoothSettings: () -> Unit, close: () -> Unit) {
+    var showUnknown by rememberSaveable(role) { mutableStateOf(false) }
+    val deviceRole = if (role == R.string.ui_heart_rate) DeviceType.HEART_RATE_SENSOR else DeviceType.TRAINER
+    val devices = remember(scan.devices, deviceRole, showUnknown) { pickerDevices(scan.devices, deviceRole, showUnknown) }
     AlertDialog(onDismissRequest = close, title = { Text(stringResource(role)) }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(when (scan.status) {
@@ -54,9 +58,14 @@ internal fun DevicePicker(role: Int, scan: BleScanState, selected: String?, acti
             }))
             if (scan.status == ScanStatus.PERMISSION_REQUIRED) TextButton(onClick = appSettings) { Text(stringResource(R.string.open_app_settings)) }
             if (scan.status == ScanStatus.BLUETOOTH_OFF) TextButton(onClick = bluetoothSettings) { Text(stringResource(R.string.open_bluetooth_settings)) }
-            if (scan.devices.isEmpty()) Text(stringResource(R.string.ui_no_devices))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(stringResource(R.string.ui_show_unknown), Modifier.weight(1f))
+                Switch(checked = showUnknown, onCheckedChange = { showUnknown = it })
+            }
+            if (devices.isEmpty()) Text(stringResource(R.string.ui_no_matching_devices))
             LazyColumn(Modifier.heightIn(max = 320.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(scan.devices, key = { it.address }) { device ->
+                items(devices, key = { it.address }) { device ->
                     OutlinedButton(onClick = { connect(device); close() }, enabled = !(active && selected == device.address), modifier = Modifier.fillMaxWidth()) {
                         Text(device.name ?: stringResource(R.string.unnamed_device))
                     }

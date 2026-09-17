@@ -61,3 +61,5 @@ Physical/visual acceptance remains pending:
    Ride must remain active, timer continuous, and BLE/ERG/recording unchanged.
 6. End ride, verify it in existing History, charts and analytics. Settings FTP edits and
    language selection must persist; historical FTP stays tied to its session.
+
+Device picker update: filter by selected role. Trainer/FE-C candidates precede CPS-only candidates; HR selection includes only recognized HR devices. Within each group sort by stronger RSSI, then name/address deterministically. Unknown devices are hidden unless explicitly enabled, and always follow matching known devices. Unrelated known roles remain excluded. Scan results and connection objects are unchanged.
