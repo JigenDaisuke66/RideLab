@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.isaac.ridelab"
     compileSdk {
-        version = release(36) {
+        version = release(37) {
             minorApiLevel = 1
         }
     }
@@ -54,6 +54,8 @@ room { schemaDirectory("$projectDir/schemas") }
 
 dependencies {
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.ui.text)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -70,4 +72,5 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation(libs.androidx.compose.material.icons.extended)
 }

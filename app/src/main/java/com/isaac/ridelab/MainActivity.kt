@@ -14,27 +14,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.isaac.ridelab.ui.screen.HistoryScreen
 import com.isaac.ridelab.ui.screen.HistoryViewModel
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
 import com.isaac.ridelab.data.model.DiscoveredDevice
-import com.isaac.ridelab.data.model.GattFailure
 import com.isaac.ridelab.locale.AppLocale
-import com.isaac.ridelab.ui.screen.DevicesScreen
 import com.isaac.ridelab.ui.screen.DevicesViewModel
 import com.isaac.ridelab.ui.theme.RideLabTheme
 
@@ -72,62 +55,17 @@ class MainActivity : ComponentActivity() {
         val history = ViewModelProvider(this)[HistoryViewModel::class.java]
         enableEdgeToEdge()
         setContent {
-            var showSettings by rememberSaveable { mutableStateOf(false) }
-            val ftpState by ftp.state.collectAsState()
-            var showHistory by rememberSaveable { mutableStateOf(false) }
-            val state by devices.scanner.state.collectAsState()
-            val connection by devices.trainerState.collectAsState()
-            val heartRate by devices.heartRateState.collectAsState()
-            val ride by devices.rideState.collectAsState()
-            val ready by devices.serviceReady.collectAsState()
             RideLabTheme {
-                if (showSettings) com.isaac.ridelab.ui.screen.SettingsScreen(ftpState,
-                    { value -> ftp.save(value) { showSettings = false; history.loadCharts(history.charts.value.sessionId) } },
-                    { showSettings = false })
-                Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
-                    Row(Modifier.statusBarsPadding()) {
-                        TextButton(onClick = { showSettings = true }) { Text(stringResource(R.string.ftp_settings)) }
-                        TextButton(onClick = { showHistory = !showHistory }) {
-                            Text(stringResource(if (showHistory) R.string.devices_title else R.string.history_title))
-                        }
-                        TextButton(onClick = { selectLanguage(AppLocale.CHINESE) }) {
-                            Text(stringResource(R.string.language_chinese))
-                        }
-                        TextButton(onClick = { selectLanguage(AppLocale.ENGLISH) }) {
-                            Text(stringResource(R.string.language_english))
-                        }
-                    }
-                }) { innerPadding ->
-                    if (showHistory) {
-                        val historyState by history.state.collectAsState()
-                        val chartState by history.charts.collectAsState()
-                        HistoryScreen(historyState, { showHistory = false }, history::retry, chartState, history::loadCharts, Modifier.padding(innerPadding))
-                    } else DevicesScreen(
-                        state = state,
-                        connection = connection,
-                        onConnect = ::onDeviceSelected,
-                        onDisconnect = devices::disconnectTrainer,
-                        onFecTarget = devices::sendFecTarget,
-                        heartRate = heartRate,
-                        onConnectHeartRate = ::onHeartRateSelected,
-                        onDisconnectHeartRate = devices::disconnectHeartRate,
-                        ride = ride,
-                        serviceReady = ready,
-                        onStartRide = ::onStartRide,
-                        onEndRide = devices::endRide,
-                        onStart = {
-                            devices.pendingConnection = null
-                            devices.pendingHeartRateConnection = null
-                            if (devices.scanner.hasPermissions()) devices.scanner.start()
-                            else requestBluetoothPermissions()
-                        },
-                        onStop = devices.scanner::stop,
-                        onSettings = { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.fromParts("package", packageName, null))) },
-                        onBluetoothSettings = { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
-                        modifier = Modifier.padding(innerPadding),
-                    )
-                }
+                com.isaac.ridelab.ui.screen.AppShell(devices, history, ftp,
+                    ::onDeviceSelected, ::onHeartRateSelected, ::onStartRide,
+                    scan = {
+                        devices.pendingConnection = null
+                        devices.pendingHeartRateConnection = null
+                        if (devices.scanner.hasPermissions()) devices.scanner.start() else requestBluetoothPermissions()
+                    },
+                    appSettings = { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))) },
+                    bluetoothSettings = { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
+                    language = ::selectLanguage)
             }
         }
     }

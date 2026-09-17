@@ -207,3 +207,7 @@ Later:
 - long-term trends
 
 Do not implement until core recording is stable.
+
+## UI refactor round 1
+
+Presentation-only Home/Ride/History/Settings navigation implemented. Device diagnostics retained internally; Developer Mode and extensive history redesign deferred. Physical/visual acceptance pending. See UI_ROUND1_VERIFICATION.md.

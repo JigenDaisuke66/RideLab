@@ -182,4 +182,40 @@
     <string name="analytics_ftp_needed">This ride has no saved FTP, so IF/TSS are unavailable. Set FTP before starting your next ride.</string>
     <string name="analytics_ftp_saved">Uses the saved FTP for this ride; new rides save it at Start ride.</string>
     <string name="analytics_coverage">NP uses valid continuous 30-second windows; TSS uses full ride duration. Missing data may affect how representative the results are.</string>
+    <string name="ui_home">Home</string>
+    <string name="ui_ride">Ride</string>
+    <string name="ui_connected">Connected</string>
+    <string name="ui_disconnected">Disconnected</string>
+    <string name="ui_connecting">Connecting…</string>
+    <string name="ui_connection_failed">Connection failed. Please retry.</string>
+    <string name="ui_no_device">No device selected</string>
+    <string name="ui_choose_device">Choose device</string>
+    <string name="ui_search_devices">Search devices</string>
+    <string name="ui_searching">Searching for nearby devices…</string>
+    <string name="ui_choose_hint">Wake your device, then select it to connect.</string>
+    <string name="ui_no_devices">No devices found. Start a search.</string>
+    <string name="ui_scan_failed">Search failed. Please retry shortly.</string>
+    <string name="ui_heart_rate">Heart rate</string>
+    <string name="ui_trainer_needed">Connect your trainer before starting a ride. A heart-rate sensor is optional.</string>
+    <string name="ui_return_ride">Return to ride</string>
+    <string name="ui_recent_ride">Latest completed ride</string>
+    <string name="ui_power">Power</string>
+    <string name="ui_watts">W</string>
+    <string name="ui_erg">ERG target power</string>
+    <string name="ui_requested_target">Requested target: %1$s</string>
+    <string name="ui_apply_target">Apply target</string>
+    <string name="ui_erg_ready">Adjust and apply a target from 50–200 W.</string>
+    <string name="ui_erg_sending">Sending target…</string>
+    <string name="ui_erg_sent">Target sent. Confirm the trainer responds.</string>
+    <string name="ui_erg_failed">Target failed. Check the connection and retry.</string>
+    <string name="ui_erg_preparing">Preparing power control…</string>
+    <string name="ui_erg_unavailable">Power control is currently unavailable.</string>
+    <string name="ui_edit_ftp">Edit FTP</string>
+    <string name="ui_language">Language</string>
+
+    <string name="ui_devices">Devices</string>
+
+    <string name="ui_select">Select</string>
+    <string name="ui_disconnect">Disconnect</string>
+
 </resources>

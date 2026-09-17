@@ -182,4 +182,41 @@
     <string name="analytics_ftp_needed">本次骑行未保存 FTP，无法计算 IF/TSS。请在下次开始骑行前设置 FTP。</string>
     <string name="analytics_ftp_saved">使用本次骑行保存的 FTP；新骑行在开始时保存。</string>
     <string name="analytics_coverage">NP 仅使用连续有效的 30 秒窗口；TSS 使用完整骑行时长。缺失数据可能影响结果的代表性。</string>
+    <string name="ui_home">首页</string>
+    <string name="ui_ride">骑行</string>
+    <string name="ui_connected">已连接</string>
+    <string name="ui_disconnected">未连接</string>
+    <string name="ui_connecting">正在连接…</string>
+    <string name="ui_connection_failed">连接失败，请重试</string>
+    <string name="ui_no_device">尚未选择设备</string>
+    <string name="ui_choose_device">选择设备</string>
+    <string name="ui_search_devices">搜索设备</string>
+    <string name="ui_searching">正在搜索附近设备…</string>
+    <string name="ui_choose_hint">唤醒设备，然后选择要连接的设备。</string>
+    <string name="ui_no_devices">暂未找到设备，请搜索。</string>
+    <string name="ui_scan_failed">搜索失败，请稍后重试。</string>
+    <string name="ui_heart_rate">心率</string>
+    <string name="ui_trainer_needed">开始骑行前请先连接骑行台。心率传感器为可选设备。</string>
+    <string name="ui_return_ride">返回骑行</string>
+    <string name="ui_recent_ride">最近完成的骑行</string>
+    <string name="ui_power">功率</string>
+    <string name="ui_watts">W</string>
+    <string name="ui_erg">ERG 目标功率</string>
+    <string name="ui_requested_target">已请求目标：%1$s</string>
+    <string name="ui_apply_target">应用目标</string>
+    <string name="ui_erg_ready">调整后点击应用，范围为 50–200 W。</string>
+    <string name="ui_erg_sending">正在发送目标…</string>
+    <string name="ui_erg_sent">目标已发送，请确认骑行台的实际响应。</string>
+    <string name="ui_erg_failed">目标发送失败，请检查连接后重试。</string>
+    <string name="ui_erg_preparing">正在准备功率控制…</string>
+    <string name="ui_erg_unavailable">当前无法使用功率控制。</string>
+    <string name="ui_edit_ftp">修改 FTP</string>
+    <string name="ui_language">语言</string>
+
+    <string name="ui_devices">设备</string>
+
+    <string name="ui_select">选择</string>
+    <string name="ui_disconnect">断开</string>
+    <string name="ui_last_duration">上次时长</string>
+
 </resources>
