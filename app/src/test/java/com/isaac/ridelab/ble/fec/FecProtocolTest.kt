@@ -11,7 +11,7 @@ class FecProtocolTest {
         // Manually derived 16-bit quarter-watt fields and XOR checksums.
         val cases = listOf(
             Triple(50, "C8 00", "E1"), Triple(100, "90 01", "B8"),
-            Triple(150, "58 02", "73"), Triple(200, "20 03", "0A"),
+            Triple(150, "58 02", "73"), Triple(200, "20 03", "0A"), Triple(2000, "40 1F", "76"),
         )
         for ((watts, power, checksum) in cases) {
             val expected = hex("A4 09 4F 05 31 FF FF FF FF FF $power $checksum")
@@ -33,11 +33,20 @@ class FecProtocolTest {
     }
 
     @Test fun clampsAtProtocolBoundaryIncludingExtremeInputs() {
-        for (watts in listOf(Int.MIN_VALUE, -1, 0, 49))
-            assertArrayEquals(FecProtocol.targetPower(50), FecProtocol.targetPower(watts))
-        for (watts in listOf(201, 1000, Int.MAX_VALUE))
-            assertArrayEquals(FecProtocol.targetPower(200), FecProtocol.targetPower(watts))
+        for (watts in listOf(Int.MIN_VALUE, -1))
+            assertArrayEquals(FecProtocol.targetPower(0), FecProtocol.targetPower(watts))
+        for (watts in listOf(16384, Int.MAX_VALUE))
+            assertArrayEquals(FecProtocol.targetPower(FecProtocol.MAX_ENCODABLE_WATTS), FecProtocol.targetPower(watts))
         assertEquals(420, FecProtocol.targetPower(105).let { (it[10].toInt() and 255) or ((it[11].toInt() and 255) shl 8) })
+    }
+
+    @Test fun trainerLimitsAreSeparateFromEncodingCapacity() {
+        assertEquals(50, ThinkRiderX2MaxProfile.minErgWatts)
+        assertEquals(2000, ThinkRiderX2MaxProfile.maxErgWatts)
+        assertEquals(50, ThinkRiderX2MaxProfile.clamp(Int.MIN_VALUE))
+        assertEquals(2000, ThinkRiderX2MaxProfile.clamp(Int.MAX_VALUE))
+        assertEquals(1350, ThinkRiderX2MaxProfile.clamp(1350))
+        assertTrue(FecProtocol.MAX_ENCODABLE_WATTS > ThinkRiderX2MaxProfile.maxErgWatts)
     }
 
     private fun service(notify: Int = 0x10, write: Int = 0x0c, cccd: Boolean = true) =

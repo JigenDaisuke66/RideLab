@@ -6,7 +6,7 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import com.isaac.ridelab.ble.fec.FecProtocol
+import com.isaac.ridelab.ble.fec.ThinkRiderX2MaxProfile
 
 class ErgTargetSettings(context: Context) {
     private val mutex = Mutex()
@@ -16,7 +16,7 @@ class ErgTargetSettings(context: Context) {
         if (preferences.contains(key(address))) preferences.getInt(key(address), 100) else null
     } }
     suspend fun save(address: String, watts: Int) = mutex.withLock { withContext(Dispatchers.IO) {
-        require(watts in FecProtocol.MIN_WATTS..FecProtocol.MAX_WATTS)
+        require(watts in ThinkRiderX2MaxProfile.minErgWatts..ThinkRiderX2MaxProfile.maxErgWatts)
         check(preferences.edit().putInt(key(address), watts).commit())
     } }
 }

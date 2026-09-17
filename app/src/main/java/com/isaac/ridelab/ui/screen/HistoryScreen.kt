@@ -165,18 +165,79 @@ fun HistoryScreen(
                             // 2. 运动表现卡片 (双列网格)
                             item {
                                 SectionCard(title = "Performance") {
-                                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
                                         Row(Modifier.fillMaxWidth()) {
-                                            StatBox(stringResource(R.string.history_avg_power), entry.averagePower?.let { "$it ${stringResource(R.string.history_watts)}" } ?: noData, Modifier.weight(1f))
-                                            StatBox(stringResource(R.string.history_max_power), entry.maximumPower?.let { "$it ${stringResource(R.string.history_watts)}" } ?: noData, Modifier.weight(1f))
+                                            StatBox(
+                                                label = stringResource(R.string.history_avg_power),
+                                                value = entry.averagePower?.let {
+                                                    stringResource(
+                                                        R.string.history_watts,
+                                                        it.toDouble()
+                                                    )
+                                                } ?: noData,
+                                                modifier = Modifier.weight(1f)
+                                            )
+
+                                            StatBox(
+                                                label = stringResource(R.string.history_max_power),
+                                                value = entry.maximumPower?.let {
+                                                    stringResource(
+                                                        R.string.history_watts,
+                                                        it.toDouble()
+                                                    )
+                                                } ?: noData,
+                                                modifier = Modifier.weight(1f)
+                                            )
                                         }
+
                                         Row(Modifier.fillMaxWidth()) {
-                                            StatBox(stringResource(R.string.history_avg_hr), entry.averageHeartRate?.let { "$it ${stringResource(R.string.history_bpm)}" } ?: noData, Modifier.weight(1f))
-                                            StatBox(stringResource(R.string.history_max_hr), entry.maximumHeartRate?.let { "$it ${stringResource(R.string.history_bpm)}" } ?: noData, Modifier.weight(1f))
+                                            StatBox(
+                                                label = stringResource(R.string.history_avg_hr),
+                                                value = entry.averageHeartRate?.let {
+                                                    stringResource(
+                                                        R.string.history_bpm,
+                                                        it.toDouble()
+                                                    )
+                                                } ?: noData,
+                                                modifier = Modifier.weight(1f)
+                                            )
+
+                                            StatBox(
+                                                label = stringResource(R.string.history_max_hr),
+                                                value = entry.maximumHeartRate?.let {
+                                                    stringResource(
+                                                        R.string.history_bpm,
+                                                        it.toDouble()
+                                                    )
+                                                } ?: noData,
+                                                modifier = Modifier.weight(1f)
+                                            )
                                         }
+
                                         Row(Modifier.fillMaxWidth()) {
-                                            StatBox(stringResource(R.string.history_avg_cadence), entry.averageCadence?.let { "$it ${stringResource(R.string.history_rpm)}" } ?: noData, Modifier.weight(1f))
-                                            StatBox(stringResource(R.string.history_max_cadence), entry.maximumCadence?.let { "$it ${stringResource(R.string.history_rpm)}" } ?: noData, Modifier.weight(1f))
+                                            StatBox(
+                                                label = stringResource(R.string.history_avg_cadence),
+                                                value = entry.averageCadence?.let {
+                                                    stringResource(
+                                                        R.string.history_rpm,
+                                                        it.toDouble()
+                                                    )
+                                                } ?: noData,
+                                                modifier = Modifier.weight(1f)
+                                            )
+
+                                            StatBox(
+                                                label = stringResource(R.string.history_max_cadence),
+                                                value = entry.maximumCadence?.let {
+                                                    stringResource(
+                                                        R.string.history_rpm,
+                                                        it.toDouble()
+                                                    )
+                                                } ?: noData,
+                                                modifier = Modifier.weight(1f)
+                                            )
                                         }
                                     }
                                 }

@@ -99,7 +99,7 @@
     <string name="wheel_raw">车轮累计转数：%1$d；事件时间：%2$d（1/2048 秒）</string>
     <string name="fec_detected">已检测到 FE-C 实验控制通道</string>
     <string name="fec_unavailable">FE-C 控制不可用：缺少服务、特征或所需属性</string>
-    <string name="fec_experiment_note">实验功能：50–200 W，仅按按钮时发送。GATT 写入成功不代表骑行台已接受 ERG 指令。</string>
+    <string name="fec_experiment_note">实验功能：50–2000 W，仅按按钮时发送。GATT 写入成功不代表骑行台已接受 ERG 指令。</string>
     <string name="fec_subscribing">正在准备 FE-C 通知</string>
     <string name="fec_ready">FE-C 已就绪，尚未发送目标功率</string>
     <string name="fec_writing">正在写入或等待发送冷却</string>
@@ -204,7 +204,7 @@
     <string name="ui_erg">ERG 目标功率</string>
     <string name="ui_requested_target">已请求目标：%1$s</string>
     <string name="ui_apply_target">应用目标</string>
-    <string name="ui_erg_ready">调整后点击应用，范围为 50–200 W。</string>
+    <string name="ui_erg_ready">调整后点击应用，范围为 50–2000 W。</string>
     <string name="ui_erg_sending">正在发送目标…</string>
     <string name="ui_erg_sent">目标已发送，请确认骑行台的实际响应。</string>
     <string name="ui_erg_failed">目标发送失败，请检查连接后重试。</string>

@@ -82,7 +82,7 @@ class FecOverBleTrainerController(
         }
         val session = gatt ?: return
         val characteristic = write ?: return
-        val watts = FecProtocol.clamp(requestedWatts)
+        val watts = ThinkRiderX2MaxProfile.clamp(requestedWatts)
         val bytes = FecProtocol.targetPower(watts)
         // Prefer an ATT response when available. This confirms transport only, not ERG acceptance.
         val type = if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0)

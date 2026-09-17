@@ -11,10 +11,11 @@ object FecProtocol {
     val NOTIFY: UUID = UUID.fromString("6e40fec2-b5a3-f393-e0a9-e50e24dcca9e")
     val WRITE: UUID = UUID.fromString("6e40fec3-b5a3-f393-e0a9-e50e24dcca9e")
     val CCCD: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-    const val MIN_WATTS = 50
-    const val MAX_WATTS = 200
+    const val MIN_ENCODABLE_WATTS = 0
+    // Whole-watt input fitting the unsigned 16-bit quarter-watt field.
+    const val MAX_ENCODABLE_WATTS = 0xffff / 4
 
-    fun clamp(watts: Int) = watts.coerceIn(MIN_WATTS, MAX_WATTS)
+    fun clamp(watts: Int) = watts.coerceIn(MIN_ENCODABLE_WATTS, MAX_ENCODABLE_WATTS)
 
     fun targetPower(watts: Int): ByteArray {
         val quarters = clamp(watts) * 4 // Page 49 uses unsigned 0.25 W units, little endian.

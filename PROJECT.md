@@ -188,3 +188,5 @@ No virtual world.
 No Zwift clone.
 No AI coaching.
 No online account requirement.
+
+Current experimental FE-C trainer profile: ThinkRider X2 Max supports ERG targets 50–2000 W. TrainerErgProfile controls UI, restored preferences and controller validation independently of FE-C field encoding limits. Apply remains explicit; no restored target is auto-sent. See ERG_TARGET_VERIFICATION.md.

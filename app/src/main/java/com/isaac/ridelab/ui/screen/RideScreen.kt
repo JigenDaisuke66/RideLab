@@ -32,8 +32,8 @@ internal fun adjustedErgTarget(
     current: Int,
     step: Int
 ) = (current + step).coerceIn(
-    FecProtocol.MIN_WATTS,
-    FecProtocol.MAX_WATTS
+    ThinkRiderX2MaxProfile.minErgWatts,
+    ThinkRiderX2MaxProfile.maxErgWatts
 )
 
 @Composable
@@ -334,7 +334,7 @@ internal fun ErgControls(
         AlertDialog(onDismissRequest = { dialog = false },
             title = { Text(stringResource(R.string.erg_set_target)) },
             text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.erg_available_range, FecProtocol.MIN_WATTS, FecProtocol.MAX_WATTS))
+                Text(stringResource(R.string.erg_available_range, ThinkRiderX2MaxProfile.minErgWatts, ThinkRiderX2MaxProfile.maxErgWatts))
                 OutlinedTextField(value = input,
                     onValueChange = { text -> if (text.all { it in '0'..'9' }) input = text },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -352,14 +352,14 @@ internal fun ErgControls(
                 state.lastTargetWatts?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data)),
                 style = MaterialTheme.typography.bodySmall)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                FilledTonalIconButton(onClick = { edit(adjustedErgTarget(target, -5)) }, enabled = ready && target > FecProtocol.MIN_WATTS, modifier = Modifier.size(56.dp)) {
+                FilledTonalIconButton(onClick = { edit(adjustedErgTarget(target, -5)) }, enabled = ready && target > ThinkRiderX2MaxProfile.minErgWatts, modifier = Modifier.size(56.dp)) {
                     Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.fec_minus))
                 }
                 TextButton(onClick = { input = target.toString(); dialog = true }, enabled = ready, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.power_value, target), style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
                 }
-                FilledTonalIconButton(onClick = { edit(adjustedErgTarget(target, 5)) }, enabled = ready && target < FecProtocol.MAX_WATTS, modifier = Modifier.size(56.dp)) {
+                FilledTonalIconButton(onClick = { edit(adjustedErgTarget(target, 5)) }, enabled = ready && target < ThinkRiderX2MaxProfile.maxErgWatts, modifier = Modifier.size(56.dp)) {
                     Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.fec_plus))
                 }
             }

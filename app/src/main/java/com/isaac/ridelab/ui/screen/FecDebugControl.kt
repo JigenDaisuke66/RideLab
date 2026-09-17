@@ -11,7 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.isaac.ridelab.R
-import com.isaac.ridelab.ble.fec.FecProtocol
+import com.isaac.ridelab.ble.fec.ThinkRiderX2MaxProfile
 import com.isaac.ridelab.ble.fec.FecState
 import com.isaac.ridelab.ble.fec.FecStatus
 
@@ -33,11 +33,11 @@ internal fun FecDebugControl(state: FecState, active: Boolean, send: (Int) -> Un
     state.statusCode?.let { Text(stringResource(R.string.gatt_status_code, it)) }
     state.lastTargetWatts?.let { Text(stringResource(R.string.fec_last_target, it)) }
     Row {
-        TextButton(onClick = { watts -= 5 }, enabled = active && state.canSend && watts > FecProtocol.MIN_WATTS) {
+        TextButton(onClick = { watts -= 5 }, enabled = active && state.canSend && watts > ThinkRiderX2MaxProfile.minErgWatts) {
             Text(stringResource(R.string.fec_minus))
         }
         Text(stringResource(R.string.fec_target, watts))
-        TextButton(onClick = { watts += 5 }, enabled = active && state.canSend && watts < FecProtocol.MAX_WATTS) {
+        TextButton(onClick = { watts += 5 }, enabled = active && state.canSend && watts < ThinkRiderX2MaxProfile.maxErgWatts) {
             Text(stringResource(R.string.fec_plus))
         }
     }

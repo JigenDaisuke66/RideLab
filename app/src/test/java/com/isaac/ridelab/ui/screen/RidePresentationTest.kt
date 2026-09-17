@@ -7,7 +7,7 @@ import org.junit.Test
 class RidePresentationTest {
     @Test fun pendingTargetsStayWithinVerifiedRange() {
         assertEquals(50, adjustedErgTarget(50, -5))
-        assertEquals(200, adjustedErgTarget(200, 5))
+        assertEquals(2000, adjustedErgTarget(2000, 5))
         assertEquals(105, adjustedErgTarget(100, 5))
         assertEquals(95, adjustedErgTarget(100, -5))
     }

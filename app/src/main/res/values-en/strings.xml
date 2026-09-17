@@ -99,7 +99,7 @@
     <string name="wheel_raw">Cumulative wheel revolutions: %1$d; event time: %2$d (1/2048 s)</string>
     <string name="fec_detected">Experimental FE-C control channel detected</string>
     <string name="fec_unavailable">FE-C unavailable: required service, characteristics or properties missing</string>
-    <string name="fec_experiment_note">Experimental: 50–200 W, sent only on button press. A successful GATT write does not confirm ERG acceptance.</string>
+    <string name="fec_experiment_note">Experimental: 50–2000 W, sent only on button press. A successful GATT write does not confirm ERG acceptance.</string>
     <string name="fec_subscribing">Preparing FE-C notifications</string>
     <string name="fec_ready">FE-C ready; no target sent yet</string>
     <string name="fec_writing">Writing or waiting for send cooldown</string>
@@ -204,7 +204,7 @@
     <string name="ui_erg">ERG target power</string>
     <string name="ui_requested_target">Requested target: %1$s</string>
     <string name="ui_apply_target">Apply target</string>
-    <string name="ui_erg_ready">Adjust and apply a target from 50–200 W.</string>
+    <string name="ui_erg_ready">Adjust and apply a target from 50–2000 W.</string>
     <string name="ui_erg_sending">Sending target…</string>
     <string name="ui_erg_sent">Target sent. Confirm the trainer responds.</string>
     <string name="ui_erg_failed">Target failed. Check the connection and retry.</string>
