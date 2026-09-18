@@ -211,3 +211,7 @@ Do not implement until core recording is stable.
 ## UI refactor round 1
 
 Presentation-only Home/Ride/History/Settings navigation implemented. Device diagnostics retained internally; Developer Mode and extensive history redesign deferred. Physical/visual acceptance pending. See UI_ROUND1_VERIFICATION.md.
+
+## Analytics Layer 1
+
+Implemented fixed 5s/15s/30s/1m/5m/20m/60m best efforts, fixed-point power duration, earlier-completed-ride PR comparison, ride-time weight snapshots/W/kg, and 7 FTP power zones. Explicit Room v2-to-v3 nullable weight migration. Physical/manual verification pending; see ANALYTICS_LAYER1_VERIFICATION.md. No eFTP, training load, workout automation or ride-pipeline changes.

@@ -63,14 +63,16 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
                     { destination = Destination.HISTORY }, modifier)
                 Destination.RIDE -> RideScreen(trainer, hr, ride, ready, startRide, devices::endRide, devices::sendFecTarget, appSettings, modifier, ergState, erg::edit, erg::rememberApplied)
                 Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier)
-                Destination.SETTINGS -> SettingsDestination(ftpState, { value, done -> ftp.save(value, done) }, language, modifier)
+                Destination.SETTINGS -> SettingsDestination(ftpState, { value, done -> ftp.save(value, done) }, ftp::saveWeight, language, modifier)
             }
         }
     }
 }
 
 @Composable
-private fun SettingsDestination(state: FtpState, save: (Int?, () -> Unit) -> Unit, language: (String) -> Unit, modifier: Modifier) {
+private fun SettingsDestination(state: FtpState, save: (Int?, () -> Unit) -> Unit, saveWeight: (Double?, () -> Unit) -> Unit, language: (String) -> Unit, modifier: Modifier) {
+    var editWeight by rememberSaveable { mutableStateOf(false) }
+    if (editWeight) WeightDialog(state, { value -> saveWeight(value) { editWeight = false } }, { editWeight = false })
     var edit by rememberSaveable { mutableStateOf(false) }
     if (edit) SettingsScreen(state, { save(it) { edit = false } }, { edit = false })
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -80,6 +82,10 @@ private fun SettingsDestination(state: FtpState, save: (Int?, () -> Unit) -> Uni
             Text(state.ftp?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data), style = MaterialTheme.typography.headlineMedium)
             if (state.failed) Text(stringResource(R.string.ftp_error))
             Button(onClick = { edit = true }) { Text(stringResource(R.string.ui_edit_ftp)) }
+        } } }
+        item { Card(onClick = { editWeight = true }, modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
+            Text(stringResource(R.string.body_weight), style = MaterialTheme.typography.titleLarge)
+            Text(state.weightKg?.let { stringResource(R.string.weight_value, it) } ?: stringResource(R.string.history_no_data))
         } } }
         item { Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
             Text(stringResource(R.string.ui_language), style = MaterialTheme.typography.titleLarge)

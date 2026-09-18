@@ -275,6 +275,11 @@ fun HistoryScreen(
                                 }
                             }
 
+                            charts.powerAnalysis?.takeIf { charts.sessionId == currentSelectedId }?.let { analysis ->
+                                item { BestEffortsView(analysis, ride.bodyWeightKg) }
+                                item { PowerDurationView(analysis) }
+                                item { PowerZonesView(analysis) }
+                            }
                             // 4. 图表区
                             if (data != null) {
                                 item {

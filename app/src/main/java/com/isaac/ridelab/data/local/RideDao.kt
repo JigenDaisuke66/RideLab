@@ -7,6 +7,8 @@ import com.isaac.ridelab.data.model.StoredRideStatus
 
 @Dao
 abstract class RideDao {
+    @Query("SELECT * FROM ride_sessions WHERE status = 'COMPLETED' AND (startTimeEpochMillis < :timestamp OR (startTimeEpochMillis = :timestamp AND id < :id)) ORDER BY startTimeEpochMillis, id")
+    abstract suspend fun previousCompleted(timestamp: Long, id: Long): List<RideSession>
     @Query("""SELECT r.*, COUNT(s.sessionId) AS sampleCount,
         MIN(s.elapsedMillis) AS firstElapsedMillis, MAX(s.elapsedMillis) AS lastElapsedMillis,
         AVG(s.trainerPowerWatts) AS averagePower, MAX(s.trainerPowerWatts) AS maximumPower,

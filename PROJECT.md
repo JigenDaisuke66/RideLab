@@ -86,7 +86,7 @@ Lists completed and interrupted local sessions newest first, with duration, stat
 
 Ride details also show separate Canvas power, heart-rate and cadence charts from stored samples. Null values and elapsed sample gaps over three seconds break the lines; deterministic min/max time buckets reduce long rides without changing raw data. See RIDE_CHARTS_VERIFICATION.md.
 
-Training analytics phase 1 adds optional FTP settings and NP/IF/TSS. Schema v2 explicitly migrates v1 with one nullable session FTP snapshot, captured at Start ride (unset stays null; legacy nulls are not backfilled). Raw samples and recording are unchanged. See TRAINING_ANALYTICS_VERIFICATION.md. Further analytics remain deferred.
+Training analytics phase 1 adds optional FTP settings and NP/IF/TSS. Schema v2 explicitly migrates v1 with one nullable session FTP snapshot, captured at Start ride (unset stays null; legacy nulls are not backfilled). Raw samples and recording are unchanged. See TRAINING_ANALYTICS_VERIFICATION.md. Analytics Layer 1 adds fixed-duration best efforts/PDC, historical PR comparison, saved ride-weight W/kg and FTP power-zone time. Body weight is an optional local setting snapshotted at ride start via explicit schema v3 migration. See ANALYTICS_LAYER1_VERIFICATION.md. eFTP and other advanced metrics remain deferred.
 
 ### Settings
 
@@ -158,7 +158,7 @@ No user account.
 No mandatory cloud.
 No server required.
 
-Room database ridelab.db (schema version 2) stores ride_sessions and ride_samples.
+Room database ridelab.db (schema version 3) stores ride_sessions and ride_samples.
 Statuses are ACTIVE, COMPLETED and ABORTED, never localized strings. Samples preserve
 nullable trainer power, cadence, BPM, requested target, source addresses and optional
 external power/speed/resistance separately. Missing/disconnected/stale sensor data is

@@ -15,6 +15,7 @@ class RideFtpSnapshotTest {
             sessions[id] = session.copy(id = id)
             return id
         }
+        override suspend fun previousCompleted(timestamp: Long, id: Long) = sessions.values.filter { it.status == StoredRideStatus.COMPLETED && it.id < id }
         override suspend fun session(id: Long) = sessions[id]
         override suspend fun sessionCount() = sessions.size
         override suspend fun insertSample(sample: RideSample) = Unit
@@ -25,6 +26,19 @@ class RideFtpSnapshotTest {
         override suspend fun recoverInterrupted() = 0
     }
 
+    @Test fun weightSnapshotsAtStartAndNeverChangesOnDetailRead() = runBlocking {
+        val dao = MemoryDao(); var weight: Double? = 100.5
+        val repo = RoomRideRepository(dao, { 130 }, { weight })
+        val old = repo.start(RideSession(startTimeEpochMillis = 0))
+        weight = 90.25
+        val newer = repo.start(RideSession(startTimeEpochMillis = 1000))
+        assertEquals(100.5, repo.analyticsSession(old)!!.bodyWeightKg!!, 0.0)
+        assertEquals(90.25, repo.analyticsSession(newer)!!.bodyWeightKg!!, 0.0)
+        weight = null
+        val unset = repo.start(RideSession(startTimeEpochMillis = 2000))
+        assertNull(repo.analyticsSession(unset)!!.bodyWeightKg)
+        assertEquals(100.5, repo.analyticsSession(old)!!.bodyWeightKg!!, 0.0)
+    }
     @Test fun startSnapshots130() = runBlocking {
         val dao = MemoryDao(); val repo = RoomRideRepository(dao) { 130 }
         val id = repo.start(RideSession(startTimeEpochMillis = 0))

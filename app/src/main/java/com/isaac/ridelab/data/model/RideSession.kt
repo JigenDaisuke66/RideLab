@@ -21,5 +21,6 @@ data class RideSession(
     // SQLite permits multiple NULLs in a unique index, but only one ACTIVE slot.
     val activeSlot: Int? = 1,
     val analyticsFtpWatts: Int? = null,
+    val bodyWeightKg: Double? = null,
 )
 

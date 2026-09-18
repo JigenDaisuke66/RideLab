@@ -6,7 +6,7 @@ import sqlite3
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = ROOT / 'app/schemas/com.isaac.ridelab.data.local.RideDatabase/2.json'
+SCHEMA = ROOT / 'app/schemas/com.isaac.ridelab.data.local.RideDatabase/3.json'
 DAO = ROOT / 'app/src/main/java/com/isaac/ridelab/data/local/RideDao.kt'
 
 class HistoryQueryTest(unittest.TestCase):

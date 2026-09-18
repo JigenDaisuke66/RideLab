@@ -16,7 +16,7 @@ class AnalyticsMigrationTest(unittest.TestCase):
                 db.execute(index['createSql'].replace('${TABLE_NAME}', entity['tableName']))
         db.execute("INSERT INTO ride_sessions(id,startTimeEpochMillis,durationMillis,status) VALUES(1,1000,60000,'COMPLETED')")
         db.execute('INSERT INTO ride_samples(sessionId,timestampEpochMillis,elapsedMillis,trainerPowerWatts) VALUES(1,1000,0,100)')
-        sql = re.search(r'db.execSQL\("([^"]+)"\)', (BASE / 'RideDatabase.kt').read_text())[1]
+        sql = re.search(r'db.execSQL\("(ALTER TABLE ride_sessions ADD COLUMN analyticsFtpWatts INTEGER)"\)', (BASE / 'RideDatabase.kt').read_text())[1]
         db.execute(sql)
         self.assertEqual((1,60000,None), db.execute('SELECT id,durationMillis,analyticsFtpWatts FROM ride_sessions').fetchone())
         self.assertEqual((100,), db.execute('SELECT trainerPowerWatts FROM ride_samples').fetchone())
