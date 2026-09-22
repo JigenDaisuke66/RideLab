@@ -267,4 +267,12 @@
     <string name="zone_range_6">FTP &gt;120–150%</string>
     <string name="zone_range_7">FTP &gt;150%</string>
     <string name="back">Back</string>
+    <string name="overlay_title">RideLab · Live</string>
+    <string name="overlay_drag_hint">Drag to move; tap to collapse or expand</string>
+    <string name="overlay_close">Close</string>
+    <string name="overlay_enable">Show floating metrics</string>
+    <string name="overlay_disable">Hide floating metrics</string>
+    <string name="overlay_need_ride">Start a ride to enable floating metrics over other apps.</string>
+    <string name="overlay_permission_note">First allow display over other apps, then return and tap again. Drag the title to move; tap it to collapse.</string>
+    <string name="overlay_failure">Unable to show floating metrics. Check display-over-other-apps permission and retry.</string>
 </resources>

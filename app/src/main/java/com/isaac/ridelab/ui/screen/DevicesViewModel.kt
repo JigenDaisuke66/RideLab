@@ -24,6 +24,9 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
     private val mutableHeartRate = MutableStateFlow(HeartRateState())
     private val mutableRide = MutableStateFlow(RideState())
     private val mutableReady = MutableStateFlow(false)
+    private val mutableOverlay = MutableStateFlow(com.isaac.ridelab.ui.overlay.RideOverlayState.OFF)
+    val overlayState = mutableOverlay.asStateFlow()
+    fun setOverlay(enabled: Boolean) { service?.setOverlay(enabled) }
     val trainerState = mutableTrainer.asStateFlow()
     val heartRateState = mutableHeartRate.asStateFlow()
     val rideState = mutableRide.asStateFlow()
@@ -39,12 +42,14 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
             observations = scope.launch {
                 launch { owner.trainerState.collect { mutableTrainer.value = it } }
                 launch { owner.heartRateState.collect { mutableHeartRate.value = it } }
+                launch { owner.overlayState.collect { mutableOverlay.value = it } }
                 launch { owner.rideState.collect { mutableRide.value = it } }
             }
             mutableReady.value = true
             if (!visible) owner.uiHidden()
         }
         override fun onServiceDisconnected(name: ComponentName) {
+            mutableOverlay.value = com.isaac.ridelab.ui.overlay.RideOverlayState.OFF
             observations?.cancel(); service = null; mutableReady.value = false
             mutableTrainer.value = GattDeviceState(connection = ConnectionState.FAILED, issue = GattIssue(GattFailure.CONNECTION_LOST))
             mutableHeartRate.value = HeartRateState(connection = ConnectionState.FAILED, issue = GattIssue(GattFailure.CONNECTION_LOST))

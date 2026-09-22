@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
                     },
                     appSettings = { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))) },
                     bluetoothSettings = { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
-                    language = ::selectLanguage)
+                    language = ::selectLanguage, enableOverlay = ::enableOverlay)
             }
         }
     }
@@ -119,6 +119,19 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else devices.startRide()
+    }
+
+    private fun enableOverlay() {
+        if (Settings.canDrawOverlays(this)) {
+            devices.setOverlay(true)
+        } else {
+            try {
+                startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+            } catch (e: android.content.ActivityNotFoundException) {
+                Log.e("RideLabOverlay", "Overlay permission settings unavailable", e)
+                android.widget.Toast.makeText(this, R.string.overlay_failure, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun selectLanguage(language: String) {

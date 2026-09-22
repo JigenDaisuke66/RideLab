@@ -1,5 +1,10 @@
 package com.isaac.ridelab.service
 
+import com.isaac.ridelab.ui.overlay.RideOverlayState
+import com.isaac.ridelab.ui.overlay.RideOverlayWindow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import android.provider.Settings
 import android.Manifest
 import android.app.*
 import android.content.Intent
@@ -45,6 +50,42 @@ class RideRecordingService : Service() {
     private var recording: Job? = null
     private var finalizing: Job? = null
     private lateinit var recovery: Deferred<Unit>
+    private val mutableOverlay = MutableStateFlow(RideOverlayState.OFF)
+    val overlayState = mutableOverlay.asStateFlow()
+    private var overlayJob: Job? = null
+    private var overlayWindow: RideOverlayWindow? = null
+
+    fun setOverlay(enabled: Boolean) {
+        overlayJob?.cancel(); overlayJob = null
+        if (!enabled || rideState.value.phase != RidePhase.ACTIVE) {
+            overlayWindow?.hide(); mutableOverlay.value = RideOverlayState.OFF; return
+        }
+        overlayJob = scope.launch {
+            try {
+                while (isActive && rideState.value.phase == RidePhase.ACTIVE) {
+                    if (!Settings.canDrawOverlays(this@RideRecordingService)) {
+                        overlayWindow?.hide(); mutableOverlay.value = RideOverlayState.PERMISSION_REQUIRED; break
+                    }
+                    if (overlayWindow == null) overlayWindow = RideOverlayWindow(this@RideRecordingService) { setOverlay(false) }
+                    val locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
+                    val interactive = getSystemService(PowerManager::class.java).isInteractive
+                    if (locked || !interactive) overlayWindow?.hide()
+                    else if (overlayWindow?.show(liveSnapshot(SystemClock.elapsedRealtime())) != true) {
+                        mutableOverlay.value = RideOverlayState.FAILED
+                        break
+                    }
+                    ensureActive()
+                    mutableOverlay.value = RideOverlayState.VISIBLE
+                    delay(1000)
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                Log.e("RideLabOverlay", "Overlay failed", e)
+                overlayWindow?.hide(); mutableOverlay.value = RideOverlayState.FAILED
+            }
+        }
+    }
+
     private var destroyed = false
     private var recordingError: Exception? = null
 
@@ -55,6 +96,7 @@ class RideRecordingService : Service() {
         trainer = FtmsClient(this)
         heartRate = HeartRateClient(this)
         Log.i(TAG, "Service created; sole BLE owner")
+        scope.launch { rideState.map { it.phase }.distinctUntilChanged().collect { if (it != RidePhase.ACTIVE) setOverlay(false) } }
         recovery = scope.async {
             try {
                 val count = repository.recoverInterrupted()
@@ -287,6 +329,7 @@ class RideRecordingService : Service() {
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
+        if (overlayState.value == RideOverlayState.VISIBLE) { overlayWindow?.hide(); overlayWindow = null }
         if (rideState.value.phase == RidePhase.ACTIVE) {
             createChannel()
             getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(rideState.value.startedAtMs!!))
@@ -299,6 +342,7 @@ class RideRecordingService : Service() {
     private fun releaseWakeLock() { wakeLock?.let { if (it.isHeld) it.release() }; wakeLock = null }
 
     override fun onDestroy() {
+        setOverlay(false); overlayWindow = null
         destroyed = true
         Log.i(TAG, "Service destroyed phase=${rideState.value.phase}")
         scope.cancel()

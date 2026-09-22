@@ -24,7 +24,7 @@ private enum class Destination(val title: Int) { HOME(R.string.ui_home), RIDE(R.
 fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewModel, erg: ErgTargetViewModel,
     connectTrainer: (DiscoveredDevice) -> Unit, connectHr: (DiscoveredDevice) -> Unit,
     startRide: () -> Unit, scan: () -> Unit, appSettings: () -> Unit, bluetoothSettings: () -> Unit,
-    language: (String) -> Unit) {
+    language: (String) -> Unit, enableOverlay: () -> Unit = {}) {
     var destination by rememberSaveable { mutableStateOf(Destination.HOME) }
     var picker by rememberSaveable { mutableStateOf<Int?>(null) }
     val holder = rememberSaveableStateHolder()
@@ -32,6 +32,7 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     val hr by devices.heartRateState.collectAsState()
     val ride by devices.rideState.collectAsState()
     val ready by devices.serviceReady.collectAsState()
+    val overlay by devices.overlayState.collectAsState()
     val scanState by devices.scanner.state.collectAsState()
     val historyState by history.state.collectAsState()
     val chartState by history.charts.collectAsState()
@@ -45,7 +46,14 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
             if (isHr) hr.isActive else trainer.isActive, if (isHr) connectHr else connectTrainer,
             scan, devices.scanner::stop, appSettings, bluetoothSettings, { picker = null })
     }
-    Scaffold(bottomBar = {
+    Scaffold(topBar = {
+        if (destination == Destination.RIDE) {
+            Column(Modifier.statusBarsPadding().padding(horizontal = 16.dp)) {
+                OverlayControl(overlay, ready && ride.phase == com.isaac.ridelab.service.RidePhase.ACTIVE,
+                    enableOverlay, { devices.setOverlay(false) })
+            }
+        }
+    }, bottomBar = {
         NavigationBar {
             Destination.entries.forEach { item ->
                 NavigationBarItem(selected = destination == item, onClick = { destination = item },
@@ -121,4 +129,18 @@ private fun NavigationGlyph(destination: Destination) {
             }
         }
     }
+}
+
+@Composable
+private fun OverlayControl(state: com.isaac.ridelab.ui.overlay.RideOverlayState, active: Boolean,
+    enable: () -> Unit, disable: () -> Unit) {
+    val visible = state == com.isaac.ridelab.ui.overlay.RideOverlayState.VISIBLE
+    TextButton(onClick = if (visible) disable else enable, enabled = active) {
+        Text(stringResource(if (visible) R.string.overlay_disable else R.string.overlay_enable))
+    }
+    Text(stringResource(when {
+        state == com.isaac.ridelab.ui.overlay.RideOverlayState.FAILED -> R.string.overlay_failure
+        !active -> R.string.overlay_need_ride
+        else -> R.string.overlay_permission_note
+    }), style = MaterialTheme.typography.bodySmall)
 }
