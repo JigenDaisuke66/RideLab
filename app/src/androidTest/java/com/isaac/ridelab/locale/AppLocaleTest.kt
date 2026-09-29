@@ -105,6 +105,24 @@ class AppLocaleTest {
         assertTrue(manager.applicationLocales.isEmpty)
     }
 
+    @Test fun overlayFollowsAppChoiceInsteadOfDisplayLocale() {
+        val englishDisplay = context.createConfigurationContext(Configuration(context.resources.configuration).apply {
+            setLocale(Locale.ENGLISH)
+        })
+        AppLocale.select(context, AppLocale.CHINESE)
+        assertEquals("关闭", AppLocale.overlayContext(englishDisplay, context).getString(R.string.overlay_close))
+        AppLocale.select(context, AppLocale.ENGLISH)
+        assertEquals("Close", AppLocale.overlayContext(englishDisplay, context).getString(R.string.overlay_close))
+    }
+
+    @Test fun overlayHonorsExplicitSystemDefault() {
+        assumeTrue(Build.VERSION.SDK_INT >= 33)
+        val manager = context.getSystemService(LocaleManager::class.java)
+        manager.applicationLocales = LocaleList.getEmptyLocaleList()
+        assertEquals(manager.systemLocales,
+            AppLocale.overlayContext(context, context).resources.configuration.locales)
+    }
+
     @Test fun upgradingFromLegacyMigratesSavedEnglishOnce() {
         assumeTrue(Build.VERSION.SDK_INT >= 33)
         AppLocale.initializeLegacy(context)

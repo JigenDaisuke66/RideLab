@@ -38,3 +38,16 @@ Compile/unit checks do not verify OEM overlay permission or window behavior on h
 - app/src/main/res/values/strings.xml and values-en/strings.xml: localized labels.
 - app/src/test/java/com/isaac/ridelab/ui/overlay/OverlayPositionTest.kt: positioning checks.
 - OVERLAY_VERIFICATION.md: behavior and physical checks.
+
+## Transparency and language follow-up
+- Expanded window includes a background transparency slider (0–80%, default 6%).
+  Text remains opaque. On release, ride_overlay/transparency preferences remember
+  the setting across hiding, app restarts and new rides; restored values are clamped.
+- Window resources explicitly use the Android per-app locale on API 33+, or the
+  legacy app preference on API 31/32. Explicit System default remains supported.
+  Each live refresh detects locale changes and recreates labels without touching BLE.
+- Verify system English/app Chinese, then switch app to English and back while riding.
+  Header, close, metric labels, units and transparency label must follow the app.
+- Move the slider, close/reopen, restart the app and rotate; verify the value persists
+  and text remains legible. New locale instrumentation cases are compile-checked;
+  running them requires a device and is not part of the no-APK check.

@@ -275,4 +275,5 @@
     <string name="overlay_need_ride">Start a ride to enable floating metrics over other apps.</string>
     <string name="overlay_permission_note">First allow display over other apps, then return and tap again. Drag the title to move; tap it to collapse.</string>
     <string name="overlay_failure">Unable to show floating metrics. Check display-over-other-apps permission and retry.</string>
+    <string name="overlay_transparency">Background transparency: %1$d%%</string>
 </resources>

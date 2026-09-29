@@ -43,6 +43,16 @@ object AppLocale {
     fun activityContext(context: Context): Context =
         if (Build.VERSION.SDK_INT >= 33) context else legacyContext(context)
 
+    /** Window contexts may carry display/system locales rather than the per-app choice. */
+    fun overlayContext(windowContext: Context, appContext: Context): Context {
+        if (Build.VERSION.SDK_INT < 33) return legacyContext(windowContext)
+        val manager = appContext.getSystemService(LocaleManager::class.java)
+        val locales = manager.applicationLocales.takeUnless { it.isEmpty } ?: manager.systemLocales
+        val configuration = Configuration(windowContext.resources.configuration)
+        configuration.setLocales(locales)
+        return windowContext.createConfigurationContext(configuration)
+    }
+
     internal fun legacyContext(context: Context): Context {
         val language = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
             .getString(LEGACY_LANGUAGE, CHINESE) ?: CHINESE

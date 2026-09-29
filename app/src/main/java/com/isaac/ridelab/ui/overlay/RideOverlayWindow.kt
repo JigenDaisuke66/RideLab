@@ -13,11 +13,13 @@ import com.isaac.ridelab.data.model.LiveRideData
 import com.isaac.ridelab.locale.AppLocale
 
 /** Read-only window; no BLE ownership or trainer-control actions. Main thread only. */
-class RideOverlayWindow(service: Context, private val close: () -> Unit) {
+class RideOverlayWindow(private val service: Context, private val close: () -> Unit) {
     private val windowContext = service.createWindowContext(
         service.getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY),
         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null)
-    private val context = AppLocale.activityContext(windowContext)
+    private var context = AppLocale.overlayContext(windowContext, service)
+    private val preferences = service.getSharedPreferences("ride_overlay", Context.MODE_PRIVATE)
+    private var transparency = preferences.getInt("transparency", 6).coerceIn(0, 80)
     private val manager = windowContext.getSystemService(WindowManager::class.java)
     private var root: LinearLayout? = null
     private var power: TextView? = null
@@ -32,6 +34,11 @@ class RideOverlayWindow(service: Context, private val close: () -> Unit) {
         PixelFormat.TRANSLUCENT).apply { gravity = Gravity.TOP or Gravity.LEFT; x = dp(16); y = dp(120) }
 
     fun show(data: LiveRideData): Boolean {
+        val localized = AppLocale.overlayContext(windowContext, service)
+        if (localized.resources.configuration.locales != context.resources.configuration.locales) {
+            hide()
+            context = localized
+        }
         if (root == null) attach()
         val noData = context.getString(R.string.history_no_data)
         power?.text = data.trainerPowerWatts?.let { context.getString(R.string.power_value, it) } ?: noData
@@ -50,8 +57,9 @@ class RideOverlayWindow(service: Context, private val close: () -> Unit) {
             orientation = LinearLayout.VERTICAL; setPadding(dp(14),dp(4),dp(8),dp(12))
             elevation = dp(8).toFloat()
             background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.argb(240,22,43,38), Color.argb(240,13,23,21))).apply {
+                intArrayOf(Color.rgb(22,43,38), Color.rgb(13,23,21))).apply {
                 cornerRadius = dp(20).toFloat(); setStroke(dp(1), Color.rgb(71,118,105))
+                alpha = (255 * (100 - transparency) / 100)
             }
         }
         val header = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -75,6 +83,28 @@ class RideOverlayWindow(service: Context, private val close: () -> Unit) {
             row.addView(value); metrics.addView(row); return value
         }
         power = metric(R.string.ui_power); hr = metric(R.string.ui_heart_rate); cadence = metric(R.string.cadence)
+        val transparencyLabel = label(context.getString(R.string.overlay_transparency, transparency), 12f)
+        metrics.addView(transparencyLabel)
+        metrics.addView(SeekBar(context).apply {
+            max = 80
+            progress = transparency
+            contentDescription = context.getString(R.string.overlay_transparency, transparency)
+            minimumHeight = dp(48)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
+                    if (!fromUser) return
+                    transparency = value.coerceIn(0, 80)
+                    panel.background.alpha = 255 * (100 - transparency) / 100
+                    val text = context.getString(R.string.overlay_transparency, transparency)
+                    transparencyLabel.text = text
+                    bar.contentDescription = text
+                }
+                override fun onStartTrackingTouch(bar: SeekBar) = Unit
+                override fun onStopTrackingTouch(bar: SeekBar) {
+                    preferences.edit().putInt("transparency", transparency).apply()
+                }
+            })
+        }, LinearLayout.LayoutParams(-1, dp(48)))
         metrics.visibility = if (collapsed) View.GONE else View.VISIBLE
         panel.addView(metrics)
         title.setOnClickListener { collapsed = !collapsed; metrics.visibility = if(collapsed) View.GONE else View.VISIBLE; panel.post { position(true) } }

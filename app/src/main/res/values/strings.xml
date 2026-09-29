@@ -275,4 +275,5 @@
     <string name="overlay_need_ride">开始骑行后可开启跨应用悬浮窗。</string>
     <string name="overlay_permission_note">首次使用请允许“显示在其他应用上层”，返回后再次点击开启。拖动标题移动，点击标题折叠。</string>
     <string name="overlay_failure">无法显示悬浮窗，请检查系统悬浮窗权限后重试。</string>
+    <string name="overlay_transparency">背景透明度：%1$d%%</string>
 </resources>
