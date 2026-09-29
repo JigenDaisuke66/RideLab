@@ -45,6 +45,24 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    private val _deleting = MutableStateFlow(false)
+    val deleting = _deleting.asStateFlow()
+    fun deleteRide(id: Long, result: (Boolean) -> Unit) {
+        if (_deleting.value) return
+        _deleting.value = true
+        viewModelScope.launch {
+            try {
+                val deleted = repository.deleteHistory(id)
+                if (deleted && _charts.value.sessionId == id) loadCharts(null)
+                result(deleted)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                Log.e("RideLabHistory", "Delete failed sessionId=$id", error)
+                result(false)
+            } finally { _deleting.value = false }
+        }
+    }
+
     private val refresh = MutableStateFlow(0)
     val state = refresh.flatMapLatest {
         (application as RideLabApplication).rideRepository.observeHistory()

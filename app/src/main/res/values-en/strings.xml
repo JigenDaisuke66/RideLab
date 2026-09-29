@@ -276,4 +276,8 @@
     <string name="overlay_permission_note">First allow display over other apps, then return and tap again. Drag the title to move; tap it to collapse.</string>
     <string name="overlay_failure">Unable to show floating metrics. Check display-over-other-apps permission and retry.</string>
     <string name="overlay_transparency">Background transparency: %1$d%%</string>
+    <string name="history_delete">Delete ride</string>
+    <string name="history_delete_message">Delete the ride from %1$s and all its samples? This cannot be undone.</string>
+    <string name="history_delete_failed">Deletion failed. Retry; active rides cannot be deleted.</string>
+    <string name="history_deleting">Deleting…</string>
 </resources>

@@ -19,6 +19,10 @@ abstract class RideDao {
         GROUP BY r.id ORDER BY r.startTimeEpochMillis DESC, r.id DESC""")
     abstract fun observeHistory(): kotlinx.coroutines.flow.Flow<List<com.isaac.ridelab.data.model.RideHistoryEntry>>
 
+    // Existing foreign key cascades sample deletion atomically. Never delete an active ride.
+    @Query("DELETE FROM ride_sessions WHERE id = :id AND status IN ('COMPLETED', 'ABORTED')")
+    abstract suspend fun deleteHistory(id: Long): Int
+
     @Insert abstract suspend fun insertSession(session: RideSession): Long
     @Insert abstract suspend fun insertSample(sample: RideSample)
     @Query("SELECT * FROM ride_sessions WHERE id = :id") abstract suspend fun session(id: Long): RideSession?

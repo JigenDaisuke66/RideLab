@@ -32,6 +32,7 @@ class RoomRideRepository(private val dao: RideDao, private val currentFtp: suspe
         }
         current.copy(prs = current.efforts.mapIndexed { i, effort -> PowerAnalysisCalculator.compare(effort.watts, previous[i], session.status) })
     }
+    suspend fun deleteHistory(id: Long): Boolean = dao.deleteHistory(id) == 1
     suspend fun analyticsSession(id: Long) = dao.session(id)
     suspend fun historySamples(id: Long) = dao.samples(id)
     fun observeHistory() = dao.observeHistory()

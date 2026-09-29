@@ -21,6 +21,28 @@ class RideDatabaseTest {
     }
     @After fun tearDown() { db.close() }
 
+    @Test fun deleteHistoryCascadesSamplesAndProtectsActiveRide() = runBlocking {
+        val dao = db.rides()
+        val completed = dao.insertSession(RideSession(startTimeEpochMillis = 1000))
+        dao.finish(completed, LiveRideData().sample(completed, 2000, 1000),
+            2000, 1000, StoredRideStatus.COMPLETED, null)
+        val aborted = dao.insertSession(RideSession(startTimeEpochMillis = 3000))
+        dao.append(LiveRideData().sample(aborted, 4000, 1000))
+        dao.recoverInterrupted()
+        val active = dao.insertSession(RideSession(startTimeEpochMillis = 5000))
+        dao.append(LiveRideData().sample(active, 6000, 1000))
+        assertEquals(0, dao.deleteHistory(active))
+        assertEquals(1, dao.samples(active).size)
+        assertEquals(1, dao.deleteHistory(completed))
+        assertNull(dao.session(completed))
+        assertTrue(dao.samples(completed).isEmpty())
+        assertEquals(listOf(aborted), dao.observeHistory().first().map { it.session.id })
+        assertEquals(0, dao.deleteHistory(completed))
+        assertEquals(1, dao.deleteHistory(aborted))
+        assertTrue(dao.samples(aborted).isEmpty())
+        assertNotNull(dao.session(active))
+    }
+
     @Test fun historyProjectionMapsCountsAndNullableMetrics() = runBlocking {
         val dao = db.rides()
         val first = dao.insertSession(RideSession(startTimeEpochMillis = 1000))

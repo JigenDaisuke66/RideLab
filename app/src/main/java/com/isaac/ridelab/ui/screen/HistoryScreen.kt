@@ -33,8 +33,12 @@ fun HistoryScreen(
     onRetry: () -> Unit,
     charts: ChartState,
     onLoadCharts: (Long?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    deleting: Boolean = false,
+    onDelete: (Long, (Boolean) -> Unit) -> Unit = { _, done -> done(false) }
 ) {
+    var pendingDelete by rememberSaveable { mutableStateOf<Long?>(null) }
+    var deleteFailed by rememberSaveable { mutableStateOf(false) }
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     LaunchedEffect(selectedId) { onLoadCharts(selectedId) }
 
@@ -75,6 +79,30 @@ fun HistoryScreen(
         return String.format(locale, "%02d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60)
     }
 
+    pendingDelete?.let { id ->
+        AlertDialog(
+            onDismissRequest = { if (!deleting) pendingDelete = null },
+            title = { Text(stringResource(R.string.history_delete)) },
+            text = { Column {
+                Text(stringResource(R.string.history_delete_message,
+                    date(state.rides.find { it.session.id == id }?.session?.startTimeEpochMillis)))
+                if (deleteFailed) Text(stringResource(R.string.history_delete_failed), color = MaterialTheme.colorScheme.error)
+            } },
+            confirmButton = { TextButton(enabled = !deleting, onClick = {
+                deleteFailed = false
+                onDelete(id) { success ->
+                    if (success) {
+                        pendingDelete = null
+                        if (selectedId == id) selectedId = null
+                    } else deleteFailed = true
+                }
+            }) { Text(stringResource(if (deleting) R.string.history_deleting else R.string.history_delete)) } },
+            dismissButton = { TextButton(enabled = !deleting, onClick = { pendingDelete = null }) {
+                Text(stringResource(R.string.erg_cancel))
+            } }
+        )
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
@@ -85,6 +113,13 @@ fun HistoryScreen(
                         text = stringResource(if (selectedId == null) R.string.history_title else R.string.history_detail),
                         fontWeight = FontWeight.Bold
                     )
+                },
+                actions = {
+                    if (selectedId != null && state.rides.any { it.session.id == selectedId }) {
+                        TextButton(enabled = !deleting, onClick = { deleteFailed = false; pendingDelete = selectedId }) {
+                            Text(stringResource(R.string.history_delete))
+                        }
+                    }
                 },
                 navigationIcon = {
                     if (selectedId != null) {
@@ -316,6 +351,9 @@ fun HistoryScreen(
                                     .padding(20.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                TextButton(enabled = !deleting, onClick = { deleteFailed = false; pendingDelete = entry.session.id }) {
+                                    Text(stringResource(R.string.history_delete), color = MaterialTheme.colorScheme.error)
+                                }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = date(entry.session.startTimeEpochMillis),

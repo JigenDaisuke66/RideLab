@@ -16,6 +16,11 @@ class RideFtpSnapshotTest {
             return id
         }
         override suspend fun previousCompleted(timestamp: Long, id: Long) = sessions.values.filter { it.status == StoredRideStatus.COMPLETED && it.id < id }
+        override suspend fun deleteHistory(id: Long): Int {
+            if (sessions[id]?.status !in listOf(StoredRideStatus.COMPLETED, StoredRideStatus.ABORTED)) return 0
+            sessions.remove(id)
+            return 1
+        }
         override suspend fun session(id: Long) = sessions[id]
         override suspend fun sessionCount() = sessions.size
         override suspend fun insertSample(sample: RideSample) = Unit
