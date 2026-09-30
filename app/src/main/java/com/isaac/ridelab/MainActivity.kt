@@ -16,6 +16,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import com.isaac.ridelab.ui.screen.HistoryViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
+import com.isaac.ridelab.ui.screen.CsvExportState
+import com.isaac.ridelab.export.RideCsvExporter
 import com.isaac.ridelab.data.model.DiscoveredDevice
 import com.isaac.ridelab.locale.AppLocale
 import com.isaac.ridelab.ui.screen.DevicesViewModel
@@ -26,6 +31,15 @@ class MainActivity : ComponentActivity() {
         super.attachBaseContext(AppLocale.activityContext(newBase))
     }
 
+    private lateinit var history: HistoryViewModel
+    private var pendingCsvRide: Long? = null
+    private val csvDocument = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        val id = pendingCsvRide
+        pendingCsvRide = null
+        if (uri != null && id != null) {
+            history.exportCsv(id, uri, resources.getStringArray(R.array.ride_csv_headers).toList())
+        }
+    }
     private lateinit var devices: DevicesViewModel
     private val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) devices.startRide()
@@ -53,7 +67,23 @@ class MainActivity : ComponentActivity() {
         devices = ViewModelProvider(this)[DevicesViewModel::class.java]
         val ftp = ViewModelProvider(this)[com.isaac.ridelab.ui.screen.FtpViewModel::class.java]
         val erg = ViewModelProvider(this)[com.isaac.ridelab.ui.screen.ErgTargetViewModel::class.java]
-        val history = ViewModelProvider(this)[HistoryViewModel::class.java]
+        history = ViewModelProvider(this)[HistoryViewModel::class.java]
+        pendingCsvRide = savedInstanceState?.takeIf { it.containsKey("csv_ride_id") }?.getLong("csv_ride_id")
+        lifecycleScope.launch {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                history.csvExport.collect { status ->
+                    val message = when (status) {
+                        CsvExportState.SUCCESS -> R.string.csv_export_success
+                        CsvExportState.FAILED -> R.string.csv_export_failed
+                        else -> null
+                    }
+                    if (message != null) {
+                        android.widget.Toast.makeText(this@MainActivity, message, android.widget.Toast.LENGTH_SHORT).show()
+                        history.acknowledgeExport()
+                    }
+                }
+            }
+        }
         enableEdgeToEdge()
         setContent {
             RideLabTheme {
@@ -66,8 +96,24 @@ class MainActivity : ComponentActivity() {
                     },
                     appSettings = { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))) },
                     bluetoothSettings = { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
-                    language = ::selectLanguage, enableOverlay = ::enableOverlay)
+                    language = ::selectLanguage, enableOverlay = ::enableOverlay, exportCsv = ::exportCsv)
             }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        pendingCsvRide?.let { outState.putLong("csv_ride_id", it) }
+        super.onSaveInstanceState(outState)
+    }
+
+    private fun exportCsv(id: Long, startEpochMillis: Long) {
+        if (pendingCsvRide != null || history.csvExport.value == CsvExportState.WRITING) return
+        pendingCsvRide = id
+        try {
+            csvDocument.launch(RideCsvExporter.filename(startEpochMillis))
+        } catch (error: Exception) {
+            pendingCsvRide = null
+            history.exportFailed(error)
         }
     }
 

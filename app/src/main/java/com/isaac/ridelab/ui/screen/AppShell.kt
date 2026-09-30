@@ -24,7 +24,7 @@ private enum class Destination(val title: Int) { HOME(R.string.ui_home), RIDE(R.
 fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewModel, erg: ErgTargetViewModel,
     connectTrainer: (DiscoveredDevice) -> Unit, connectHr: (DiscoveredDevice) -> Unit,
     startRide: () -> Unit, scan: () -> Unit, appSettings: () -> Unit, bluetoothSettings: () -> Unit,
-    language: (String) -> Unit, enableOverlay: () -> Unit = {}) {
+    language: (String) -> Unit, enableOverlay: () -> Unit = {}, exportCsv: (Long, Long) -> Unit = { _, _ -> }) {
     var destination by rememberSaveable { mutableStateOf(Destination.HOME) }
     var picker by rememberSaveable { mutableStateOf<Int?>(null) }
     val holder = rememberSaveableStateHolder()
@@ -35,6 +35,7 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     val overlay by devices.overlayState.collectAsState()
     val scanState by devices.scanner.state.collectAsState()
     val historyState by history.state.collectAsState()
+    val csvExport by history.csvExport.collectAsState()
     val deleting by history.deleting.collectAsState()
     val chartState by history.charts.collectAsState()
     val ergState by erg.state.collectAsState()
@@ -71,7 +72,7 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
                     { destination = Destination.RIDE; startRide() }, { destination = Destination.RIDE },
                     { destination = Destination.HISTORY }, modifier)
                 Destination.RIDE -> RideScreen(trainer, hr, ride, ready, startRide, devices::endRide, devices::sendFecTarget, appSettings, modifier, ergState, erg::edit, erg::rememberApplied)
-                Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier, deleting, history::deleteRide)
+                Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier, deleting, history::deleteRide, csvExport == CsvExportState.WRITING, exportCsv)
                 Destination.SETTINGS -> SettingsDestination(ftpState, { value, done -> ftp.save(value, done) }, ftp::saveWeight, language, modifier)
             }
         }

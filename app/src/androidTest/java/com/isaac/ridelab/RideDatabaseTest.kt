@@ -21,6 +21,24 @@ class RideDatabaseTest {
     }
     @After fun tearDown() { db.close() }
 
+    @Test fun exportLoadsOnlySelectedFinishedRideInElapsedOrder() = runBlocking {
+        val dao = db.rides()
+        val id = dao.insertSession(RideSession(startTimeEpochMillis = 1000))
+        dao.insertSample(LiveRideData(trainerPowerWatts = 0).sample(id, 3000, 2000))
+        dao.insertSample(LiveRideData().sample(id, 1000, 0))
+        dao.finish(id, null, 3000, 2000, StoredRideStatus.COMPLETED, null)
+        val active = dao.insertSession(RideSession(startTimeEpochMillis = 4000))
+        dao.append(LiveRideData(trainerPowerWatts = 200).sample(active, 4000, 0))
+        val samples = dao.exportSamples(id)
+        assertEquals(listOf(0L, 2000L), samples.map { it.elapsedMillis })
+        assertNull(samples.first().trainerPowerWatts)
+        assertEquals(0, samples.last().trainerPowerWatts)
+        try { dao.exportSamples(active); fail("Active export must be rejected") }
+        catch (_: IllegalStateException) { }
+        try { dao.exportSamples(-1); fail("Missing export must be rejected") }
+        catch (_: IllegalStateException) { }
+    }
+
     @Test fun deleteHistoryCascadesSamplesAndProtectsActiveRide() = runBlocking {
         val dao = db.rides()
         val completed = dao.insertSession(RideSession(startTimeEpochMillis = 1000))

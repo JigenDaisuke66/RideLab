@@ -280,4 +280,21 @@
     <string name="history_delete_message">删除 %1$s 的骑行记录及全部采样数据？此操作无法撤销。</string>
     <string name="history_delete_failed">删除失败，请重试。正在进行的骑行不能删除。</string>
     <string name="history_deleting">正在删除…</string>
+    <string name="history_more_actions">更多操作</string>
+    <string name="csv_export">导出 CSV</string>
+    <string name="csv_exporting">正在导出…</string>
+    <string name="csv_export_success">CSV 已导出</string>
+    <string name="csv_export_failed">CSV 导出失败</string>
+    <string name="csv_timestamp">时间戳_UTC</string>
+    <string name="csv_epoch">Epoch毫秒</string>
+    <string name="csv_elapsed">骑行时间毫秒</string>
+    <string name="csv_power">骑行台功率_W</string>
+    <string name="csv_cadence">踏频_rpm</string>
+    <string name="csv_hr">心率_bpm</string>
+    <string name="csv_target">目标功率_W</string>
+    <string name="csv_external">外部功率_W</string>
+    <string name="csv_speed">速度_km_h</string>
+    <string name="csv_resistance">阻力等级</string>
+    <string name="csv_trainer_address">骑行台地址</string>
+    <string name="csv_hr_address">心率传感器地址</string>
 </resources>

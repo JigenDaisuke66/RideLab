@@ -41,6 +41,14 @@ abstract class RideDao {
     abstract suspend fun recoverInterrupted(): Int
 
     @Transaction
+    open suspend fun exportSamples(id: Long): List<RideSample> {
+        check(session(id)?.status in setOf(StoredRideStatus.COMPLETED, StoredRideStatus.ABORTED)) {
+            "Ride unavailable for export: $id"
+        }
+        return samples(id)
+    }
+
+    @Transaction
     open suspend fun append(sample: RideSample) {
         check(session(sample.sessionId)?.status == StoredRideStatus.ACTIVE)
         insertSample(sample)

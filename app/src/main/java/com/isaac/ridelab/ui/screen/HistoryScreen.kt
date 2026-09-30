@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,7 +35,9 @@ fun HistoryScreen(
     onLoadCharts: (Long?) -> Unit,
     modifier: Modifier = Modifier,
     deleting: Boolean = false,
-    onDelete: (Long, (Boolean) -> Unit) -> Unit = { _, done -> done(false) }
+    onDelete: (Long, (Boolean) -> Unit) -> Unit = { _, done -> done(false) },
+    exporting: Boolean = false,
+    onExport: (Long, Long) -> Unit = { _, _ -> }
 ) {
     var pendingDelete by rememberSaveable { mutableStateOf<Long?>(null) }
     var deleteFailed by rememberSaveable { mutableStateOf(false) }
@@ -159,6 +161,14 @@ fun HistoryScreen(
                         } else {
                             val ride = entry.session
 
+                            item {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                    TextButton(enabled = !exporting && !deleting,
+                                        onClick = { onExport(ride.id, ride.startTimeEpochMillis) }) {
+                                        Text(stringResource(if (exporting) R.string.csv_exporting else R.string.csv_export))
+                                    }
+                                }
+                            }
                             // 1. 概要卡片
                             item {
                                 SectionCard {
@@ -351,9 +361,6 @@ fun HistoryScreen(
                                     .padding(20.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                TextButton(enabled = !deleting, onClick = { deleteFailed = false; pendingDelete = entry.session.id }) {
-                                    Text(stringResource(R.string.history_delete), color = MaterialTheme.colorScheme.error)
-                                }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = date(entry.session.startTimeEpochMillis),
@@ -378,11 +385,24 @@ fun HistoryScreen(
                                         )
                                     }
                                 }
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Box {
+                                    var menuOpen by remember { mutableStateOf(false) }
+                                    IconButton(enabled = !deleting, onClick = { menuOpen = true }) {
+                                        Icon(Icons.Rounded.MoreVert,
+                                            contentDescription = stringResource(R.string.history_more_actions),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.history_delete), color = MaterialTheme.colorScheme.error) },
+                                            enabled = !deleting,
+                                            onClick = {
+                                                menuOpen = false
+                                                deleteFailed = false
+                                                pendingDelete = entry.session.id
+                                            })
+                                    }
+                                }
                             }
                         }
                     }

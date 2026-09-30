@@ -1,0 +1,16 @@
+<resources>
+    <string-array name="ride_csv_headers">
+        <item>@string/csv_timestamp</item>
+        <item>@string/csv_epoch</item>
+        <item>@string/csv_elapsed</item>
+        <item>@string/csv_power</item>
+        <item>@string/csv_cadence</item>
+        <item>@string/csv_hr</item>
+        <item>@string/csv_target</item>
+        <item>@string/csv_external</item>
+        <item>@string/csv_speed</item>
+        <item>@string/csv_resistance</item>
+        <item>@string/csv_trainer_address</item>
+        <item>@string/csv_hr_address</item>
+    </string-array>
+</resources>

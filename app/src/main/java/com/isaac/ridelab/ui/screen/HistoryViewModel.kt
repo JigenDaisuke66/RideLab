@@ -11,6 +11,8 @@ import com.isaac.ridelab.ui.chart.buildRideCharts
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
+enum class CsvExportState { IDLE, WRITING, SUCCESS, FAILED }
+
 data class HistoryState(val loading: Boolean = true, val failed: Boolean = false,
     val rides: List<RideHistoryEntry> = emptyList())
 
@@ -60,6 +62,30 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
                 Log.e("RideLabHistory", "Delete failed sessionId=$id", error)
                 result(false)
             } finally { _deleting.value = false }
+        }
+    }
+
+    private val _csvExport = MutableStateFlow(CsvExportState.IDLE)
+    val csvExport = _csvExport.asStateFlow()
+    fun acknowledgeExport() { if (_csvExport.value != CsvExportState.WRITING) _csvExport.value = CsvExportState.IDLE }
+    fun exportFailed(error: Exception) {
+        Log.e("RideLabHistory", "CSV document picker failed", error)
+        _csvExport.value = CsvExportState.FAILED
+    }
+    fun exportCsv(id: Long, uri: android.net.Uri, headers: List<String>) {
+        if (_csvExport.value == CsvExportState.WRITING) return
+        _csvExport.value = CsvExportState.WRITING
+        viewModelScope.launch {
+            try {
+                com.isaac.ridelab.export.RideCsvDocumentWriter(getApplication<Application>().contentResolver, repository)
+                    .write(id, uri, headers)
+                _csvExport.value = CsvExportState.SUCCESS
+                Log.i("RideLabHistory", "CSV exported sessionId=$id")
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) {
+                Log.e("RideLabHistory", "CSV export failed sessionId=$id", error)
+                _csvExport.value = CsvExportState.FAILED
+            }
         }
     }
 

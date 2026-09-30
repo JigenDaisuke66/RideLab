@@ -280,4 +280,21 @@
     <string name="history_delete_message">Delete the ride from %1$s and all its samples? This cannot be undone.</string>
     <string name="history_delete_failed">Deletion failed. Retry; active rides cannot be deleted.</string>
     <string name="history_deleting">Deleting…</string>
+    <string name="history_more_actions">More actions</string>
+    <string name="csv_export">Export CSV</string>
+    <string name="csv_exporting">Exporting…</string>
+    <string name="csv_export_success">CSV exported</string>
+    <string name="csv_export_failed">CSV export failed</string>
+    <string name="csv_timestamp">Timestamp_UTC</string>
+    <string name="csv_epoch">Epoch_ms</string>
+    <string name="csv_elapsed">Elapsed_ms</string>
+    <string name="csv_power">Trainer_power_W</string>
+    <string name="csv_cadence">Cadence_rpm</string>
+    <string name="csv_hr">Heart_rate_bpm</string>
+    <string name="csv_target">Target_power_W</string>
+    <string name="csv_external">External_power_W</string>
+    <string name="csv_speed">Speed_km_h</string>
+    <string name="csv_resistance">Resistance_level</string>
+    <string name="csv_trainer_address">Trainer_address</string>
+    <string name="csv_hr_address">Heart_rate_sensor_address</string>
 </resources>
