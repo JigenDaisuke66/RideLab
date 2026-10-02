@@ -8,6 +8,15 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
+import androidx.compose.material.icons.rounded.MoreVert
+import com.isaac.ridelab.ui.theme.StatusPill
+import com.isaac.ridelab.ui.theme.RideLabCard
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,6 +54,8 @@ fun HomeScreen(
     }
 
     val locale = LocalConfiguration.current.locales[0]
+    val formatter = remember(locale) { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale) }
+    val view = LocalView.current
 
     val trainerConnected = trainer.connection.readyForRide()
     val hrConnected = hr.connection.readyForRide()
@@ -67,7 +78,7 @@ fun HomeScreen(
             TopAppBar( // 替换掉 LargeTopAppBar
                 title = {
                     Text(
-                        text = "RideLab",
+                        text = stringResource(R.string.app_name),
                         fontWeight = FontWeight.Black, // 字重加粗，突出 Logo 感
                         style = MaterialTheme.typography.titleLarge
                     )
@@ -86,9 +97,9 @@ fun HomeScreen(
                 start = 20.dp,
                 end = 20.dp,
                 top = innerPadding.calculateTopPadding(),
-                bottom = 100.dp
+                bottom = 24.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
             /* ---------- Start Ride ---------- */
@@ -96,6 +107,7 @@ fun HomeScreen(
             item {
                 Button(
                     onClick = {
+                        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
                         if (ride.phase == RidePhase.ACTIVE) {
                             openRide()
                         } else {
@@ -160,11 +172,12 @@ fun HomeScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface // 使用纯粹的表面色
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // 增加微弱的悬浮感
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(vertical = 18.dp)
@@ -218,22 +231,11 @@ fun HomeScreen(
                         } ?: stringResource(R.string.history_no_data)
                     )
 
-                    val latestDuration = latest?.let {
-                        val seconds = it.session.durationMillis / 1000
-
-                        stringResource(
-                            R.string.ride_elapsed,
-                            seconds / 3600,
-                            seconds / 60 % 60,
-                            seconds % 60
-                        )
-                    } ?: stringResource(R.string.history_no_data)
-
                     MetricCard(
                         modifier = Modifier.weight(1f),
-                        label = stringResource(R.string.ui_last_duration), // 记得在 strings.xml 中添加此项以避免文案重复
-                        value = latestDuration,
-                        onClick = openHistory
+                        label = stringResource(R.string.body_weight),
+                        value = ftp.weightKg?.let { stringResource(R.string.weight_value, it) }
+                            ?: stringResource(R.string.history_no_data)
                     )
                 }
             }
@@ -245,11 +247,12 @@ fun HomeScreen(
                     Card(
                         onClick = openHistory,
                         modifier = Modifier.fillMaxWidth(),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface // 使用纯粹的表面色
                         ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // 增加微弱的悬浮感
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -270,20 +273,16 @@ fun HomeScreen(
                                 Spacer(Modifier.height(6.dp))
 
                                 Text(
-                                    text = DateFormat
-                                        .getDateTimeInstance(
-                                            DateFormat.MEDIUM,
-                                            DateFormat.SHORT,
-                                            locale
-                                        )
-                                        .format(
-                                            Date(
-                                                latest.session.startTimeEpochMillis
-                                            )
-                                        ),
+                                    text = formatter.format(Date(latest.session.startTimeEpochMillis)),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                Text(stringResource(R.string.ui_recent_summary,
+                                    latest.session.durationMillis / 60000,
+                                    latest.averagePower?.let { stringResource(R.string.history_watts, it) }
+                                        ?: stringResource(R.string.history_no_data)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontFamily = FontFamily.Monospace)
                             }
 
                             Icon(
@@ -307,7 +306,10 @@ private fun CompactDeviceRow(
     onSelect: () -> Unit,
     onDisconnect: () -> Unit
 ) {
+    var menu by remember { mutableStateOf(false) }
+    val view = LocalView.current
     ListItem(
+        modifier = Modifier.clickable { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); onSelect() },
         colors = ListItemDefaults.colors(
             containerColor = Color.Transparent
         ),
@@ -322,10 +324,7 @@ private fun CompactDeviceRow(
             )
         },
         supportingContent = {
-            Text(
-                text = stringResource(if (connected) R.string.ui_connected else R.string.ui_disconnected),
-                color = if (connected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            StatusPill(stringResource(if (connected) R.string.ui_connected else R.string.ui_disconnected), connected)
         },
         leadingContent = {
             Icon(
@@ -335,8 +334,16 @@ private fun CompactDeviceRow(
             )
         },
         trailingContent = {
-            TextButton(onClick = if (connected) onDisconnect else onSelect) {
-                Text(stringResource(if (connected) R.string.ui_disconnect else R.string.ui_select))
+            if (connected) Box {
+                IconButton(onClick = { menu = true }) {
+                    Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.history_more_actions))
+                }
+                DropdownMenu(menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.ui_disconnect), color = MaterialTheme.colorScheme.error) },
+                        onClick = { menu = false; onDisconnect() })
+                }
+            } else {
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
             }
         }
     )
@@ -355,7 +362,8 @@ private fun MetricCard(
             text = value,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.onSurface,
+            fontFamily = FontFamily.Monospace
         )
 
         Spacer(Modifier.height(4.dp))
@@ -376,7 +384,7 @@ private fun MetricCard(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = 1.dp
+                defaultElevation = 0.dp
             )
         ) {
             Column(
@@ -392,7 +400,7 @@ private fun MetricCard(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(
-                defaultElevation = 1.dp
+                defaultElevation = 0.dp
             )
         ) {
             Column(

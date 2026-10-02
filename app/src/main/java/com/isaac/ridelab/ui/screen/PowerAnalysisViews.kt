@@ -9,6 +9,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.Alignment
+import com.isaac.ridelab.ui.theme.StatusPill
+import com.isaac.ridelab.ui.theme.RideLabCard
 import com.isaac.ridelab.R
 import com.isaac.ridelab.analytics.*
 
@@ -19,14 +23,16 @@ private val zoneRanges = listOf(R.string.zone_range_1, R.string.zone_range_2, R.
 @Composable
 internal fun BestEffortsView(analysis: PowerAnalysis, weight: Double?) {
     val noData = stringResource(R.string.history_no_data)
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    RideLabCard(Modifier.fillMaxWidth()) {
         Text(stringResource(R.string.best_efforts), style = MaterialTheme.typography.titleLarge)
         Text(stringResource(R.string.ride_weight, weight?.let { stringResource(R.string.weight_value, it) } ?: noData), style = MaterialTheme.typography.bodySmall)
         analysis.efforts.forEachIndexed { index, effort ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(stringResource(durationLabels[index]))
-                Text(effort.watts?.let { stringResource(R.string.history_watts, it) } ?: noData)
-                Text(effort.wattsPerKg?.let { stringResource(R.string.watts_per_kg, it) } ?: noData)
+            Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(durationLabels[index]), Modifier.weight(.7f))
+                Text(effort.watts?.let { stringResource(R.string.history_watts, it) } ?: noData,
+                    Modifier.weight(1f), fontFamily = FontFamily.Monospace)
+                Text(effort.wattsPerKg?.let { stringResource(R.string.watts_per_kg, it) } ?: noData,
+                    Modifier.weight(1.2f), fontFamily = FontFamily.Monospace)
             }
             val pr = analysis.prs.getOrNull(index)
             if (pr != null && pr.status != PrStatus.UNAVAILABLE) {
@@ -36,9 +42,13 @@ internal fun BestEffortsView(analysis: PowerAnalysis, weight: Double?) {
                     PrStatus.MATCH -> R.string.pr_match
                     else -> R.string.pr_below
                 })
-                Text(if (pr.previousWatts == null) badge else stringResource(R.string.pr_comparison, badge, pr.previousWatts),
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                if (pr.status in setOf(PrStatus.NEW, PrStatus.FIRST, PrStatus.MATCH))
+                    StatusPill(badge, true)
+                else Text(badge, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (pr.previousWatts != null) Text(stringResource(R.string.pr_comparison, badge, pr.previousWatts),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            HorizontalDivider(Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.outline)
         }
         Text(stringResource(R.string.effort_coverage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -50,7 +60,7 @@ internal fun PowerDurationView(analysis: PowerAnalysis) {
     val high = maxOf(1.0, values.filterNotNull().maxOrNull() ?: 1.0)
     val color = MaterialTheme.colorScheme.primary
     val grid = MaterialTheme.colorScheme.outlineVariant
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    RideLabCard(Modifier.fillMaxWidth()) {
         Text(stringResource(R.string.power_duration), style = MaterialTheme.typography.titleLarge)
         if (values.all { it == null }) Text(stringResource(R.string.history_no_data)) else {
             Text(stringResource(R.string.history_watts, high), style = MaterialTheme.typography.labelSmall)
@@ -76,21 +86,24 @@ internal fun PowerDurationView(analysis: PowerAnalysis) {
 
 @Composable
 internal fun PowerZonesView(analysis: PowerAnalysis) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    RideLabCard(Modifier.fillMaxWidth()) {
         Text(stringResource(R.string.power_zones), style = MaterialTheme.typography.titleLarge)
         if (analysis.zones == null) Text(stringResource(R.string.zones_unavailable)) else {
             analysis.zones.forEach { zone ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(zoneLabels[zone.index]))
-                        Text(stringResource(zoneRanges[zone.index]), style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(zoneRanges[zone.index]), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column {
                         val seconds = zone.millis / 1000
-                        Text(stringResource(R.string.ride_elapsed, seconds / 3600, seconds / 60 % 60, seconds % 60))
-                        Text(stringResource(R.string.zone_percent, zone.percent), style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.ride_elapsed, seconds / 3600, seconds / 60 % 60, seconds % 60), fontFamily = FontFamily.Monospace)
+                        Text(stringResource(R.string.zone_percent, zone.percent), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+                LinearProgressIndicator(progress = { (zone.percent / 100.0).toFloat().coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(5.dp),
+                    color = MaterialTheme.colorScheme.secondary, trackColor = MaterialTheme.colorScheme.surfaceVariant)
             }
         }
     }

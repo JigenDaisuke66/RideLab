@@ -297,4 +297,11 @@
     <string name="csv_resistance">阻力等级</string>
     <string name="csv_trainer_address">骑行台地址</string>
     <string name="csv_hr_address">心率传感器地址</string>
+    <string name="ui_end_confirm">结束本次骑行并保存记录？</string>
+    <string name="ui_recent_summary">%1$d 分钟 · %2$s</string>
+    <string name="ui_history_summary">平均功率 %1$s · 平均心率 %2$s</string>
+    <string name="ui_display">显示</string>
+    <string name="ui_help">帮助</string>
+    <string name="ui_overlay_opacity_hint">在展开的悬浮窗内调节背景透明度，设置会自动保存。</string>
+    <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
 </resources>

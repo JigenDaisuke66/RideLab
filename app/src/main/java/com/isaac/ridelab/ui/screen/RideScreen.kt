@@ -17,6 +17,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
+import com.isaac.ridelab.ui.theme.MetricTile
+import com.isaac.ridelab.ui.theme.StatusPill
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,37 +46,7 @@ private fun LiveMetric(
     value: String,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(title),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
+    MetricTile(stringResource(title), value, modifier)
 }
 
 @Composable
@@ -107,7 +81,7 @@ fun RideScreen(
         now
     )
 
-    val noData = "--" // 使用更专业的占位符代替 "暂无数据" 提升高级感
+    val noData = stringResource(R.string.history_no_data)
 
     val seconds = ride.elapsedMs(now) / 1000
 
@@ -126,7 +100,12 @@ fun RideScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                RideControls(ride, controlsReady, start, end, appSettings, showElapsed = false)
+            }
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -137,7 +116,7 @@ fun RideScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(8.dp))
 
             /* ---------- Header ---------- */
             Row(
@@ -146,27 +125,15 @@ fun RideScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(
-                        text = stringResource(R.string.ui_ride),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Black
-                    )
-
-                    Spacer(Modifier.height(4.dp))
-
-                    Text(
+                    StatusPill(
                         text = when (ride.phase) {
                             RidePhase.ACTIVE -> stringResource(R.string.ride_active)
                             RidePhase.STARTING -> stringResource(R.string.ride_starting)
                             RidePhase.STOPPING -> stringResource(R.string.ride_stopping)
+                            RidePhase.ERROR -> stringResource(R.string.ride_error)
                             else -> stringResource(R.string.ride_idle)
                         },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (ride.phase == RidePhase.ACTIVE) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
+                        active = ride.phase == RidePhase.ACTIVE
                     )
                 }
 
@@ -179,21 +146,21 @@ fun RideScreen(
                 )
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(12.dp))
 
             /* ---------- Main Power ---------- */
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp),
-                shape = RoundedCornerShape(28.dp),
+                    .heightIn(min = 120.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -209,14 +176,14 @@ fun RideScreen(
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
                                 text = live.trainerPowerWatts.toString(),
-                                fontSize = 84.sp,
-                                lineHeight = 84.sp,
+                                fontSize = 72.sp,
+                                lineHeight = 76.sp,
                                 fontWeight = FontWeight.Black,
                                 fontFamily = FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "W", // 简写更具科技感
+                                text = stringResource(R.string.ui_watts),
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 12.dp, start = 8.dp)
@@ -233,7 +200,7 @@ fun RideScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
 
             /* ---------- Heart rate + cadence ---------- */
             Row(
@@ -257,7 +224,7 @@ fun RideScreen(
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
 
             /* ---------- Compact connection status ---------- */
             Row(
@@ -287,7 +254,7 @@ fun RideScreen(
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
 
             /* ---------- ERG ---------- */
             ErgControls(
@@ -298,19 +265,7 @@ fun RideScreen(
                 send = send
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            /* ---------- Ride actions ---------- */
-            RideControls(
-                state = ride,
-                ready = controlsReady,
-                start = start,
-                end = end,
-                settings = appSettings,
-                showElapsed = false
-            )
-
-            Spacer(modifier = Modifier.height(100.dp)) // 为底部导航栏留出空间
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
@@ -324,6 +279,7 @@ internal fun ErgControls(
     send: (Int) -> Unit
 ) {
     val state = trainer.fec
+    val view = LocalView.current
     val target = preference.target
     var dialog by rememberSaveable(trainer.device?.address) { mutableStateOf(false) }
     var input by rememberSaveable(trainer.device?.address) { mutableStateOf("") }
@@ -345,25 +301,25 @@ internal fun ErgControls(
     }
     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.ui_erg), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.ui_requested_target,
                 state.lastTargetWatts?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data)),
                 style = MaterialTheme.typography.bodySmall)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                FilledTonalIconButton(onClick = { edit(adjustedErgTarget(target, -5)) }, enabled = ready && target > ThinkRiderX2MaxProfile.minErgWatts, modifier = Modifier.size(56.dp)) {
+                FilledTonalIconButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); edit(adjustedErgTarget(target, -5)) }, enabled = ready && target > ThinkRiderX2MaxProfile.minErgWatts, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.fec_minus))
                 }
-                TextButton(onClick = { input = target.toString(); dialog = true }, enabled = ready, modifier = Modifier.weight(1f)) {
+                OutlinedButton(onClick = { input = target.toString(); dialog = true }, enabled = ready, modifier = Modifier.weight(1f).padding(horizontal = 8.dp).heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.power_value, target), style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
                 }
-                FilledTonalIconButton(onClick = { edit(adjustedErgTarget(target, 5)) }, enabled = ready && target < ThinkRiderX2MaxProfile.maxErgWatts, modifier = Modifier.size(56.dp)) {
+                FilledTonalIconButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); edit(adjustedErgTarget(target, 5)) }, enabled = ready && target < ThinkRiderX2MaxProfile.maxErgWatts, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.fec_plus))
                 }
             }
-            Button(onClick = { rememberApplied(target); send(target) }, enabled = enabled, modifier = Modifier.fillMaxWidth().height(56.dp), shape = CircleShape) {
+            Button(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK); rememberApplied(target); send(target) }, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = MaterialTheme.shapes.medium) {
                 Text(stringResource(R.string.ui_apply_target), fontWeight = FontWeight.Bold)
             }
             if (preference.failed) Text(stringResource(R.string.erg_preference_error))

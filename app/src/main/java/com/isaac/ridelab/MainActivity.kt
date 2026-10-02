@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.activity.result.contract.ActivityResultContracts
 import com.isaac.ridelab.ui.screen.HistoryViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -84,7 +85,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        enableEdgeToEdge()
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(9, 13, 18)))
         setContent {
             RideLabTheme {
                 com.isaac.ridelab.ui.screen.AppShell(devices, history, ftp, erg,

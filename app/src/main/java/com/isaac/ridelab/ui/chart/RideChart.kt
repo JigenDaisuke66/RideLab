@@ -12,6 +12,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import com.isaac.ridelab.ui.theme.RideColors
 import com.isaac.ridelab.R
 
 @Composable
@@ -19,12 +21,16 @@ fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long)
     val points = remember(series) { series.segments.flatten() }
     val low = remember(points) { minOf(0.0, points.minOfOrNull { it.value } ?: 0.0) }
     val high = remember(points) { maxOf(1.0, points.maxOfOrNull { it.value } ?: 1.0) }
-    val color = MaterialTheme.colorScheme.primary
-    val grid = MaterialTheme.colorScheme.outlineVariant
+    val color = when (title) {
+        R.string.chart_hr -> RideColors.heartRate
+        R.string.chart_cadence -> RideColors.cadence
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val grid = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .6f)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
         if (points.isEmpty()) Text(stringResource(R.string.history_no_data)) else {
-            Text(stringResource(unitFormat, high), style = MaterialTheme.typography.labelSmall)
+            Text(stringResource(unitFormat, high), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Canvas(Modifier.fillMaxWidth().height(150.dp)) {
                 val pad = 3.dp.toPx()
                 fun position(point: ChartPoint) = Offset(
@@ -46,11 +52,11 @@ fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long)
                     }
                 }
             }
-            Text(stringResource(unitFormat, low), style = MaterialTheme.typography.labelSmall)
+            Text(stringResource(unitFormat, low), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(stringResource(R.string.history_time_value, 0L, 0L, 0L))
-            Text(stringResource(R.string.history_time_value, endMillis / 3600000, endMillis / 60000 % 60, endMillis / 1000 % 60))
+            Text(stringResource(R.string.history_time_value, 0L, 0L, 0L), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.history_time_value, endMillis / 3600000, endMillis / 60000 % 60, endMillis / 1000 % 60), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(stringResource(R.string.chart_elapsed), style = MaterialTheme.typography.labelSmall)
     }

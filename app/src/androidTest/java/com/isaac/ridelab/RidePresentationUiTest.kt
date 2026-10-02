@@ -6,6 +6,21 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.filter
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.isaac.ridelab.ui.screen.RideControls
+import com.isaac.ridelab.ui.screen.RideScreen
+import com.isaac.ridelab.service.RideState
+import com.isaac.ridelab.service.RidePhase
 import androidx.compose.runtime.*
 import com.isaac.ridelab.ui.screen.ErgTargetUi
 import androidx.test.platform.app.InstrumentationRegistry
@@ -23,6 +38,30 @@ import org.junit.Test
 class RidePresentationUiTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test fun endRideRequiresConfirmationAndCancelKeepsRideActive() {
+        var ended = 0
+        compose.setContent { RideLabTheme {
+            RideControls(RideState(phase = RidePhase.ACTIVE), true, {}, { ended++ }, {}, showElapsed = false)
+        } }
+        val end = context.getString(R.string.ride_end)
+        compose.onNodeWithText(end).performClick()
+        compose.runOnIdle { assertEquals(0, ended) }
+        compose.onNodeWithText(context.getString(R.string.erg_cancel)).performClick()
+        compose.runOnIdle { assertEquals(0, ended) }
+        compose.onNodeWithText(end).performClick()
+        compose.onAllNodesWithText(end).filter(hasClickAction() and hasAnyAncestor(isDialog())).onFirst().performClick()
+        compose.runOnIdle { assertEquals(1, ended) }
+    }
+
+    @Test fun smallRideViewportKeepsRideActionVisible() {
+        compose.setContent { RideLabTheme {
+            Box(Modifier.requiredSize(360.dp, 640.dp)) {
+                RideScreen(GattDeviceState(), HeartRateState(), RideState(), true, {}, {}, {}, {})
+            }
+        } }
+        compose.onNodeWithText(context.getString(R.string.ride_start)).assertIsDisplayed()
+    }
 
     @Test fun ergAdjustmentDoesNotSendUntilApply() {
         val sent = mutableListOf<Int>()

@@ -9,6 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
+import com.isaac.ridelab.ui.theme.StatusPill
 import com.isaac.ridelab.R
 import com.isaac.ridelab.ble.BleScanState
 import com.isaac.ridelab.ble.ScanStatus
@@ -44,6 +47,7 @@ internal fun DevicePicker(role: Int, scan: BleScanState, selected: String?, acti
     connect: (DiscoveredDevice) -> Unit, start: () -> Unit, stop: () -> Unit,
     appSettings: () -> Unit, bluetoothSettings: () -> Unit, close: () -> Unit) {
     var showUnknown by rememberSaveable(role) { mutableStateOf(false) }
+    val view = LocalView.current
     val deviceRole = if (role == R.string.ui_heart_rate) DeviceType.HEART_RATE_SENSOR else DeviceType.TRAINER
     val devices = remember(scan.devices, deviceRole, showUnknown) { pickerDevices(scan.devices, deviceRole, showUnknown) }
     AlertDialog(onDismissRequest = close, title = { Text(stringResource(role)) }, text = {
@@ -66,8 +70,16 @@ internal fun DevicePicker(role: Int, scan: BleScanState, selected: String?, acti
             if (devices.isEmpty()) Text(stringResource(R.string.ui_no_matching_devices))
             LazyColumn(Modifier.heightIn(max = 320.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(devices, key = { it.address }) { device ->
-                    OutlinedButton(onClick = { connect(device); close() }, enabled = !(active && selected == device.address), modifier = Modifier.fillMaxWidth()) {
-                        Text(device.name ?: stringResource(R.string.unnamed_device))
+                    OutlinedButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); connect(device); close() }, enabled = !(active && selected == device.address), modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(device.name ?: stringResource(R.string.unnamed_device), color = MaterialTheme.colorScheme.onSurface)
+                            Text(stringResource(when {
+                                DeviceType.TRAINER in device.possibleTypes -> R.string.role_trainer
+                                DeviceType.HEART_RATE_SENSOR in device.possibleTypes -> R.string.ui_heart_rate
+                                DeviceType.POWER_METER in device.possibleTypes -> R.string.possible_power_meter
+                                else -> R.string.device_type_unknown
+                            }), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }

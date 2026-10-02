@@ -13,6 +13,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -34,6 +38,19 @@ internal fun RideControls(
     settings: () -> Unit,
     showElapsed: Boolean = true
 ) {
+    var confirmEnd by rememberSaveable { mutableStateOf(false) }
+    val view = LocalView.current
+    if (confirmEnd && state.phase == RidePhase.ACTIVE) {
+        AlertDialog(onDismissRequest = { confirmEnd = false },
+            title = { Text(stringResource(R.string.ride_end)) },
+            text = { Text(stringResource(R.string.ui_end_confirm)) },
+            confirmButton = { TextButton(onClick = {
+                confirmEnd = false
+                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                end()
+            }) { Text(stringResource(R.string.ride_end), color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { confirmEnd = false }) { Text(stringResource(R.string.erg_cancel)) } })
+    }
     var now by remember {
         mutableLongStateOf(SystemClock.elapsedRealtime())
     }
@@ -89,17 +106,20 @@ internal fun RideControls(
 
         Button(
             onClick = {
-                if (state.phase == RidePhase.ACTIVE) end() else start()
+                if (state.phase == RidePhase.ACTIVE) confirmEnd = true else {
+                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    start()
+                }
             },
             enabled = ready && state.phase !in setOf(RidePhase.STARTING, RidePhase.STOPPING),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp), // 加高按钮显得更大气
-            shape = CircleShape,
+                .height(52.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = if (state.phase == RidePhase.ACTIVE) {
                 ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.error
                 )
             } else {
                 ButtonDefaults.buttonColors()

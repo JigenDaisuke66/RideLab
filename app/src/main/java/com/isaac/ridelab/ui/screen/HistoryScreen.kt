@@ -2,7 +2,13 @@ package com.isaac.ridelab.ui.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
+import com.isaac.ridelab.ui.theme.RideLabCard
+import com.isaac.ridelab.ui.theme.StatusPill
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +45,7 @@ fun HistoryScreen(
     exporting: Boolean = false,
     onExport: (Long, Long) -> Unit = { _, _ -> }
 ) {
+    val view = LocalView.current
     var pendingDelete by rememberSaveable { mutableStateOf<Long?>(null) }
     var deleteFailed by rememberSaveable { mutableStateOf(false) }
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -51,7 +58,7 @@ fun HistoryScreen(
 
     val locale = LocalConfiguration.current.locales[0]
     val dateFormat = remember(locale) { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale) }
-    val noData = "--"
+    val noData = stringResource(R.string.history_no_data)
 
     val dateTimeFormat = remember(locale) {
         DateFormat.getDateTimeInstance(
@@ -94,6 +101,7 @@ fun HistoryScreen(
                 deleteFailed = false
                 onDelete(id) { success ->
                     if (success) {
+                        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
                         pendingDelete = null
                         if (selectedId == id) selectedId = null
                     } else deleteFailed = true
@@ -107,7 +115,7 @@ fun HistoryScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -119,7 +127,7 @@ fun HistoryScreen(
                 actions = {
                     if (selectedId != null && state.rides.any { it.session.id == selectedId }) {
                         TextButton(enabled = !deleting, onClick = { deleteFailed = false; pendingDelete = selectedId }) {
-                            Text(stringResource(R.string.history_delete))
+                            Text(stringResource(R.string.history_delete), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 },
@@ -141,7 +149,7 @@ fun HistoryScreen(
             )
         }
     ) { innerPadding ->
-        Crossfade(targetState = selectedId, label = "HistoryContent", modifier = Modifier.padding(innerPadding)) { currentSelectedId ->
+        Crossfade(targetState = selectedId, animationSpec = tween(180), label = "HistoryContent", modifier = Modifier.padding(innerPadding)) { currentSelectedId ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
@@ -301,12 +309,12 @@ fun HistoryScreen(
                                             val analytics = charts.analytics
                                             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                                 Row(Modifier.fillMaxWidth()) {
-                                                    StatBox(stringResource(R.string.analytics_np), analytics?.np?.let { "$it W" } ?: noData, Modifier.weight(1f))
-                                                    StatBox(stringResource(R.string.ftp_label), analytics?.ftp?.let { "$it W" } ?: noData, Modifier.weight(1f))
+                                                    StatBox(stringResource(R.string.analytics_np), analytics?.np?.let { stringResource(R.string.history_watts, it) } ?: noData, Modifier.weight(1f))
+                                                    StatBox(stringResource(R.string.ftp_label), analytics?.ftp?.let { stringResource(R.string.power_value, it) } ?: noData, Modifier.weight(1f))
                                                 }
                                                 Row(Modifier.fillMaxWidth()) {
-                                                    StatBox(stringResource(R.string.analytics_tss), analytics?.tss?.toString() ?: noData, Modifier.weight(1f))
-                                                    StatBox(stringResource(R.string.analytics_if), analytics?.intensityFactor?.toString() ?: noData, Modifier.weight(1f))
+                                                    StatBox(stringResource(R.string.analytics_tss), analytics?.tss?.let { stringResource(R.string.analytics_score, it) } ?: noData, Modifier.weight(1f))
+                                                    StatBox(stringResource(R.string.analytics_if), analytics?.intensityFactor?.let { stringResource(R.string.analytics_ratio, it) } ?: noData, Modifier.weight(1f))
                                                 }
 
                                                 Text(
@@ -352,8 +360,9 @@ fun HistoryScreen(
                             onClick = { selectedId = entry.session.id },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -378,12 +387,15 @@ fun HistoryScreen(
                                             fontFamily = FontFamily.Monospace,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
-                                        Text(
-                                            text = stringResource(if (entry.session.status == StoredRideStatus.ABORTED) R.string.history_aborted else R.string.history_completed),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (entry.session.status == StoredRideStatus.ABORTED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                                        )
+                                        StatusPill(stringResource(if (entry.session.status == StoredRideStatus.ABORTED) R.string.history_aborted else R.string.history_completed),
+                                            entry.session.status == StoredRideStatus.COMPLETED)
                                     }
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(stringResource(R.string.ui_history_summary,
+                                        entry.averagePower?.let { stringResource(R.string.history_watts, it) } ?: stringResource(R.string.history_no_data),
+                                        entry.averageHeartRate?.let { stringResource(R.string.history_bpm, it) } ?: stringResource(R.string.history_no_data)),
+                                        style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Box {
                                     var menuOpen by remember { mutableStateOf(false) }
@@ -419,24 +431,17 @@ private fun SectionCard(
     title: String? = null,
     content: @Composable () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+    RideLabCard(Modifier.fillMaxWidth()) {
             if (title != null) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(16.dp))
             }
             content()
-        }
     }
 }
 

@@ -11,6 +11,8 @@ import android.widget.*
 import com.isaac.ridelab.R
 import com.isaac.ridelab.data.model.LiveRideData
 import com.isaac.ridelab.locale.AppLocale
+import com.isaac.ridelab.ui.theme.RideColors
+import androidx.compose.ui.graphics.toArgb
 
 /** Read-only window; no BLE ownership or trainer-control actions. Main thread only. */
 class RideOverlayWindow(private val service: Context, private val close: () -> Unit) {
@@ -25,13 +27,17 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     private var power: TextView? = null
     private var hr: TextView? = null
     private var cadence: TextView? = null
+    private var summary: TextView? = null
     private var collapsed = false
     private fun dp(value: Int) = (value * context.resources.displayMetrics.density).toInt()
     private val params = WindowManager.LayoutParams(
         WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
         WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-        PixelFormat.TRANSLUCENT).apply { gravity = Gravity.TOP or Gravity.LEFT; x = dp(16); y = dp(120) }
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+        PixelFormat.TRANSLUCENT).apply {
+        gravity = Gravity.TOP or Gravity.LEFT
+        x = preferences.getInt("position_x", dp(16)); y = preferences.getInt("position_y", dp(120))
+    }
 
     fun show(data: LiveRideData): Boolean {
         val localized = AppLocale.overlayContext(windowContext, service)
@@ -44,42 +50,48 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         power?.text = data.trainerPowerWatts?.let { context.getString(R.string.power_value, it) } ?: noData
         hr?.text = data.heartRateBpm?.let { context.getString(R.string.hr_value, it) } ?: noData
         cadence?.text = data.cadenceRpm?.let { context.getString(R.string.cadence_value, it) } ?: noData
+        summary?.text = context.getString(R.string.ui_overlay_compact, power?.text, hr?.text, cadence?.text)
         position(false)
         return root != null
     }
     private fun label(text: String, size: Float, accent: Boolean = false) = TextView(context).apply {
         this.text = text; textSize = size
-        setTextColor(if (accent) Color.rgb(118,214,195) else Color.rgb(225,237,233))
+        setTextColor(if (accent) RideColors.accent.toArgb() else RideColors.text.toArgb())
         setTypeface(Typeface.DEFAULT, Typeface.BOLD)
     }
     private fun attach() {
         val panel = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL; setPadding(dp(14),dp(4),dp(8),dp(12))
-            elevation = dp(8).toFloat()
-            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(22,43,38), Color.rgb(13,23,21))).apply {
-                cornerRadius = dp(20).toFloat(); setStroke(dp(1), Color.rgb(71,118,105))
+            elevation = dp(2).toFloat()
+            background = GradientDrawable().apply {
+                setColor(RideColors.surface.toArgb())
+                cornerRadius = dp(20).toFloat(); setStroke(dp(1), RideColors.outline.toArgb())
                 alpha = (255 * (100 - transparency) / 100)
             }
         }
         val header = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }
-        val title = label(context.getString(R.string.overlay_title), 13f, true).apply {
+        val title = label(context.getString(R.string.overlay_title), 13f).apply {
             minHeight = dp(48); gravity = Gravity.CENTER_VERTICAL
             contentDescription = context.getString(R.string.overlay_drag_hint)
         }
         header.addView(title, LinearLayout.LayoutParams(0, dp(48), 1f))
         header.addView(Button(context).apply {
             text = context.getString(R.string.overlay_close); textSize = 12f
-            setTextColor(Color.rgb(225,237,233)); background = null
+            setTextColor(RideColors.secondaryText.toArgb()); background = null
             minWidth = 0; minimumWidth = 0; setPadding(0,0,0,0)
             setOnClickListener { close() }
         }, LinearLayout.LayoutParams(dp(56), dp(48)))
         panel.addView(header)
+        summary = label(context.getString(R.string.history_no_data), 13f).apply {
+            typeface = Typeface.MONOSPACE
+            visibility = if (collapsed) View.VISIBLE else View.GONE
+        }
+        panel.addView(summary)
         val metrics = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
         fun metric(titleId: Int): TextView {
             val row = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0,dp(3),dp(4),dp(3)) }
-            row.addView(label(context.getString(titleId),12f), LinearLayout.LayoutParams(0, -2, 1f))
-            val value = label(context.getString(R.string.history_no_data),22f,true)
+            row.addView(label(context.getString(titleId),12f).apply { setTextColor(RideColors.secondaryText.toArgb()) }, LinearLayout.LayoutParams(0, -2, 1f))
+            val value = label(context.getString(R.string.history_no_data), if (titleId == R.string.ui_power) 34f else 20f, titleId == R.string.ui_power).apply { typeface = Typeface.MONOSPACE }
             row.addView(value); metrics.addView(row); return value
         }
         power = metric(R.string.ui_power); hr = metric(R.string.ui_heart_rate); cadence = metric(R.string.cadence)
@@ -105,9 +117,26 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
                 }
             })
         }, LinearLayout.LayoutParams(-1, dp(48)))
-        metrics.visibility = if (collapsed) View.GONE else View.VISIBLE
-        panel.addView(metrics)
-        title.setOnClickListener { collapsed = !collapsed; metrics.visibility = if(collapsed) View.GONE else View.VISIBLE; panel.post { position(true) } }
+        // Keep header/close reachable on landscape and large-font displays.
+        val body = object : ScrollView(context) {
+            override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                val window = manager.currentWindowMetrics
+                val bars = window.windowInsets.getInsetsIgnoringVisibility(
+                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                val available = (window.bounds.height() - bars.top - bars.bottom - dp(80)).coerceAtLeast(dp(48))
+                super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(available, View.MeasureSpec.AT_MOST))
+            }
+        }.apply { addView(metrics); visibility = if (collapsed) View.GONE else View.VISIBLE }
+        panel.addView(body)
+        title.setOnClickListener {
+            title.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+            android.transition.TransitionManager.beginDelayedTransition(panel,
+                android.transition.AutoTransition().setDuration(160))
+            collapsed = !collapsed
+            body.visibility = if(collapsed) View.GONE else View.VISIBLE
+            summary?.visibility = if(collapsed) View.VISIBLE else View.GONE
+            panel.postDelayed({ if (root === panel) position(false) }, 180)
+        }
         var downX = 0f; var downY = 0f; var initialX = 0; var initialY = 0; var moved = false
         val slop = ViewConfiguration.get(context).scaledTouchSlop
         title.setOnTouchListener { view, event ->
@@ -118,13 +147,16 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
                     if (kotlin.math.abs(dx)>slop || kotlin.math.abs(dy)>slop) moved=true
                     if(moved) { params.x=initialX+dx.toInt(); params.y=initialY+dy.toInt(); position(false) }
                 }
-                MotionEvent.ACTION_UP -> if(moved) position(true) else view.performClick()
+                MotionEvent.ACTION_UP -> if(moved) {
+                    position(true)
+                    preferences.edit().putInt("position_x", params.x).putInt("position_y", params.y).apply()
+                } else view.performClick()
                 MotionEvent.ACTION_CANCEL -> position(true)
             }
             true
         }
         val bounds = manager.currentWindowMetrics.bounds
-        params.width = minOf(dp(250), bounds.width())
+        params.width = minOf(dp(300), bounds.width())
         root = panel
         try { manager.addView(panel,params) } catch(e: RuntimeException) { root=null; throw e }
         panel.post { if(root === panel) position(false) }
@@ -132,14 +164,19 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     private fun position(snap: Boolean) {
         val view=root ?: return
         val bounds=manager.currentWindowMetrics.bounds
-        val fitted=fitOverlay(params.x,params.y,bounds.width(),bounds.height(),params.width,view.height,snap)
-        params.x=fitted.x; params.y=fitted.y
+        val insets = manager.currentWindowMetrics.windowInsets.getInsetsIgnoringVisibility(
+            WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+        val usableWidth = (bounds.width() - insets.left - insets.right).coerceAtLeast(1)
+        val usableHeight = (bounds.height() - insets.top - insets.bottom).coerceAtLeast(1)
+        params.width = minOf(dp(300), usableWidth)
+        val fitted=fitOverlay(params.x-insets.left,params.y-insets.top,usableWidth,usableHeight,params.width,view.height,snap)
+        params.x=fitted.x+insets.left; params.y=fitted.y+insets.top
         try { manager.updateViewLayout(view,params) }
         catch(e: RuntimeException) { android.util.Log.e("RideLabOverlay","Window update failed",e); close() }
     }
     fun hide() {
         val view=root ?: return
-        root=null; power=null; hr=null; cadence=null
+        root=null; power=null; hr=null; cadence=null; summary=null
         try { manager.removeViewImmediate(view) }
         catch(e: RuntimeException) { android.util.Log.e("RideLabOverlay","Window removal failed",e) }
     }

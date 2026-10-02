@@ -297,4 +297,11 @@
     <string name="csv_resistance">Resistance_level</string>
     <string name="csv_trainer_address">Trainer_address</string>
     <string name="csv_hr_address">Heart_rate_sensor_address</string>
+    <string name="ui_end_confirm">End this ride and save the recording?</string>
+    <string name="ui_recent_summary">%1$d min · %2$s</string>
+    <string name="ui_history_summary">Avg power %1$s · Avg HR %2$s</string>
+    <string name="ui_display">Display</string>
+    <string name="ui_help">Help</string>
+    <string name="ui_overlay_opacity_hint">Adjust background transparency inside the expanded floating window. Your setting is saved automatically.</string>
+    <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
 </resources>
