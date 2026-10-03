@@ -16,7 +16,8 @@ enum class CsvExportState { IDLE, WRITING, SUCCESS, FAILED }
 data class HistoryState(val loading: Boolean = true, val failed: Boolean = false,
     val rides: List<RideHistoryEntry> = emptyList())
 
-data class ChartState(val sessionId: Long? = null, val data: RideCharts? = null, val failed: Boolean = false, val analytics: com.isaac.ridelab.analytics.TrainingMetrics? = null, val powerAnalysis: com.isaac.ridelab.analytics.PowerAnalysis? = null)
+data class ChartState(val sessionId: Long? = null, val data: RideCharts? = null, val failed: Boolean = false, val analytics: com.isaac.ridelab.analytics.TrainingMetrics? = null, val powerAnalysis: com.isaac.ridelab.analytics.PowerAnalysis? = null,
+    val insights: com.isaac.ridelab.analytics.RideInsights? = null)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(application: Application) : AndroidViewModel(application) {
@@ -38,7 +39,10 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
                     com.isaac.ridelab.analytics.TrainingAnalytics.normalizedPower(samples, session.durationMillis)
                 }
                 val metrics = com.isaac.ridelab.analytics.TrainingAnalytics.calculate(np, session.analyticsFtpWatts, session.durationMillis)
-                _charts.value = ChartState(id, data, analytics = metrics, powerAnalysis = repository.powerAnalysis(session, samples))
+                val insights = withContext(Dispatchers.Default) {
+                    com.isaac.ridelab.analytics.RideInsightsCalculator.calculate(samples, session)
+                }
+                _charts.value = ChartState(id, data, analytics = metrics, powerAnalysis = repository.powerAnalysis(session, samples), insights = insights)
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) {
                 Log.e("RideLabHistory", "Chart samples failed sessionId=$id", error)

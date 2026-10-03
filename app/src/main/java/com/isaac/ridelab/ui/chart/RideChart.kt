@@ -17,7 +17,7 @@ import com.isaac.ridelab.ui.theme.RideColors
 import com.isaac.ridelab.R
 
 @Composable
-fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long) {
+fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long, showTitle: Boolean = true) {
     val points = remember(series) { series.segments.flatten() }
     val low = remember(points) { minOf(0.0, points.minOfOrNull { it.value } ?: 0.0) }
     val high = remember(points) { maxOf(1.0, points.maxOfOrNull { it.value } ?: 1.0) }
@@ -28,7 +28,7 @@ fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long)
     }
     val grid = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .6f)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
+        if (showTitle) Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
         if (points.isEmpty()) Text(stringResource(R.string.history_no_data)) else {
             Text(stringResource(unitFormat, high), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Canvas(Modifier.fillMaxWidth().height(150.dp)) {
@@ -48,6 +48,14 @@ fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long)
                             val p = position(point)
                             if (index == 0) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y)
                         }
+                        // Fill each existing segment separately; gaps remain visible.
+                        val fill = Path().apply {
+                            addPath(path)
+                            lineTo(position(segment.last()).x, size.height - pad)
+                            lineTo(position(segment.first()).x, size.height - pad)
+                            close()
+                        }
+                        drawPath(fill, color.copy(alpha = .12f))
                         drawPath(path, color, style = Stroke(width = 1.5.dp.toPx()))
                     }
                 }

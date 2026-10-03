@@ -27,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.isaac.ridelab.R
 import com.isaac.ridelab.data.model.StoredRideStatus
-import com.isaac.ridelab.ui.chart.RideChart
 import java.text.DateFormat
 import java.util.Date
 
@@ -215,134 +214,26 @@ fun HistoryScreen(
                                 }
                             }
 
-                            // 2. 运动表现卡片 (双列网格)
-                            item {
-                                SectionCard(title = "Performance") {
-                                    Column(
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        Row(Modifier.fillMaxWidth()) {
-                                            StatBox(
-                                                label = stringResource(R.string.history_avg_power),
-                                                value = entry.averagePower?.let {
-                                                    stringResource(
-                                                        R.string.history_watts,
-                                                        it.toDouble()
-                                                    )
-                                                } ?: noData,
-                                                modifier = Modifier.weight(1f)
-                                            )
-
-                                            StatBox(
-                                                label = stringResource(R.string.history_max_power),
-                                                value = entry.maximumPower?.let {
-                                                    stringResource(
-                                                        R.string.history_watts,
-                                                        it.toDouble()
-                                                    )
-                                                } ?: noData,
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-
-                                        Row(Modifier.fillMaxWidth()) {
-                                            StatBox(
-                                                label = stringResource(R.string.history_avg_hr),
-                                                value = entry.averageHeartRate?.let {
-                                                    stringResource(
-                                                        R.string.history_bpm,
-                                                        it.toDouble()
-                                                    )
-                                                } ?: noData,
-                                                modifier = Modifier.weight(1f)
-                                            )
-
-                                            StatBox(
-                                                label = stringResource(R.string.history_max_hr),
-                                                value = entry.maximumHeartRate?.let {
-                                                    stringResource(
-                                                        R.string.history_bpm,
-                                                        it.toDouble()
-                                                    )
-                                                } ?: noData,
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-
-                                        Row(Modifier.fillMaxWidth()) {
-                                            StatBox(
-                                                label = stringResource(R.string.history_avg_cadence),
-                                                value = entry.averageCadence?.let {
-                                                    stringResource(
-                                                        R.string.history_rpm,
-                                                        it.toDouble()
-                                                    )
-                                                } ?: noData,
-                                                modifier = Modifier.weight(1f)
-                                            )
-
-                                            StatBox(
-                                                label = stringResource(R.string.history_max_cadence),
-                                                value = entry.maximumCadence?.let {
-                                                    stringResource(
-                                                        R.string.history_rpm,
-                                                        it.toDouble()
-                                                    )
-                                                } ?: noData,
-                                                modifier = Modifier.weight(1f)
-                                            )
-                                        }
-                                    }
+                            val detail = charts.takeIf { it.sessionId == currentSelectedId }
+                            when {
+                                detail?.failed == true -> item {
+                                    ErrorView(R.string.chart_failed, { onLoadCharts(currentSelectedId) }, R.string.history_retry)
                                 }
-                            }
-
-                            // 3. 高阶分析卡片
-                            val data = charts.data.takeIf { charts.sessionId == currentSelectedId }
-                            item {
-                                when {
-                                    charts.sessionId == currentSelectedId && charts.failed -> {
-                                        ErrorView(R.string.chart_failed, { onLoadCharts(currentSelectedId) }, R.string.history_retry)
+                                detail?.data == null -> item { LoadingView(R.string.history_loading) }
+                                else -> {
+                                    item { DetailSensorPanel(DetailSensor.POWER, entry, detail) }
+                                    detail.powerAnalysis?.let { analysis ->
+                                        item { PowerZonesView(analysis) }
                                     }
-                                    data == null -> LoadingView(R.string.history_loading)
-                                    else -> {
-                                        SectionCard(title = stringResource(R.string.analytics_title)) {
-                                            val analytics = charts.analytics
-                                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                                Row(Modifier.fillMaxWidth()) {
-                                                    StatBox(stringResource(R.string.analytics_np), analytics?.np?.let { stringResource(R.string.history_watts, it) } ?: noData, Modifier.weight(1f))
-                                                    StatBox(stringResource(R.string.ftp_label), analytics?.ftp?.let { stringResource(R.string.power_value, it) } ?: noData, Modifier.weight(1f))
-                                                }
-                                                Row(Modifier.fillMaxWidth()) {
-                                                    StatBox(stringResource(R.string.analytics_tss), analytics?.tss?.let { stringResource(R.string.analytics_score, it) } ?: noData, Modifier.weight(1f))
-                                                    StatBox(stringResource(R.string.analytics_if), analytics?.intensityFactor?.let { stringResource(R.string.analytics_ratio, it) } ?: noData, Modifier.weight(1f))
-                                                }
-
-                                                Text(
-                                                    text = stringResource(if (analytics?.ftp == null) R.string.analytics_ftp_needed else R.string.analytics_ftp_saved),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
+                                    item { DetailSensorPanel(DetailSensor.CADENCE, entry, detail) }
+                                    item { CadenceDistribution(detail.insights) }
+                                    item { DetailSensorPanel(DetailSensor.HEART_RATE, entry, detail) }
+                                    detail.powerAnalysis?.let { analysis ->
+                                        item { BestEffortsView(analysis, ride.bodyWeightKg) }
+                                        item { PowerDurationView(analysis) }
                                     }
-                                }
-                            }
-
-                            charts.powerAnalysis?.takeIf { charts.sessionId == currentSelectedId }?.let { analysis ->
-                                item { BestEffortsView(analysis, ride.bodyWeightKg) }
-                                item { PowerDurationView(analysis) }
-                                item { PowerZonesView(analysis) }
-                            }
-                            // 4. 图表区
-                            if (data != null) {
-                                item {
-                                    val end = maxOf(ride.durationMillis, data.endMillis)
-                                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                        RideChart(data.power, R.string.chart_power, R.string.history_watts, end)
-                                        RideChart(data.heartRate, R.string.chart_hr, R.string.history_bpm, end)
-                                        RideChart(data.cadence, R.string.chart_cadence, R.string.history_rpm, end)
-                                    }
-                                    Spacer(Modifier.height(40.dp))
+                                    item { DetailRecordingInfo(entry, detail.insights) }
+                                    item { Spacer(Modifier.height(24.dp)) }
                                 }
                             }
                         }
