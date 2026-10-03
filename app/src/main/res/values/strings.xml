@@ -275,7 +275,8 @@
     <string name="overlay_need_ride">开始骑行后可开启跨应用悬浮窗。</string>
     <string name="overlay_permission_note">首次使用请允许“显示在其他应用上层”，返回后再次点击开启。拖动标题移动，点击标题折叠。</string>
     <string name="overlay_failure">无法显示悬浮窗，请检查系统悬浮窗权限后重试。</string>
-    <string name="overlay_transparency">背景透明度：%1$d%%</string>
+    <string name="overlay_transparency">悬浮窗透明度（含文字）：%1$d%%</string>
+    <string name="overlay_font_size">字体大小：%1$d%%</string>
     <string name="history_delete">删除记录</string>
     <string name="history_delete_message">删除 %1$s 的骑行记录及全部采样数据？此操作无法撤销。</string>
     <string name="history_delete_failed">删除失败，请重试。正在进行的骑行不能删除。</string>
@@ -302,7 +303,7 @@
     <string name="ui_history_summary">平均功率 %1$s · 平均心率 %2$s</string>
     <string name="ui_display">显示</string>
     <string name="ui_help">帮助</string>
-    <string name="ui_overlay_opacity_hint">在展开的悬浮窗内调节背景透明度，设置会自动保存。</string>
+    <string name="ui_overlay_opacity_hint">在展开的悬浮窗内调节透明度和字体大小。透明度同时影响背景和文字，设置会自动保存。</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">本次平均</string>

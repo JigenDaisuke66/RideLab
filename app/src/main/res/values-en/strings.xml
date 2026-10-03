@@ -275,7 +275,8 @@
     <string name="overlay_need_ride">Start a ride to enable floating metrics over other apps.</string>
     <string name="overlay_permission_note">First allow display over other apps, then return and tap again. Drag the title to move; tap it to collapse.</string>
     <string name="overlay_failure">Unable to show floating metrics. Check display-over-other-apps permission and retry.</string>
-    <string name="overlay_transparency">Background transparency: %1$d%%</string>
+    <string name="overlay_transparency">Overlay transparency (including text): %1$d%%</string>
+    <string name="overlay_font_size">Font size: %1$d%%</string>
     <string name="history_delete">Delete ride</string>
     <string name="history_delete_message">Delete the ride from %1$s and all its samples? This cannot be undone.</string>
     <string name="history_delete_failed">Deletion failed. Retry; active rides cannot be deleted.</string>
@@ -302,7 +303,7 @@
     <string name="ui_history_summary">Avg power %1$s · Avg HR %2$s</string>
     <string name="ui_display">Display</string>
     <string name="ui_help">Help</string>
-    <string name="ui_overlay_opacity_hint">Adjust background transparency inside the expanded floating window. Your setting is saved automatically.</string>
+    <string name="ui_overlay_opacity_hint">Adjust transparency and font size inside the expanded floating window. Transparency affects both background and text; settings are saved automatically.</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">Average</string>

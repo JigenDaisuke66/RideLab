@@ -40,14 +40,30 @@ Compile/unit checks do not verify OEM overlay permission or window behavior on h
 - OVERLAY_VERIFICATION.md: behavior and physical checks.
 
 ## Transparency and language follow-up
-- Expanded window includes a background transparency slider (0–80%, default 6%).
-  Text remains opaque. On release, ride_overlay/transparency preferences remember
-  the setting across hiding, app restarts and new rides; restored values are clamped.
+- Expanded window includes an overall transparency slider (0–80%, default 6%).
+  Background, text and controls now fade together. The previous transparency
+  preference is preserved; restored values are clamped to this range.
+- A separate font-size slider (80–140%, default 100%) scales metric values,
+  labels, header/close text and the collapsed summary. It multiplies the existing
+  sp sizes, preserving Android system font scaling. The window body remains
+  scrollable, and resizing re-clamps the position within the screen.
+- User changes immediately save to ride_overlay/transparency and
+  ride_overlay/font_percent SharedPreferences, including keyboard/accessibility
+  adjustments. Close/reopen, language recreation, new rides and app restarts
+  restore these settings without touching the ride or BLE connections.
 - Window resources explicitly use the Android per-app locale on API 33+, or the
   legacy app preference on API 31/32. Explicit System default remains supported.
   Each live refresh detects locale changes and recreates labels without touching BLE.
 - Verify system English/app Chinese, then switch app to English and back while riding.
-  Header, close, metric labels, units and transparency label must follow the app.
+  Header, close, metric labels, units and both slider labels must follow the app.
 - Move the slider, close/reopen, restart the app and rotate; verify the value persists
-  and text remains legible. New locale instrumentation cases are compile-checked;
+  and both settings persist. Verify text fades with the background at 80%, and
+  all text resizes at 80%/140%, including the collapsed summary. Repeat in
+  landscape and with Android larger fonts; the close control and sliders must
+  remain reachable. New locale instrumentation cases are compile-checked;
   running them requires a device and is not part of the no-APK check.
+
+Latest adjustment: RideOverlayWindow.kt, Chinese/English strings.xml, and this
+document changed. Four existing OverlayPositionTest cases passed; application
+and instrumentation Kotlin compile checks passed. No APK/new dependencies.
+Font/opacity rendering and gestures still require physical verification.
