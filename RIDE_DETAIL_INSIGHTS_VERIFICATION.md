@@ -21,7 +21,8 @@ and downsampling; area fills are drawn separately for each segment.
   interval is positive and at most 1,500 ms, matching existing best-effort
   tolerance. Do not bridge longer intervals or assume a final tail.
 - Mechanical work (kJ) = sum(power watts * interval milliseconds / 1,000,000).
-  This is not metabolic calories; no calorie estimate is presented.
+  This is not metabolic calories. A separate estimated-calorie card now uses
+  explicit efficiency assumptions; see RIDE_ENERGY_VERIFICATION.md.
 - Recorded distance (km) = sum(speed km/h * interval milliseconds / 3,600,000).
   Missing speed means no distance, including trainers that expose only power
   and cadence. Partial speed coverage means partial recorded distance.

@@ -11,11 +11,52 @@ import androidx.compose.ui.unit.dp
 import com.isaac.ridelab.R
 import com.isaac.ridelab.analytics.RideInsights
 import com.isaac.ridelab.analytics.SensorCoverage
+import com.isaac.ridelab.analytics.EnergyFood
 import com.isaac.ridelab.data.model.RideHistoryEntry
 import com.isaac.ridelab.ui.chart.RideChart
 import com.isaac.ridelab.ui.theme.*
 
 internal enum class DetailSensor { POWER, CADENCE, HEART_RATE }
+
+@Composable
+internal fun RideEnergyPanel(insights: RideInsights?) {
+    val estimate = insights?.energyEstimate
+    RideLabCard(Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.energy_title), style = MaterialTheme.typography.titleLarge,
+            color = RideColors.cadence)
+        Spacer(Modifier.height(12.dp))
+        Text(estimate?.let { stringResource(R.string.energy_kcal, it.kcal) }
+            ?: stringResource(R.string.history_no_data),
+            style = MaterialTheme.typography.headlineLarge, fontFamily = FontFamily.Monospace)
+        if (estimate != null) {
+            Text(stringResource(R.string.energy_range, estimate.lowerKcal, estimate.upperKcal),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            DetailMetricRow(stringResource(R.string.detail_coverage), coverage(insights?.powerCoverage))
+            if (insights?.powerCoverage?.percent?.let { it < 99 } == true)
+                Text(stringResource(R.string.energy_partial), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outline)
+            Text(stringResource(R.string.energy_food_title), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            estimate.foodEquivalents.forEach { equivalent ->
+                val (label, value) = when (equivalent.food) {
+                    EnergyFood.BANANA -> R.string.energy_banana to R.string.energy_banana_count
+                    EnergyFood.BOILED_EGG -> R.string.energy_egg to R.string.energy_egg_count
+                    EnergyFood.COOKED_RICE_CUP -> R.string.energy_rice to R.string.energy_rice_count
+                }
+                DetailMetricRow(stringResource(label), stringResource(value, equivalent.portions))
+                Text(stringResource(R.string.energy_food_reference, equivalent.food.kcalPerPortion),
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(stringResource(R.string.energy_food_note), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.energy_method), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
 
 @Composable
 internal fun DetailMetricRow(label: String, value: String) {

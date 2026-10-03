@@ -18,7 +18,9 @@ data class RideInsights(
     val cadenceCoverage: SensorCoverage,
     val speedCoverage: SensorCoverage,
     val cadenceBands: List<CadenceBand>?,
-)
+) {
+    val energyEstimate: CyclingEnergyEstimate? get() = CyclingEnergyCalculator.estimate(workKilojoules)
+}
 
 /** Read-only raw-sample analysis, separate from existing NP, efforts and zones.
  * Same conservative 1.5s jitter tolerance as best efforts: [sample, next sample).

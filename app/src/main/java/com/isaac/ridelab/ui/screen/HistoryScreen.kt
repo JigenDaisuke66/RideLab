@@ -234,6 +234,7 @@ fun HistoryScreen(
                                 }
                                 detail?.data == null -> item { LoadingView(R.string.history_loading) }
                                 else -> {
+                                    item { RideEnergyPanel(detail.insights) }
                                     item { DetailSensorPanel(DetailSensor.POWER, entry, detail) }
                                     detail.powerAnalysis?.let { analysis ->
                                         item { PowerZonesView(analysis) }

@@ -335,4 +335,18 @@
     <string name="history_group_count">%1$d 次骑行</string>
     <string name="history_group_expanded">已展开</string>
     <string name="history_group_collapsed">已折叠</string>
+    <string name="energy_title">热量消耗（估算）</string>
+    <string name="energy_kcal">≈ %1$.0f kcal</string>
+    <string name="energy_range">20–25%% 效率假设下：%1$.0f–%2$.0f kcal</string>
+    <string name="energy_partial">仅估算有有效功率的时段，未补算缺测期间的消耗。</string>
+    <string name="energy_food_title">大致相当于以下任一种食物的能量</string>
+    <string name="energy_banana">中等香蕉</string>
+    <string name="energy_egg">大号水煮蛋</string>
+    <string name="energy_rice">熟白米饭（量杯）</string>
+    <string name="energy_banana_count">≈ %1$.1f 根</string>
+    <string name="energy_egg_count">≈ %1$.1f 个</string>
+    <string name="energy_rice_count">≈ %1$.1f 杯</string>
+    <string name="energy_food_reference">每份约 %1$.0f kcal</string>
+    <string name="energy_food_note">三项为独立对比，不相加。食物大小和做法会影响能量，仅供直观参考。</string>
+    <string name="energy_method">按机械做功与 24% 人体效率估算；参考区间不是误差保证。未单独计入静息和零功率时的消耗，不代表全天总消耗。</string>
 </resources>
