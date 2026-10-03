@@ -331,4 +331,8 @@
     <string name="detail_km">%1$.2f km</string>
     <string name="detail_speed_coverage">Speed data coverage</string>
     <string name="detail_coverage_note">Coverage and integration use valid readings with adjacent intervals up to 1.5 seconds, without filling gaps or the final tail. Distance covers only recorded speed; no distance is estimated when speed is absent.</string>
+    <string name="history_group_year">%1$d</string>
+    <string name="history_group_count">%1$d rides</string>
+    <string name="history_group_expanded">Expanded</string>
+    <string name="history_group_collapsed">Collapsed</string>
 </resources>

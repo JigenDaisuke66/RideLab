@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,10 +27,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import com.isaac.ridelab.R
 import com.isaac.ridelab.data.model.StoredRideStatus
 import java.text.DateFormat
 import java.util.Date
+import java.time.Month
+import java.time.ZoneId
+import java.time.format.TextStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +55,12 @@ fun HistoryScreen(
     var pendingDelete by rememberSaveable { mutableStateOf<Long?>(null) }
     var deleteFailed by rememberSaveable { mutableStateOf(false) }
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var toggledGroups by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val zone = ZoneId.systemDefault()
+    val groups = remember(state.rides, zone) { groupRideHistory(state.rides, zone) }
+    fun toggleGroup(key: String) {
+        toggledGroups = if (key in toggledGroups) toggledGroups - key else toggledGroups + key
+    }
     LaunchedEffect(selectedId) { onLoadCharts(selectedId) }
 
     val back = {
@@ -246,64 +259,81 @@ fun HistoryScreen(
                     }
 
                     // 列表展示
-                    else -> items(state.rides, key = { it.session.id }) { entry ->
-                        Card(
-                            onClick = { selectedId = entry.session.id },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(20.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = date(entry.session.startTimeEpochMillis),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(Modifier.height(6.dp))
+                    else -> groups.forEach { year ->
+                        val yearKey = "year-${year.year}"
+                        val yearExpanded = (year.year == groups.first().year) xor (yearKey in toggledGroups)
+                        item(key = yearKey) {
+                            HistoryGroupHeader(stringResource(R.string.history_group_year, year.year),
+                                year.rideCount, yearExpanded, false) { toggleGroup(yearKey) }
+                        }
+                        if (yearExpanded) year.months.forEach { month ->
+                            val monthKey = "month-${year.year}-${month.month}"
+                            val monthExpanded = (year.year == groups.first().year && month.month == year.months.first().month) xor
+                                (monthKey in toggledGroups)
+                            item(key = monthKey) {
+                                HistoryGroupHeader(Month.of(month.month).getDisplayName(TextStyle.FULL, locale),
+                                    month.rides.size, monthExpanded, true) { toggleGroup(monthKey) }
+                            }
+                            if (monthExpanded) items(month.rides, key = { "ride-${it.session.id}" }) { entry ->
+                                Card(
+                                    onClick = { selectedId = entry.session.id },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                ) {
                                     Row(
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(20.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = elapsedStr(entry.session.durationMillis),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        StatusPill(stringResource(if (entry.session.status == StoredRideStatus.ABORTED) R.string.history_aborted else R.string.history_completed),
-                                            entry.session.status == StoredRideStatus.COMPLETED)
-                                    }
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(stringResource(R.string.ui_history_summary,
-                                        entry.averagePower?.let { stringResource(R.string.history_watts, it) } ?: stringResource(R.string.history_no_data),
-                                        entry.averageHeartRate?.let { stringResource(R.string.history_bpm, it) } ?: stringResource(R.string.history_no_data)),
-                                        style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Box {
-                                    var menuOpen by remember { mutableStateOf(false) }
-                                    IconButton(enabled = !deleting, onClick = { menuOpen = true }) {
-                                        Icon(Icons.Rounded.MoreVert,
-                                            contentDescription = stringResource(R.string.history_more_actions),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.history_delete), color = MaterialTheme.colorScheme.error) },
-                                            enabled = !deleting,
-                                            onClick = {
-                                                menuOpen = false
-                                                deleteFailed = false
-                                                pendingDelete = entry.session.id
-                                            })
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = date(entry.session.startTimeEpochMillis),
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(Modifier.height(6.dp))
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = elapsedStr(entry.session.durationMillis),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontFamily = FontFamily.Monospace,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                StatusPill(stringResource(if (entry.session.status == StoredRideStatus.ABORTED) R.string.history_aborted else R.string.history_completed),
+                                                    entry.session.status == StoredRideStatus.COMPLETED)
+                                            }
+                                            Spacer(Modifier.height(8.dp))
+                                            Text(stringResource(R.string.ui_history_summary,
+                                                entry.averagePower?.let { stringResource(R.string.history_watts, it) } ?: stringResource(R.string.history_no_data),
+                                                entry.averageHeartRate?.let { stringResource(R.string.history_bpm, it) } ?: stringResource(R.string.history_no_data)),
+                                                style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        Box {
+                                            var menuOpen by remember { mutableStateOf(false) }
+                                            IconButton(enabled = !deleting, onClick = { menuOpen = true }) {
+                                                Icon(Icons.Rounded.MoreVert,
+                                                    contentDescription = stringResource(R.string.history_more_actions),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.history_delete), color = MaterialTheme.colorScheme.error) },
+                                                    enabled = !deleting,
+                                                    onClick = {
+                                                        menuOpen = false
+                                                        deleteFailed = false
+                                                        pendingDelete = entry.session.id
+                                                    })
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -316,6 +346,27 @@ fun HistoryScreen(
 }
 
 // ========== 通用基础组件 ==========
+
+@Composable
+private fun HistoryGroupHeader(title: String, count: Int, expanded: Boolean,
+    isMonth: Boolean, onClick: () -> Unit) {
+    val description = stringResource(if (expanded) R.string.history_group_expanded else R.string.history_group_collapsed)
+    Surface(onClick = onClick, modifier = Modifier.fillMaxWidth()
+        .padding(start = if (isMonth) 12.dp else 0.dp)
+        .semantics { stateDescription = description },
+        shape = RoundedCornerShape(12.dp),
+        color = if (isMonth) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, Modifier.weight(1f), fontWeight = FontWeight.Bold,
+                style = if (isMonth) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.history_group_count, count),
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, contentDescription = null)
+        }
+    }
+}
 
 @Composable
 private fun SectionCard(

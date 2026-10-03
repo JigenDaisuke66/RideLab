@@ -331,4 +331,8 @@
     <string name="detail_km">%1$.2f km</string>
     <string name="detail_speed_coverage">速度数据覆盖率</string>
     <string name="detail_coverage_note">覆盖率与积分仅计入相邻间隔不超过 1.5 秒的有效读数，不补齐缺测或末尾时段。距离仅代表有速度数据的部分；没有速度数据时不估算距离。</string>
+    <string name="history_group_year">%1$d 年</string>
+    <string name="history_group_count">%1$d 次骑行</string>
+    <string name="history_group_expanded">已展开</string>
+    <string name="history_group_collapsed">已折叠</string>
 </resources>
