@@ -136,7 +136,10 @@ Status: physically verified, including Home, app switching and screen lock.
 RideRecordingService owns both BLE clients from initial preview connection onward.
 Start ride promotes the same bound service to a started connectedDevice foreground
 service, without new GATT connections. ACTIVE sessions survive UI lifecycle changes.
-One bounded reconnect per role per ride; explicit End closes both sessions.
+One bounded reconnect per role per ride (including PAUSED). Explicit End now retains
+both sessions in connectedDevice foreground mode until manually disconnected.
+Ride pause/resume freezes active elapsed time, recording and workout progression;
+null boundary rows break chart/analytics continuity. No schema migration.
 No sample recording/persistence or Phase 4/5 implementation is added by this task.
 See FOREGROUND_SERVICE_VERIFICATION.md.
 

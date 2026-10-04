@@ -10,6 +10,34 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class RideRecorderTest {
+    @Test fun pauseExcludesTimeAndAddsNullBoundaryWithoutDuplicatingSession() = runBlocking {
+        val repo = MemoryRepository(); val recorder = RideRecorder(repo)
+        val lifecycle = RideSession {}
+        val id = recorder.start(StoredSession(startTimeEpochMillis = 10_000), 1000)
+        lifecycle.begin(); lifecycle.activate(1000, id)
+        recorder.sample(LiveRideData(trainerPowerWatts = 100), 11_000, 2000)
+        lifecycle.pause(2500)
+        recorder.pause(11_500, lifecycle.state.value.recordingClock(2500))
+        assertNull(repo.samples.last().trainerPowerWatts)
+        assertEquals(1500L, repo.samples.last().elapsedMillis)
+        lifecycle.resume(302_500)
+        recorder.sample(LiveRideData(trainerPowerWatts = 120), 312_000, lifecycle.state.value.recordingClock(303_000))
+        recorder.complete(LiveRideData(), 313_000, lifecycle.state.value.recordingClock(304_000))
+        assertEquals(listOf(1000L, 1500L, 2000L, 3000L), repo.samples.map { it.elapsedMillis })
+        assertEquals(3000L, repo.sessions.getValue(id).durationMillis)
+        assertEquals(1, repo.sessions.size)
+    }
+
+    @Test fun endingWhilePausedDoesNotRecordSensorValuesOrPausedDuration() = runBlocking {
+        val repo = MemoryRepository(); val recorder = RideRecorder(repo)
+        recorder.start(StoredSession(startTimeEpochMillis = 0), 0)
+        recorder.sample(LiveRideData(trainerPowerWatts = 100), 1000, 1000)
+        recorder.pause(1000, 1000) // Same tick as the last actual sample.
+        recorder.complete(LiveRideData(), 60_000, 1000)
+        assertEquals(listOf(1000L, 1001L), repo.samples.map { it.elapsedMillis })
+        assertNull(repo.samples.last().trainerPowerWatts)
+        assertEquals(1001L, repo.sessions.values.single().durationMillis)
+    }
     @Test fun repeatedStartAndUiRecreationUseExactlyOneSession() = runBlocking {
         val repo = MemoryRepository()
         val recorder = RideRecorder(repo)

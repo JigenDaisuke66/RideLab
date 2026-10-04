@@ -1,5 +1,9 @@
 # Foreground ride service verification
 
+Lifecycle update: the original End/disconnect expectations below are superseded
+by RIDE_PAUSE_VERIFICATION.md. PAUSED retains BLE/foreground mode. End finishes
+recording and retains connections with a device notification until manually disconnected.
+
 ## Old disconnect path
 
 MainActivity.onStop, except for configuration changes, called

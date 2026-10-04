@@ -36,11 +36,12 @@ internal fun RideControls(
     start: () -> Unit,
     end: () -> Unit,
     settings: () -> Unit,
-    showElapsed: Boolean = true
+    showElapsed: Boolean = true,
+    pause: () -> Unit = {}, resume: () -> Unit = {}
 ) {
     var confirmEnd by rememberSaveable { mutableStateOf(false) }
     val view = LocalView.current
-    if (confirmEnd && state.phase == RidePhase.ACTIVE) {
+    if (confirmEnd && state.ongoing) {
         AlertDialog(onDismissRequest = { confirmEnd = false },
             title = { Text(stringResource(R.string.ride_end)) },
             text = { Text(stringResource(R.string.ui_end_confirm)) },
@@ -80,6 +81,7 @@ internal fun RideControls(
                         RidePhase.IDLE -> R.string.ride_idle
                         RidePhase.STARTING -> R.string.ride_starting
                         RidePhase.ACTIVE -> R.string.ride_active
+                        RidePhase.PAUSED -> R.string.ride_paused
                         RidePhase.STOPPING -> R.string.ride_stopping
                         RidePhase.ERROR -> R.string.ride_error
                     }
@@ -88,7 +90,7 @@ internal fun RideControls(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (state.phase == RidePhase.ACTIVE) {
+            if (state.ongoing) {
                 val seconds = state.elapsedMs(now) / 1_000
                 Text(
                     text = stringResource(
@@ -104,9 +106,17 @@ internal fun RideControls(
             }
         }
 
+        if (state.ongoing) {
+            Button(onClick = { if (state.phase == RidePhase.PAUSED) resume() else pause() },
+                enabled = ready, modifier = Modifier.fillMaxWidth().height(48.dp), shape = MaterialTheme.shapes.medium) {
+                Text(stringResource(if (state.phase == RidePhase.PAUSED) R.string.ride_resume else R.string.ride_pause))
+            }
+            if (state.phase == RidePhase.PAUSED) Text(stringResource(R.string.ride_pause_hint),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Button(
             onClick = {
-                if (state.phase == RidePhase.ACTIVE) confirmEnd = true else {
+                if (state.ongoing) confirmEnd = true else {
                     view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
                     start()
                 }
@@ -116,7 +126,7 @@ internal fun RideControls(
                 .fillMaxWidth()
                 .height(52.dp),
             shape = MaterialTheme.shapes.medium,
-            colors = if (state.phase == RidePhase.ACTIVE) {
+            colors = if (state.ongoing) {
                 ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.error
@@ -127,7 +137,7 @@ internal fun RideControls(
         ) {
             Text(
                 text = stringResource(
-                    if (state.phase == RidePhase.ACTIVE) R.string.ride_end else R.string.ride_start
+                    if (state.ongoing) R.string.ride_end else R.string.ride_start
                 ),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold

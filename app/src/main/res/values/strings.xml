@@ -34,7 +34,7 @@
     <string name="gatt_subscribing">正在启用测量数据通知…</string>
     <string name="gatt_streaming">通知已启用</string>
     <string name="gatt_failed">连接或 GATT 操作失败</string>
-    <string name="foreground_connection_note">开始骑行后可切换应用或锁屏，连接由骑行服务保持。未开始骑行时，离开应用会断开预览连接。</string>
+    <string name="foreground_connection_note">开始骑行后可切换应用或锁屏；暂停或结束记录后设备仍保持连接。首次开始骑行前，离开应用会断开预览连接。</string>
     <string name="gatt_permission_error">缺少蓝牙权限。请在应用设置中允许“附近的设备”，然后重试连接。</string>
     <string name="gatt_bluetooth_error">蓝牙不可用，请开启蓝牙后重新连接。</string>
     <string name="gatt_connect_error">连接失败。请确认设备已唤醒，并关闭其他应用的设备连接后重试。</string>
@@ -122,6 +122,12 @@
     <string name="ride_idle">未骑行</string>
     <string name="ride_starting">正在开始骑行</string>
     <string name="ride_active">骑行中</string>
+    <string name="ride_paused">骑行已暂停</string>
+    <string name="ride_pause">暂停骑行</string>
+    <string name="ride_resume">继续骑行</string>
+    <string name="ride_pause_hint">暂停计时和记录，设备保持连接，已应用的 ERG 阻力保持不变。</string>
+    <string name="ride_devices_retained">设备保持连接</string>
+    <string name="ride_devices_retained_hint">骑行记录已结束。点按返回，可开始新骑行或手动断开设备。</string>
     <string name="ride_stopping">正在结束骑行</string>
     <string name="ride_error">骑行服务错误</string>
     <string name="ride_elapsed">%1$02d:%2$02d:%3$02d</string>
@@ -298,7 +304,7 @@
     <string name="csv_resistance">阻力等级</string>
     <string name="csv_trainer_address">骑行台地址</string>
     <string name="csv_hr_address">心率传感器地址</string>
-    <string name="ui_end_confirm">结束本次骑行并保存记录？</string>
+    <string name="ui_end_confirm">结束本次骑行并保存记录？设备将保持连接。</string>
     <string name="ui_recent_summary">%1$d 分钟 · %2$s</string>
     <string name="ui_history_summary">平均功率 %1$s · 平均心率 %2$s</string>
     <string name="ui_display">显示</string>

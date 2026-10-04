@@ -95,6 +95,8 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
     fun sendFecTarget(watts: Int) { service?.sendFecTarget(watts) }
     fun startRide() { scanner.stop(); service?.requestStart() }
     fun endRide() { service?.endRide() }
+    fun pauseRide() { service?.pauseRide() }
+    fun resumeRide() { service?.resumeRide() }
     fun enterForeground() { visible = true }
 
     fun leaveForeground() {

@@ -34,7 +34,7 @@
     <string name="gatt_subscribing">Enabling measurement notifications…</string>
     <string name="gatt_streaming">Notifications enabled</string>
     <string name="gatt_failed">Connection or GATT operation failed</string>
-    <string name="foreground_connection_note">Start a ride to keep connections through app switching and screen lock. Before a ride starts, leaving the app disconnects preview connections.</string>
+    <string name="foreground_connection_note">Start a ride to keep connections through app switching and screen lock. Pausing or ending recording keeps devices connected. Before the first ride starts, leaving the app disconnects preview connections.</string>
     <string name="gatt_permission_error">Bluetooth permission is missing. Allow Nearby devices in app settings and reconnect.</string>
     <string name="gatt_bluetooth_error">Bluetooth is unavailable. Enable Bluetooth and reconnect.</string>
     <string name="gatt_connect_error">Connection failed. Wake the device and disconnect it from other apps before retrying.</string>
@@ -122,6 +122,12 @@
     <string name="ride_idle">No active ride</string>
     <string name="ride_starting">Starting ride</string>
     <string name="ride_active">Ride active</string>
+    <string name="ride_paused">Ride paused</string>
+    <string name="ride_pause">Pause ride</string>
+    <string name="ride_resume">Resume ride</string>
+    <string name="ride_pause_hint">Timing and recording pause. Devices stay connected and the applied ERG resistance remains unchanged.</string>
+    <string name="ride_devices_retained">Devices remain connected</string>
+    <string name="ride_devices_retained_hint">Recording ended. Tap to start another ride or disconnect devices manually.</string>
     <string name="ride_stopping">Ending ride</string>
     <string name="ride_error">Ride service error</string>
     <string name="ride_elapsed">%1$02d:%2$02d:%3$02d</string>
@@ -298,7 +304,7 @@
     <string name="csv_resistance">Resistance_level</string>
     <string name="csv_trainer_address">Trainer_address</string>
     <string name="csv_hr_address">Heart_rate_sensor_address</string>
-    <string name="ui_end_confirm">End this ride and save the recording?</string>
+    <string name="ui_end_confirm">End this ride and save the recording? Devices will stay connected.</string>
     <string name="ui_recent_summary">%1$d min · %2$s</string>
     <string name="ui_history_summary">Avg power %1$s · Avg HR %2$s</string>
     <string name="ui_display">Display</string>

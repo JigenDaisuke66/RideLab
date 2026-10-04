@@ -1,5 +1,9 @@
 # Local ride persistence (Phase 7)
 
+Lifecycle update: see RIDE_PAUSE_VERIFICATION.md. Pause excludes paused time from
+sample elapsed time/duration and adds a null boundary row. End completes this same
+session while retaining BLE; original End/disconnect expectations below are historical.
+
 ## Scope and dependencies
 
 The physically verified BLE clients/scanner, FE-C packet encoder, GATT ownership,

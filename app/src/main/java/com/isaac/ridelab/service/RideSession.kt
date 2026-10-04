@@ -4,18 +4,23 @@ import com.isaac.ridelab.data.model.GattFailure
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class RidePhase { IDLE, STARTING, ACTIVE, STOPPING, ERROR }
+enum class RidePhase { IDLE, STARTING, ACTIVE, PAUSED, STOPPING, ERROR }
 enum class RideError { START_FAILED, BLUETOOTH_PERMISSION, NOTIFICATIONS_DISABLED, SERVICE_LOST, RECORDING_FAILED }
 data class RideState(val phase: RidePhase = RidePhase.IDLE, val startedAtMs: Long? = null, val error: RideError? = null,
-    val sessionId: Long? = null) {
-    fun elapsedMs(nowMs: Long): Long = startedAtMs?.let { (nowMs - it).coerceAtLeast(0) } ?: 0
+    val sessionId: Long? = null, val pausedAtMs: Long? = null, val pausedDurationMs: Long = 0) {
+    val ongoing get() = phase == RidePhase.ACTIVE || phase == RidePhase.PAUSED
+    fun elapsedMs(nowMs: Long): Long = startedAtMs?.let {
+        ((pausedAtMs ?: nowMs) - it - pausedDurationMs).coerceAtLeast(0)
+    } ?: 0
+    fun recordingClock(nowMs: Long): Long = (startedAtMs ?: nowMs) + elapsedMs(nowMs)
 }
 
 /** Lifecycle policy shared by the service and unit tests. No Activity owns this object. */
 class RideSession(private val disconnectAll: () -> Unit) {
     private val mutableState = MutableStateFlow(RideState())
     val state = mutableState.asStateFlow()
-    val keepsConnections get() = state.value.phase in setOf(RidePhase.STARTING, RidePhase.ACTIVE, RidePhase.STOPPING)
+    private var retainPreview = false
+    val keepsConnections get() = retainPreview || state.value.phase in setOf(RidePhase.STARTING, RidePhase.ACTIVE, RidePhase.PAUSED, RidePhase.STOPPING)
 
     fun begin(): Boolean {
         if (state.value.phase !in setOf(RidePhase.IDLE, RidePhase.ERROR)) return false
@@ -27,8 +32,22 @@ class RideSession(private val disconnectAll: () -> Unit) {
         if (state.value.phase == RidePhase.STARTING) mutableState.value = RideState(RidePhase.ACTIVE, nowMs, sessionId = sessionId)
     }
 
+    fun pause(nowMs: Long): Boolean {
+        if (state.value.phase != RidePhase.ACTIVE) return false
+        mutableState.value = state.value.copy(phase = RidePhase.PAUSED, pausedAtMs = nowMs)
+        return true
+    }
+
+    fun resume(nowMs: Long): Boolean {
+        val current = state.value
+        if (current.phase != RidePhase.PAUSED) return false
+        mutableState.value = current.copy(phase = RidePhase.ACTIVE, pausedAtMs = null,
+            pausedDurationMs = current.pausedDurationMs + (nowMs - current.pausedAtMs!!).coerceAtLeast(0))
+        return true
+    }
+
     fun beginStop(): Boolean {
-        if (state.value.phase !in setOf(RidePhase.STARTING, RidePhase.ACTIVE)) return false
+        if (state.value.phase !in setOf(RidePhase.STARTING, RidePhase.ACTIVE, RidePhase.PAUSED)) return false
         mutableState.value = state.value.copy(phase = RidePhase.STOPPING)
         return true
     }
@@ -36,12 +55,14 @@ class RideSession(private val disconnectAll: () -> Unit) {
     fun uiHidden() { if (!keepsConnections) disconnectAll() }
 
     fun end() {
-        mutableState.value = state.value.copy(phase = RidePhase.STOPPING)
-        disconnectAll()
+        retainPreview = true
         mutableState.value = RideState()
     }
 
+    fun releasePreview() { retainPreview = false }
+
     fun fail(error: RideError) {
+        retainPreview = false
         mutableState.value = RideState(RidePhase.ERROR, error = error)
         disconnectAll()
     }

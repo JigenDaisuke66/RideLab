@@ -149,12 +149,19 @@ Active rides must continue recording while:
 
 A connectedDevice Foreground Service owns active ride BLE connections and elapsed
 time (SystemClock.elapsedRealtime). Start/End ride is explicit. A notification and
-partial wake lock last only for the active ride; End disconnects both devices,
-cancels recovery and removes foreground mode. Each device gets one automatic
+partial wake lock protect ACTIVE and PAUSED rides. Pause freezes elapsed time,
+sampling and workout progression, retaining BLE and applied ERG resistance.
+End completes recording, releases the wake lock and cancels recovery, but retains
+both existing connections in connectedDevice foreground mode with a device-connected
+notification. Explicitly disconnecting all devices removes that foreground mode.
+Each device gets one automatic
 reconnect attempt per ride after an unexpected disconnect. No automatic ERG target
 replay is performed. Room recording is sampled by the service at approximately 1 Hz,
 independently of BLE notifications and Activity lifecycle. Explicit End first commits
-the last sample and COMPLETED session before disconnecting/stopping foreground mode.
+the last sample and COMPLETED session without disconnecting BLE.
+Paused time is excluded from stored duration/sample elapsed time; wall-clock start/end
+timestamps remain real. Each pause writes one null boundary row so charts and rolling
+analytics cannot bridge the pause (same-tick boundaries may add 1 ms). No schema change.
 
 The UI observes service/application state.
 

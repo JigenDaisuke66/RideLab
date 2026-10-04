@@ -68,7 +68,8 @@ fun RideScreen(
     pauseWorkout: () -> Unit = {}, resumeWorkout: () -> Unit = {},
     skipWorkout: () -> Unit = {}, endWorkout: () -> Unit = {},
     rampResult: RampTestResult? = null, ftp: FtpState = FtpState(),
-    acceptRamp: () -> Unit = {}, keepRamp: () -> Unit = {}, ftpSettings: () -> Unit = {}
+    acceptRamp: () -> Unit = {}, keepRamp: () -> Unit = {}, ftpSettings: () -> Unit = {},
+    pauseRide: () -> Unit = {}, resumeRide: () -> Unit = {}
 ) {
     var now by remember {
         mutableLongStateOf(SystemClock.elapsedRealtime())
@@ -102,16 +103,17 @@ fun RideScreen(
 
     val controlsReady =
         ready &&
-                (ride.phase == RidePhase.ACTIVE || trainerReady)
+                (ride.ongoing || trainerReady)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                if (ride.phase == RidePhase.ACTIVE && workout.phase in setOf(WorkoutPhase.ACTIVE, WorkoutPhase.PAUSED))
+                if (ride.ongoing && workout.phase in setOf(WorkoutPhase.ACTIVE, WorkoutPhase.PAUSED))
                     WorkoutActions(workout, trainer.fec.canSend, pauseWorkout, resumeWorkout, skipWorkout, endWorkout)
-                else RideControls(ride, controlsReady && workout.phase != WorkoutPhase.PREPARING, start, end, appSettings, showElapsed = false)
+                else RideControls(ride, controlsReady && workout.phase != WorkoutPhase.PREPARING, start, end, appSettings,
+                    showElapsed = false, pause = pauseRide, resume = resumeRide)
             }
         }
     ) { innerPadding ->
@@ -136,6 +138,7 @@ fun RideScreen(
                     StatusPill(
                         text = when (ride.phase) {
                             RidePhase.ACTIVE -> stringResource(R.string.ride_active)
+                            RidePhase.PAUSED -> stringResource(R.string.ride_paused)
                             RidePhase.STARTING -> stringResource(R.string.ride_starting)
                             RidePhase.STOPPING -> stringResource(R.string.ride_stopping)
                             RidePhase.ERROR -> stringResource(R.string.ride_error)

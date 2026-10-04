@@ -61,7 +61,7 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     Scaffold(topBar = {
         if (destination == Destination.RIDE) {
             Column(Modifier.statusBarsPadding().padding(horizontal = 16.dp)) {
-                OverlayControl(overlay, ready && ride.phase == com.isaac.ridelab.service.RidePhase.ACTIVE,
+                OverlayControl(overlay, ready && ride.ongoing,
                     enableOverlay, { devices.setOverlay(false) })
             }
         }
@@ -90,10 +90,10 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
                 Destination.RIDE -> RideScreen(trainer, hr, ride, ready, startRide, devices::endRide, devices::sendFecTarget, appSettings, modifier, ergState, erg::edit, erg::rememberApplied,
                     workout, devices::pauseWorkout, devices::resumeWorkout, devices::skipWorkout, devices::endWorkout,
                     rampResult, ftpState, devices::acceptRampResult, devices::keepRampResult,
-                    { destination = Destination.SETTINGS })
+                    { destination = Destination.SETTINGS }, devices::pauseRide, devices::resumeRide)
                 Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier, deleting, history::deleteRide, csvExport == CsvExportState.WRITING, exportCsv)
                 Destination.SETTINGS -> SettingsDestination(ftpState, { value, done -> ftp.save(value, done) }, ftp::saveWeight, language, modifier,
-                    overlay, ready && ride.phase == com.isaac.ridelab.service.RidePhase.ACTIVE,
+                    overlay, ready && ride.ongoing,
                     enableOverlay, { devices.setOverlay(false) })
             }
         }

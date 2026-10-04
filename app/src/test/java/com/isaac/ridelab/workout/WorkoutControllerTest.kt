@@ -5,6 +5,22 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class WorkoutControllerTest {
+    @Test fun ridePauseClockKeepsWorkoutAndRecordingElapsedAligned() {
+        val ride = com.isaac.ridelab.service.RideSession {}
+        ride.begin(); ride.activate(1000)
+        val sent = mutableListOf<Int>()
+        val engine = start(definition(step(10, 100), step(10, 150)), sent, now = 1000)
+        engine.tick(ride.state.value.recordingClock(3000))
+        ride.pause(3500); engine.pause(ride.state.value.recordingClock(3500))
+        engine.tick(ride.state.value.recordingClock(303_500))
+        assertEquals(listOf(100), sent)
+        assertEquals(2500L, engine.state.value.elapsedMs)
+        ride.resume(303_500); engine.resume(ride.state.value.recordingClock(303_500), true)
+        engine.tick(ride.state.value.recordingClock(304_500))
+        assertEquals(3500L, engine.state.value.elapsedMs)
+        assertEquals(ride.state.value.elapsedMs(304_500), engine.state.value.elapsedMs)
+        assertEquals(listOf(100, 100), sent)
+    }
     private val profile = ThinkRiderX2MaxProfile
     private fun step(seconds: Int, watts: Int) = WorkoutStep(WorkoutStepType.WORK, seconds, WorkoutTarget.AbsolutePower(watts))
     private fun definition(vararg steps: WorkoutStep) = WorkoutDefinition(WorkoutId.ENDURANCE_45, steps.toList())

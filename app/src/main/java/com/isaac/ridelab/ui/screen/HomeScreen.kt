@@ -63,7 +63,7 @@ fun HomeScreen(
 
     val startEnabled =
         ready &&
-                (ride.phase == RidePhase.ACTIVE || trainerConnected) &&
+                (ride.ongoing || trainerConnected) &&
                 ride.phase !in setOf(
             RidePhase.STARTING,
             RidePhase.STOPPING
@@ -109,7 +109,7 @@ fun HomeScreen(
                 Button(
                     onClick = {
                         view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                        if (ride.phase == RidePhase.ACTIVE) {
+                        if (ride.ongoing) {
                             openRide()
                         } else {
                             start()
@@ -125,6 +125,7 @@ fun HomeScreen(
                         text = stringResource(
                             when (ride.phase) {
                                 RidePhase.ACTIVE -> R.string.ui_return_ride
+                                RidePhase.PAUSED -> R.string.ui_return_ride
                                 RidePhase.STARTING -> R.string.ride_starting
                                 RidePhase.STOPPING -> R.string.ride_stopping
                                 else -> R.string.ride_start

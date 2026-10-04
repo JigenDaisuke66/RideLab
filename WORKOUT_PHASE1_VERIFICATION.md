@@ -1,5 +1,10 @@
 # Workout Engine Phase 1 + FTP Ramp Test
 
+Lifecycle update: see RIDE_PAUSE_VERIFICATION.md. User workout pause/resume also
+pauses/resumes ride timing/recording; automatic trainer-failure pause still pauses
+the workout only. End finalizes the ride while retaining BLE, superseding the old
+End/disconnect expectation below. The verified FE-C encoder is unchanged.
+
 Implementation and compilation/unit verification are complete; physical acceptance
 is PENDING. No APK generated, new dependency, FE-C encoder change or Room migration.
 

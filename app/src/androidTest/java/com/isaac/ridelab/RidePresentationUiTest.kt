@@ -39,6 +39,22 @@ class RidePresentationUiTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
+    @Test fun pauseResumeAndEndAreSeparateActions() {
+        var paused = 0; var resumed = 0; var ended = 0
+        var state by mutableStateOf(RideState(phase = RidePhase.ACTIVE, startedAtMs = 0))
+        compose.setContent { RideLabTheme {
+            RideControls(state, true, {}, { ended++ }, {}, showElapsed = false,
+                pause = { paused++; state = state.copy(phase = RidePhase.PAUSED, pausedAtMs = 1000) },
+                resume = { resumed++; state = state.copy(phase = RidePhase.ACTIVE, pausedAtMs = null) })
+        } }
+        compose.onNodeWithText(context.getString(R.string.ride_pause)).performClick()
+        compose.onNodeWithText(context.getString(R.string.ride_resume)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.ride_end)).assertIsDisplayed()
+        compose.runOnIdle { assertEquals(1, paused); assertEquals(0, ended) }
+        compose.onNodeWithText(context.getString(R.string.ride_resume)).performClick()
+        compose.runOnIdle { assertEquals(1, resumed); assertEquals(0, ended) }
+    }
+
     @Test fun endRideRequiresConfirmationAndCancelKeepsRideActive() {
         var ended = 0
         compose.setContent { RideLabTheme {

@@ -59,6 +59,19 @@ class RideRecorder(private val repository: RideRepository) {
         }
     }
 
+    /** Explicit null boundary prevents charts/rolling analytics from joining across a pause.
+     * Paused time is excluded by the service's recording clock. A same-tick pause uses
+     * a 1 ms boundary offset to preserve the unique sample timestamp without replacing raw data.
+     */
+    suspend fun pause(epochMs: Long, monotonicMs: Long): Unit = mutex.withLock {
+        withContext(NonCancellable) {
+            val current = active ?: return@withContext
+            val elapsed = (monotonicMs - current.monotonic).coerceAtLeast(current.lastElapsed + 1)
+            repository.append(LiveRideData(targetPowerWatts = current.lastTarget).sample(current.id, epochMs, elapsed))
+            current.lastElapsed = elapsed; current.lastEpoch = epochMs
+        }
+    }
+
     suspend fun abort(): Unit = mutex.withLock {
         withContext(NonCancellable) {
             val current = active ?: return@withContext

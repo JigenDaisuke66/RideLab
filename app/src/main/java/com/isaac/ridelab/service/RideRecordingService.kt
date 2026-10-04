@@ -66,6 +66,9 @@ class RideRecordingService : Service() {
     private var startup: Job? = null
     private var recording: Job? = null
     private var finalizing: Job? = null
+    private var pauseCommit: Job? = null
+    private var retainingConnections = false
+    private fun rideClock(now: Long = SystemClock.elapsedRealtime()) = rideState.value.recordingClock(now)
     private lateinit var recovery: Deferred<Unit>
     private val mutableOverlay = MutableStateFlow(RideOverlayState.OFF)
     val overlayState = mutableOverlay.asStateFlow()
@@ -74,12 +77,12 @@ class RideRecordingService : Service() {
 
     fun setOverlay(enabled: Boolean) {
         overlayJob?.cancel(); overlayJob = null
-        if (!enabled || rideState.value.phase != RidePhase.ACTIVE) {
+        if (!enabled || !rideState.value.ongoing) {
             overlayWindow?.hide(); mutableOverlay.value = RideOverlayState.OFF; return
         }
         overlayJob = scope.launch {
             try {
-                while (isActive && rideState.value.phase == RidePhase.ACTIVE) {
+                while (isActive && rideState.value.ongoing) {
                     if (!Settings.canDrawOverlays(this@RideRecordingService)) {
                         overlayWindow?.hide(); mutableOverlay.value = RideOverlayState.PERMISSION_REQUIRED; break
                     }
@@ -113,7 +116,7 @@ class RideRecordingService : Service() {
         trainer = FtmsClient(this)
         heartRate = HeartRateClient(this)
         Log.i(TAG, "Service created; sole BLE owner")
-        scope.launch { rideState.map { it.phase }.distinctUntilChanged().collect { if (it != RidePhase.ACTIVE) setOverlay(false) } }
+        scope.launch { rideState.map { it.phase }.distinctUntilChanged().collect { if (!rideState.value.ongoing) setOverlay(false) } }
         recovery = scope.async {
             try {
                 val count = repository.recoverInterrupted()
@@ -127,7 +130,7 @@ class RideRecordingService : Service() {
         scope.launch {
             trainer.state.collect { value ->
                 val before = workoutState.value.phase
-                val now = SystemClock.elapsedRealtime()
+                val now = rideClock()
                 if (value.connection in setOf(ConnectionState.DISCONNECTED, ConnectionState.FAILED)) workout.unavailable(now)
                 else if (value.fec.status == FecStatus.FAILED) workout.controlFailed(now)
                 if (before == WorkoutPhase.ACTIVE && workoutState.value.phase == WorkoutPhase.PAUSED)
@@ -137,11 +140,13 @@ class RideRecordingService : Service() {
         scope.launch {
             trainer.state.map { it.connection to it.issue?.reason }.distinctUntilChanged().collect { (connection, failure) ->
                 if (connection == ConnectionState.FAILED) reconnectTrainer(failure)
+                stopRetainedPreviewIfDisconnected()
             }
         }
         scope.launch {
             heartRate.state.map { it.connection to it.issue?.reason }.distinctUntilChanged().collect { (connection, failure) ->
                 if (connection == ConnectionState.FAILED) reconnectHeartRate(failure)
+                stopRetainedPreviewIfDisconnected()
             }
         }
     }
@@ -150,7 +155,7 @@ class RideRecordingService : Service() {
 
     fun connectTrainer(device: DiscoveredDevice) {
         if (trainer.state.value.isActive && trainer.state.value.device?.address == device.address) return
-        workout.unavailable(SystemClock.elapsedRealtime())
+        workout.unavailable(rideClock())
         trainerRetry?.cancel(); trainerBudget.reset(); trainerWanted = device
         trainer.connect(device)
     }
@@ -162,14 +167,16 @@ class RideRecordingService : Service() {
     }
 
     fun disconnectTrainer() {
-        workout.unavailable(SystemClock.elapsedRealtime())
+        workout.unavailable(rideClock())
         trainerWanted = null; trainerRetry?.cancel(); trainerRetry = null
         trainer.disconnect()
+        stopRetainedPreviewIfDisconnected()
     }
 
     fun disconnectHeartRate() {
         hrWanted = null; hrRetry?.cancel(); hrRetry = null
         heartRate.disconnect()
+        stopRetainedPreviewIfDisconnected()
     }
 
     fun sendFecTarget(watts: Int) {
@@ -180,7 +187,7 @@ class RideRecordingService : Service() {
     }
 
     fun requestWorkout(id: WorkoutId) {
-        if (session.keepsConnections || workoutPreparing?.isActive == true ||
+        if (rideState.value.phase !in setOf(RidePhase.IDLE, RidePhase.ERROR) || workoutPreparing?.isActive == true ||
             rampReview.state.value?.phase == RampReviewPhase.APPLYING) return
         val definition = BuiltInWorkouts.find(id)
         if (!workout.prepare(definition)) return
@@ -202,14 +209,37 @@ class RideRecordingService : Service() {
             }
         }
     }
-    fun pauseWorkout() { workout.pause(SystemClock.elapsedRealtime()); Log.i("RideLabWorkout", "User pause; target unchanged") }
+    fun pauseRide() {
+        val now = SystemClock.elapsedRealtime()
+        if (!session.pause(now)) return
+        workout.pause(rideClock(now))
+        val epoch = System.currentTimeMillis()
+        val clock = rideClock(now)
+        pauseCommit = scope.launch {
+            try { recorder.pause(epoch, clock) }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { recordingFailure(e) }
+        }
+        updateNotification()
+        Log.i(TAG, "Ride PAUSED elapsedMs=${rideState.value.elapsedMs(now)}; GATT retained, sampling suspended; ERG target unchanged")
+    }
+
+    fun resumeRide() {
+        if (!session.resume(SystemClock.elapsedRealtime())) return
+        if (workoutState.value.phase == WorkoutPhase.PAUSED) workout.resume(rideClock(), trainerControlReady)
+        updateNotification()
+        Log.i(TAG, "Ride ACTIVE resumed; same session and GATT connections")
+    }
+
+    fun pauseWorkout() { pauseRide() }
     fun resumeWorkout() {
-        if (rideState.value.phase == RidePhase.ACTIVE) workout.resume(SystemClock.elapsedRealtime(), trainerControlReady)
+        if (rideState.value.phase == RidePhase.PAUSED) resumeRide()
+        else if (rideState.value.phase == RidePhase.ACTIVE) workout.resume(rideClock(), trainerControlReady)
         Log.i("RideLabWorkout", "Resume phase=${workoutState.value.phase} step=${workoutState.value.stepIndex}")
     }
     fun skipWorkout() {
         if (rideState.value.phase == RidePhase.ACTIVE) {
-            workout.skip(SystemClock.elapsedRealtime(), trainerControlReady)
+            workout.skip(rideClock(), trainerControlReady)
             if (workoutState.value.phase == WorkoutPhase.COMPLETED) endRide()
         }
     }
@@ -255,10 +285,11 @@ class RideRecordingService : Service() {
         try {
             val startedAt = SystemClock.elapsedRealtime()
             val startEpoch = System.currentTimeMillis()
-            startForeground(NOTIFICATION_ID, notification(startedAt), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+            startForeground(NOTIFICATION_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
             // BLE callbacks/reconnect timers must be processed with the display off.
             wakeLock = getSystemService(PowerManager::class.java)
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "RideLab:ActiveRide").apply { acquire() }
+            retainingConnections = false
             startup = scope.launch {
                 try {
                     recovery.await()
@@ -273,7 +304,7 @@ class RideRecordingService : Service() {
                     if (rideState.value.phase == RidePhase.STOPPING) return@launch
                     trainerBudget.reset(); hrBudget.reset()
                     session.activate(start, id)
-                    getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(start))
+                    updateNotification()
                     Log.i(TAG, "Ride ACTIVE sessionId=$id startedAtElapsedMs=$start trainer=${trainerDevice?.address} hr=${hrDevice?.address}")
                     pendingWorkout?.let { definition ->
                         pendingWorkout = null
@@ -306,21 +337,24 @@ class RideRecordingService : Service() {
     }
 
     fun endRide() {
+        val endedAt = SystemClock.elapsedRealtime()
+        val recordingEnd = rideClock(endedAt)
+        val wasPaused = rideState.value.phase == RidePhase.PAUSED
         if (!session.beginStop()) return
         Log.i(TAG, "Ride STOPPING: explicit end")
-        val endedAt = SystemClock.elapsedRealtime()
-        workout.finish(endedAt, testEnded = true)
+        workout.finish(recordingEnd, testEnded = true)
         val isRamp = workoutState.value.definition?.rampTest == true
         val ranges = workout.effortRanges()
         val endEpoch = System.currentTimeMillis()
-        val last = liveSnapshot(endedAt)
+        val last = if (wasPaused) LiveRideData(targetPowerWatts = trainer.state.value.fec.lastTargetWatts) else liveSnapshot(endedAt)
         finalizing = scope.launch {
             try {
                 startup?.join()
                 workoutJob?.cancelAndJoin()
                 recording?.cancelAndJoin()
+                pauseCommit?.join()
                 recordingError?.let { throw it }
-                val id = checkNotNull(recorder.complete(last, endEpoch, endedAt))
+                val id = checkNotNull(recorder.complete(last, endEpoch, recordingEnd))
                 Log.i(TAG, "Recording COMPLETED sessionId=$id endEpoch=$endEpoch")
                 if (isRamp) {
                     try {
@@ -334,7 +368,7 @@ class RideRecordingService : Service() {
                         workout.fail(WorkoutIssue.RESULT_FAILED)
                     }
                 }
-                session.end() // Flush/finalization succeeded before existing BLE shutdown.
+                session.end() // End recording only; retain the same BLE sessions for the next ride.
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 Log.e(TAG, "Recording completion failed", error)
@@ -344,10 +378,32 @@ class RideRecordingService : Service() {
     }
 
     private fun stopRideWork() {
-        stopForeground(STOP_FOREGROUND_REMOVE)
         releaseWakeLock()
-        stopSelf() // A visible UI may keep an idle bound instance for new device selection.
-        Log.i(TAG, "Ride phase=${rideState.value.phase}; GATT closed, foreground stopped")
+        trainerRetry?.cancel(); hrRetry?.cancel()
+        if (rideState.value.phase == RidePhase.IDLE && (trainer.state.value.isActive || heartRate.state.value.isActive)) {
+            retainingConnections = true
+            updateNotification()
+            Log.i(TAG, "Recording stopped; existing GATT retained in connectedDevice foreground service")
+        } else {
+            retainingConnections = false
+            session.releasePreview()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+    }
+
+    private fun stopRetainedPreviewIfDisconnected() {
+        if (!retainingConnections || trainer.state.value.isActive || heartRate.state.value.isActive) return
+        retainingConnections = false
+        session.releasePreview()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+        Log.i(TAG, "No retained devices; foreground service stopped")
+    }
+
+    private fun updateNotification() {
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID,
+            notification())
     }
 
     private fun liveSnapshot(nowMs: Long) = LiveRideData.snapshot(trainer.state.value, heartRate.state.value, nowMs)
@@ -355,9 +411,13 @@ class RideRecordingService : Service() {
     private fun startRecordingLoop(start: Long, id: Long) {
         recording = scope.launch {
             try {
-                while (isActive && rideState.value.phase == RidePhase.ACTIVE) {
+                while (isActive && rideState.value.ongoing) {
                     val now = SystemClock.elapsedRealtime()
-                    recorder.sample(liveSnapshot(now), System.currentTimeMillis(), now)
+                    if (rideState.value.phase == RidePhase.ACTIVE) {
+                        pauseCommit?.join()
+                        if (rideState.value.phase == RidePhase.ACTIVE)
+                            recorder.sample(liveSnapshot(now), System.currentTimeMillis(), rideClock(now))
+                    }
                     // Schedule the next second, skipping missed slots rather than fabricating catch-up samples.
                     val after = SystemClock.elapsedRealtime()
                     val next = start + ((after - start) / 1_000 + 1) * 1_000
@@ -374,9 +434,9 @@ class RideRecordingService : Service() {
     private fun startWorkoutLoop() {
         workoutJob?.cancel()
         workoutJob = scope.launch {
-            try { while (isActive && rideState.value.phase == RidePhase.ACTIVE) {
+            try { while (isActive && rideState.value.ongoing) {
                 val oldIndex = workoutState.value.stepIndex
-                workout.tick(SystemClock.elapsedRealtime())
+                if (rideState.value.phase == RidePhase.ACTIVE) workout.tick(rideClock())
                 if (oldIndex != workoutState.value.stepIndex)
                     Log.i("RideLabWorkout", "Step index=${workoutState.value.stepIndex} target=${workoutState.value.targetWatts}")
                 if (workoutState.value.phase == WorkoutPhase.COMPLETED) { endRide(); break }
@@ -384,7 +444,7 @@ class RideRecordingService : Service() {
             } } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 Log.e("RideLabWorkout", "Scheduler failed; stopping and preserving ride", e)
-                workout.finish(SystemClock.elapsedRealtime())
+                workout.finish(rideClock())
                 workout.fail(WorkoutIssue.CONTROL_FAILED)
                 endRide()
             }
@@ -392,7 +452,7 @@ class RideRecordingService : Service() {
     }
 
     private suspend fun recordingFailure(error: Exception) {
-        workout.finish(SystemClock.elapsedRealtime())
+        workout.finish(rideClock())
         if (workoutState.value.definition != null) workout.fail(WorkoutIssue.RIDE_FAILED)
         recordingError = error
         Log.e(TAG, "Recording failed; aborting ride", error)
@@ -406,11 +466,11 @@ class RideRecordingService : Service() {
 
     private fun reconnectTrainer(failure: GattFailure?) {
         val device = trainerWanted ?: return
-        if (trainerRetry?.isActive == true || !trainerBudget.take(rideState.value.phase == RidePhase.ACTIVE, failure)) return
+        if (trainerRetry?.isActive == true || !trainerBudget.take(rideState.value.ongoing, failure)) return
         Log.w(TAG, "Reconnect scheduled role=trainer address=${device.address} delayMs=3000 attempt=1/1")
         trainerRetry = scope.launch {
             delay(3_000)
-            if (rideState.value.phase == RidePhase.ACTIVE && trainerWanted == device && !trainer.state.value.isActive) {
+            if (rideState.value.ongoing && trainerWanted == device && !trainer.state.value.isActive) {
                 Log.i(TAG, "Reconnect invoked role=trainer address=${device.address}")
                 trainer.connect(device) // Existing client closes/replaces its own failed session.
             }
@@ -419,11 +479,11 @@ class RideRecordingService : Service() {
 
     private fun reconnectHeartRate(failure: GattFailure?) {
         val device = hrWanted ?: return
-        if (hrRetry?.isActive == true || !hrBudget.take(rideState.value.phase == RidePhase.ACTIVE, failure)) return
+        if (hrRetry?.isActive == true || !hrBudget.take(rideState.value.ongoing, failure)) return
         Log.w(TAG, "Reconnect scheduled role=heartRate address=${device.address} delayMs=3000 attempt=1/1")
         hrRetry = scope.launch {
             delay(3_000)
-            if (rideState.value.phase == RidePhase.ACTIVE && hrWanted == device && !heartRate.state.value.isActive) {
+            if (rideState.value.ongoing && hrWanted == device && !heartRate.state.value.isActive) {
                 Log.i(TAG, "Reconnect invoked role=heartRate address=${device.address}")
                 heartRate.connect(device)
             }
@@ -436,29 +496,36 @@ class RideRecordingService : Service() {
             NotificationChannel(CHANNEL, localized.getString(R.string.ride_channel), NotificationManager.IMPORTANCE_LOW))
     }
 
-    private fun notification(startedAt: Long): Notification {
+    private fun notification(): Notification {
         val localized = AppLocale.activityContext(this)
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val end = PendingIntent.getService(this, 1, Intent(this, RideRecordingService::class.java).setAction(END),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         return NotificationCompat.Builder(localized, CHANNEL)
             .setSmallIcon(R.drawable.ic_ride_notification)
-            .setContentTitle(localized.getString(R.string.ride_active))
-            .setContentText(localized.getString(R.string.ride_notification_text))
-            .setWhen(System.currentTimeMillis() - (SystemClock.elapsedRealtime() - startedAt))
-            .setUsesChronometer(true).setOngoing(true).setOnlyAlertOnce(true)
+            .setContentTitle(localized.getString(when (rideState.value.phase) {
+                RidePhase.PAUSED -> R.string.ride_paused
+                RidePhase.IDLE -> R.string.ride_devices_retained
+                else -> R.string.ride_active
+            }))
+            .setContentText(localized.getString(if (rideState.value.phase == RidePhase.IDLE)
+                R.string.ride_devices_retained_hint else R.string.ride_notification_text))
+            .setWhen(System.currentTimeMillis() - rideState.value.elapsedMs(SystemClock.elapsedRealtime()))
+            .setUsesChronometer(rideState.value.phase in setOf(RidePhase.STARTING, RidePhase.ACTIVE))
+            .setShowWhen(rideState.value.phase == RidePhase.ACTIVE)
+            .setOngoing(true).setOnlyAlertOnce(true)
             .setContentIntent(open)
             // Workout cancellation must pass through the UI confirmation, not a notification tap.
-            .addAction(0, localized.getString(if (workoutState.value.controlsTrainer) R.string.workout_open else R.string.ride_end),
-                if (workoutState.value.controlsTrainer) open else end).build()
+            .addAction(0, localized.getString(if (workoutState.value.controlsTrainer || retainingConnections) R.string.workout_open else R.string.ride_end),
+                if (workoutState.value.controlsTrainer || retainingConnections) open else end).build()
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         if (overlayState.value == RideOverlayState.VISIBLE) { overlayWindow?.hide(); overlayWindow = null }
-        if (rideState.value.phase == RidePhase.ACTIVE) {
+        if (rideState.value.ongoing || retainingConnections) {
             createChannel()
-            getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(rideState.value.startedAtMs!!))
+            updateNotification()
         }
     }
 

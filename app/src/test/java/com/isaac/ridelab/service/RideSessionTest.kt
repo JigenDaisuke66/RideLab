@@ -44,7 +44,7 @@ class RideSessionTest {
         assertEquals(0, session.state.value.elapsedMs(999))
     }
 
-    @Test fun explicitEndTransitionsBeforeCleanupAndResetsTimer() {
+    @Test fun explicitEndRetainsConnectionsAndResetsTimer() {
         lateinit var session: RideSession
         var disconnects = 0
         session = RideSession {
@@ -53,9 +53,11 @@ class RideSessionTest {
             disconnects++
         }
         session.begin(); session.activate(1000); session.end()
-        assertEquals(1, disconnects)
+        assertEquals(0, disconnects)
         assertEquals(RidePhase.IDLE, session.state.value.phase)
         assertNull(session.state.value.startedAtMs)
+        session.uiHidden()
+        assertEquals(0, disconnects)
         assertTrue(session.begin())
     }
 
@@ -109,6 +111,30 @@ class RideSessionTest {
         assertEquals(0, disconnects)
         assertEquals(42L, session.state.value.sessionId)
         session.end()
+        assertEquals(0, disconnects)
+    }
+
+    @Test fun pauseFreezesClockAndPreservesConnectionsAcrossBackgroundAndResume() {
+        var disconnects = 0
+        val session = RideSession { disconnects++ }
+        session.begin(); session.activate(1000, 42)
+        assertTrue(session.pause(11_000))
+        assertFalse(session.pause(12_000))
+        assertFalse(session.begin())
+        session.uiHidden()
+        assertEquals(10_000L, session.state.value.elapsedMs(311_000))
+        assertEquals(11_000L, session.state.value.recordingClock(311_000))
+        assertTrue(session.resume(311_000))
+        assertFalse(session.resume(312_000))
+        assertEquals(11_000L, session.state.value.elapsedMs(312_000))
+        assertEquals(42L, session.state.value.sessionId)
+        assertEquals(0, disconnects)
+        assertTrue(session.pause(313_000))
+        assertTrue(session.beginStop())
+        assertEquals(12_000L, session.state.value.elapsedMs(999_000))
+        session.end(); session.uiHidden()
+        assertEquals(0, disconnects)
+        session.releasePreview(); session.uiHidden()
         assertEquals(1, disconnects)
     }
 }
