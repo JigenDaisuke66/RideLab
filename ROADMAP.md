@@ -228,3 +228,8 @@ result is measured ramp-only best continuous 60s x75%, accepted only on explicit
 confirmation through normal FTP settings. No workout editor, metadata migration,
 automatic exhaustion detection or automatic FTP update. Unit/compile verification
 complete; physical acceptance PENDING. See WORKOUT_PHASE1_VERIFICATION.md.
+
+Requested extension: First FTP test (unknown FTP) adds an absolute 50 W/5-minute
+warmup, followed by 50 W +10 W/minute. No prefilled FTP or invented FTP snapshot.
+Existing result/explicit-save logic is reused. No BLE/recording/schema changes.
+See INITIAL_FTP_VERIFICATION.md; physical acceptance pending.

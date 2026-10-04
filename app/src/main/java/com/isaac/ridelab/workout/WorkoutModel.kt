@@ -3,7 +3,7 @@ package com.isaac.ridelab.workout
 import com.isaac.ridelab.ble.fec.TrainerErgProfile
 import kotlin.math.roundToInt
 
-enum class WorkoutId { RECOVERY_30, ENDURANCE_45, SWEET_SPOT, FTP_RAMP }
+enum class WorkoutId { RECOVERY_30, ENDURANCE_45, SWEET_SPOT, FTP_RAMP, INITIAL_FTP_RAMP }
 enum class WorkoutStepType { WARMUP, WORK, RECOVERY, COOLDOWN, RAMP, FREE_RIDE }
 sealed interface WorkoutTarget {
     data class FtpPercent(val fraction: Double) : WorkoutTarget
@@ -14,18 +14,25 @@ sealed interface WorkoutTarget {
 data class WorkoutStep(val type: WorkoutStepType, val durationSeconds: Int, val target: WorkoutTarget) {
     init { require(durationSeconds > 0) }
 }
-data class WorkoutDefinition(val id: WorkoutId, val steps: List<WorkoutStep>, val rampTest: Boolean = false) {
+data class FixedRamp(val startWatts: Int, val incrementWatts: Int) {
+    init { require(startWatts > 0 && incrementWatts > 0) }
+}
+data class WorkoutDefinition(val id: WorkoutId, val steps: List<WorkoutStep>, val rampTest: Boolean = false,
+    val fixedRamp: FixedRamp? = null) {
     init { require(steps.isNotEmpty()) }
-    val requiresFtp: Boolean get() = rampTest || steps.any { it.target is WorkoutTarget.FtpPercent || it.target is WorkoutTarget.Ramp }
+    val requiresFtp: Boolean get() = (rampTest && fixedRamp == null) ||
+        steps.any { it.target is WorkoutTarget.FtpPercent || it.target is WorkoutTarget.Ramp }
     fun step(index: Int, ftp: Int?, profile: TrainerErgProfile): WorkoutStep? {
         if (index < 0) return null
         steps.getOrNull(index)?.let { return it }
-        if (!rampTest || ftp == null) return null
+        if (!rampTest || fixedRamp == null && ftp == null) return null
         val stage = index - steps.size
+        fun target(stage: Int) = fixedRamp?.let { it.startWatts + it.incrementWatts * stage }
+            ?: (ftp!! * (1 + .06 * stage)).roundToInt()
         // Visit the clamped ceiling once, then finish; never hold at maximum indefinitely.
-        if (stage > 0 && (ftp * (1 + .06 * (stage - 1))).roundToInt() >= profile.maxErgWatts) return null
+        if (stage > 0 && target(stage - 1) >= profile.maxErgWatts) return null
         return WorkoutStep(WorkoutStepType.RAMP, 60,
-            WorkoutTarget.AbsolutePower(profile.clamp((ftp * (1 + .06 * stage)).roundToInt())))
+            WorkoutTarget.AbsolutePower(profile.clamp(target(stage))))
     }
 }
 
@@ -46,6 +53,9 @@ object BuiltInWorkouts {
         }),
         WorkoutDefinition(WorkoutId.FTP_RAMP, listOf(step(WorkoutStepType.WARMUP, 5, .50),
             step(WorkoutStepType.WARMUP, 5, .60)), rampTest = true),
+        WorkoutDefinition(WorkoutId.INITIAL_FTP_RAMP,
+            listOf(WorkoutStep(WorkoutStepType.WARMUP, 5 * 60, WorkoutTarget.AbsolutePower(50))),
+            rampTest = true, fixedRamp = FixedRamp(50, 10)),
     )
     fun find(id: WorkoutId) = all.first { it.id == id }
 }

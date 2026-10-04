@@ -127,6 +127,7 @@ private fun SettingsDestination(state: FtpState, save: (Int?, () -> Unit) -> Uni
             Text(stringResource(R.string.ui_overlay_opacity_hint), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        item { AppearanceControls() }
         item {
             Text(stringResource(R.string.ui_language), style = MaterialTheme.typography.titleMedium)
             SettingRow(stringResource(R.string.language_chinese), "", { language(AppLocale.CHINESE) })

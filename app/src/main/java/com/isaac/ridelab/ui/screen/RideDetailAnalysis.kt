@@ -86,7 +86,7 @@ internal fun DetailSensorPanel(sensor: DetailSensor, entry: RideHistoryEntry, st
     val noData = stringResource(R.string.history_no_data)
     val insights = state.insights
     val (title, unit, color) = when (sensor) {
-        DetailSensor.POWER -> Triple(R.string.chart_power, R.string.history_watts, RideColors.accent)
+        DetailSensor.POWER -> Triple(R.string.chart_power, R.string.history_watts, MaterialTheme.colorScheme.primary)
         DetailSensor.CADENCE -> Triple(R.string.chart_cadence, R.string.history_rpm, RideColors.cadence)
         DetailSensor.HEART_RATE -> Triple(R.string.chart_hr, R.string.history_bpm, RideColors.heartRate)
     }

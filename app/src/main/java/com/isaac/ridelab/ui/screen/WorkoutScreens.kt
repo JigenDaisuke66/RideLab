@@ -22,12 +22,14 @@ internal fun workoutName(id: WorkoutId) = when (id) {
     WorkoutId.ENDURANCE_45 -> R.string.workout_endurance
     WorkoutId.SWEET_SPOT -> R.string.workout_sweet_spot
     WorkoutId.FTP_RAMP -> R.string.workout_ftp_ramp
+    WorkoutId.INITIAL_FTP_RAMP -> R.string.workout_initial_ftp
 }
 private fun workoutPurpose(id: WorkoutId) = when (id) {
     WorkoutId.RECOVERY_30 -> R.string.workout_recovery_desc
     WorkoutId.ENDURANCE_45 -> R.string.workout_endurance_desc
     WorkoutId.SWEET_SPOT -> R.string.workout_sweet_desc
     WorkoutId.FTP_RAMP -> R.string.workout_ramp_desc
+    WorkoutId.INITIAL_FTP_RAMP -> R.string.workout_initial_ftp_desc
 }
 private fun stepName(type: WorkoutStepType) = when (type) {
     WorkoutStepType.WARMUP -> R.string.workout_warmup
@@ -51,7 +53,7 @@ internal fun WorkoutLibraryScreen(ftp: FtpState, trainerReady: Boolean, close: (
     val view = LocalView.current
     BackHandler { if (selected != null) selected = null else close() }
     val definition = selected?.let(BuiltInWorkouts::find)
-    val allowed = trainerReady && ftp.loaded && ftp.ftp != null
+    val allowed = trainerReady && ftp.loaded && definition != null && (!definition.requiresFtp || ftp.ftp != null)
     if (confirm && definition != null) AlertDialog(onDismissRequest = { confirm = false },
         title = { Text(stringResource(R.string.workout_start)) },
         text = { Text(stringResource(R.string.workout_auto_warning)) },
@@ -80,17 +82,19 @@ internal fun WorkoutLibraryScreen(ftp: FtpState, trainerReady: Boolean, close: (
                 Text(stringResource(workoutPurpose(definition.id)))
                 Text(if (definition.rampTest) stringResource(R.string.workout_ramp_duration)
                     else stringResource(R.string.workout_duration, definition.steps.sumOf { it.durationSeconds } / 60))
-                DetailMetricRow(stringResource(R.string.workout_reference_ftp), ftp.ftp?.let {
-                    stringResource(R.string.power_value, it)
-                } ?: stringResource(R.string.history_no_data))
-                Text(stringResource(R.string.workout_snapshot_note), style = MaterialTheme.typography.bodySmall)
+                if (definition.requiresFtp) {
+                    DetailMetricRow(stringResource(R.string.workout_reference_ftp), ftp.ftp?.let {
+                        stringResource(R.string.power_value, it)
+                    } ?: stringResource(R.string.history_no_data))
+                    Text(stringResource(R.string.workout_snapshot_note), style = MaterialTheme.typography.bodySmall)
+                }
                 Text(stringResource(R.string.workout_clamp_note, ThinkRiderX2MaxProfile.minErgWatts,
                     ThinkRiderX2MaxProfile.maxErgWatts), style = MaterialTheme.typography.bodySmall)
             }
             definition.steps.forEachIndexed { index, step -> item {
                 RideLabCard(Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.workout_preview_step, index + 1, stringResource(stepName(step.type))))
-                    val watts = if (ftp.ftp != null) workoutWatts(step.target, ftp.ftp, ThinkRiderX2MaxProfile) else null
+                    val watts = if (!definition.requiresFtp || ftp.ftp != null) workoutWatts(step.target, ftp.ftp, ThinkRiderX2MaxProfile) else null
                     DetailMetricRow(workoutTime(step.durationSeconds * 1000L),
                         watts?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data))
                     (step.target as? WorkoutTarget.FtpPercent)?.let {
@@ -98,9 +102,10 @@ internal fun WorkoutLibraryScreen(ftp: FtpState, trainerReady: Boolean, close: (
                     }
                 }
             } }
-            if (definition.rampTest) item { Text(stringResource(R.string.workout_ramp_protocol)) }
+            if (definition.rampTest) item { Text(stringResource(if (definition.fixedRamp != null)
+                R.string.workout_initial_ftp_protocol else R.string.workout_ramp_protocol)) }
             item {
-                if (ftp.ftp == null) {
+                if (definition.requiresFtp && ftp.ftp == null) {
                     Text(stringResource(R.string.workout_ftp_required))
                     TextButton(onClick = settings) { Text(stringResource(R.string.ftp_settings)) }
                 }

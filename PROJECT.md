@@ -90,6 +90,13 @@ Training analytics phase 1 adds optional FTP settings and NP/IF/TSS. Schema v2 e
 
 ### Settings
 
+Appearance preferences add five dark palettes (mint, blue, violet, amber, rose),
+with independently selected overlay colors or Follow app theme. Three overlay
+layouts are available: panel, horizontal strip and dashboard. Changes apply live,
+are saved in the appearance SharedPreferences, and require no Activity/service
+restart or BLE changes. Existing overlay transparency, font size and position
+preferences remain in ride_overlay. See APPEARANCE_VERIFICATION.md.
+
 Home now opens a small built-in Workout Library. Service-owned WorkoutController
 uses the ride's existing FTP snapshot and verified FE-C path for explicit-confirmed
 automatic ERG courses and FTP Ramp Test. Disconnects pause progression; resume is
@@ -97,6 +104,12 @@ explicit. Raw recording/history remain unchanged. Ramp results use measured ramp
 effort best 60s x75%; accepting requires confirmation and uses existing FTP settings.
 No Room migration/workout metadata. Pending review is process-local only; accepted
 FTP persists normally. See WORKOUT_PHASE1_VERIFICATION.md; physical acceptance pending.
+
+First FTP test is now available without any prefilled FTP: 5 minutes at 50 W,
+then a fixed ramp starting at 50 W and increasing 10 W every minute. It ignores
+existing FTP for targets and reuses measured ramp-only best 60s x75%, explicit
+acceptance, service/recording and FE-C control. Existing FTP-relative tests remain.
+See INITIAL_FTP_VERIFICATION.md; physical acceptance pending.
 
 Initial concepts:
 

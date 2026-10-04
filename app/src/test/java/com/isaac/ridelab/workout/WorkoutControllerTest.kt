@@ -5,6 +5,41 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class WorkoutControllerTest {
+    @Test fun initialFtpTestStartsWithoutFtpAndUsesFixedTargets() {
+        val def = BuiltInWorkouts.find(WorkoutId.INITIAL_FTP_RAMP)
+        assertFalse(def.requiresFtp)
+        val sent = mutableListOf<Int>()
+        val e = start(def, sent, ftp = null)
+        assertNull(e.state.value.ftpSnapshot)
+        assertEquals(listOf(50), sent)
+        e.tick(300_000) // Warmup excluded; first ramp step remains 50 W.
+        assertEquals(WorkoutStepType.RAMP, e.state.value.step?.type)
+        e.tick(360_000); e.tick(420_000)
+        assertEquals(listOf(50, 60, 70), sent)
+        e.finish(480_000, true)
+        assertEquals(listOf(EffortRange(300_000, 480_000)), e.effortRanges())
+        assertEquals(WorkoutPhase.COMPLETED, e.state.value.phase)
+    }
+
+    @Test fun initialTestDoesNotDependOnAnExistingFtpAndVisitsCeilingOnce() {
+        val def = BuiltInWorkouts.find(WorkoutId.INITIAL_FTP_RAMP)
+        assertEquals(listOf(50, 60, 70, 80), (1..4).map { workoutWatts(def.step(it, null, profile)!!.target, null, profile) })
+        assertEquals(def.step(12, null, profile), def.step(12, 300, profile))
+        val targets = generateSequence(1) { it + 1 }.map { def.step(it, null, profile) }
+            .takeWhile { it != null }.map { workoutWatts(it!!.target, null, profile)!! }.toList()
+        assertEquals(50, targets.first()); assertEquals(2000, targets.last())
+        assertEquals(1, targets.count { it == 2000 })
+    }
+
+    @Test fun initialTestPauseDoesNotAdvanceOrSendNewTarget() {
+        val sent = mutableListOf<Int>()
+        val e = start(BuiltInWorkouts.find(WorkoutId.INITIAL_FTP_RAMP), sent, ftp = null)
+        e.tick(360_000); e.pause(370_000); e.tick(900_000)
+        assertEquals(listOf(50, 60), sent)
+        assertEquals(10_000L, e.state.value.stepElapsedMs)
+        e.resume(900_000, true); e.tick(950_000)
+        assertEquals(listOf(50, 60, 60, 70), sent)
+    }
     @Test fun ridePauseClockKeepsWorkoutAndRecordingElapsedAligned() {
         val ride = com.isaac.ridelab.service.RideSession {}
         ride.begin(); ride.activate(1000)

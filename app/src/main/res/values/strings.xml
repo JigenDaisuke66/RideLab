@@ -426,4 +426,22 @@
     <string name="workout_result_kept">已保持原 FTP</string>
     <string name="workout_keep_ftp">保持当前 FTP</string>
     <string name="workout_open">打开训练</string>
+    <string name="appearance_title">外观与悬浮窗</string>
+    <string name="appearance_theme">应用主题配色</string>
+    <string name="appearance_overlay_palette">悬浮窗配色</string>
+    <string name="appearance_overlay_style">悬浮窗样式</string>
+    <string name="appearance_follow_theme">跟随应用主题</string>
+    <string name="appearance_preview">悬浮窗样式预览</string>
+    <string name="appearance_saved_hint">更改即时生效并自动保存。透明度和字体大小仍可在悬浮窗内调节。</string>
+    <string name="theme_mint">薄荷绿</string>
+    <string name="theme_blue">冰川蓝</string>
+    <string name="theme_violet">鸢尾紫</string>
+    <string name="theme_amber">琥珀橙</string>
+    <string name="theme_rose">玫瑰红</string>
+    <string name="overlay_style_panel">经典面板</string>
+    <string name="overlay_style_strip">横向条</string>
+    <string name="overlay_style_dashboard">仪表卡</string>
+    <string name="workout_initial_ftp">首次 FTP 测试（不知道 FTP）</string>
+    <string name="workout_initial_ftp_desc">无需填写 FTP。先轻松热身，再每分钟加重一点，根据实际功率给出建议 FTP。</string>
+    <string name="workout_initial_ftp_protocol">先以 50 W 热身 5 分钟，再从 50 W 开始，每分钟增加 10 W：50、60、70 W……保持舒服的踏频，踩不动时手动点“结束测试”，无需骑到设备上限。结果取递增阶段最佳连续一分钟实测平均功率的 75%，确认采纳才保存。暂停或缺失数据不会被拼接；中途休息会影响估算，建议完整连续完成。暂停和结束不会自动降低阻力；结束后可手动应用较低目标。达到设备上限后完成最后一分钟即结束。</string>
 </resources>

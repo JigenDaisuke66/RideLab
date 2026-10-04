@@ -426,4 +426,22 @@
     <string name="workout_result_kept">Original FTP kept</string>
     <string name="workout_keep_ftp">Keep current FTP</string>
     <string name="workout_open">Open workout</string>
+    <string name="appearance_title">Appearance and overlay</string>
+    <string name="appearance_theme">App theme color</string>
+    <string name="appearance_overlay_palette">Overlay color</string>
+    <string name="appearance_overlay_style">Overlay style</string>
+    <string name="appearance_follow_theme">Follow app theme</string>
+    <string name="appearance_preview">Overlay style preview</string>
+    <string name="appearance_saved_hint">Changes apply immediately and are saved automatically. Adjust transparency and text size inside the overlay.</string>
+    <string name="theme_mint">Mint</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_violet">Violet</string>
+    <string name="theme_amber">Amber</string>
+    <string name="theme_rose">Rose</string>
+    <string name="overlay_style_panel">Panel</string>
+    <string name="overlay_style_strip">Strip</string>
+    <string name="overlay_style_dashboard">Gauge</string>
+    <string name="workout_initial_ftp">First FTP test (FTP unknown)</string>
+    <string name="workout_initial_ftp_desc">No FTP setting needed. Warm up gently, then increase power each minute to estimate FTP from measured power.</string>
+    <string name="workout_initial_ftp_protocol">Warm up for 5 minutes at 50 W, then start at 50 W and add 10 W each minute: 50, 60, 70 W… Use a comfortable cadence and manually tap End Test when you cannot sustain the effort; you do not need to reach the device limit. Suggested FTP is 75% of the best continuous minute of measured power during the ramp, saved only when accepted. Pauses and missing data are not joined; resting affects the estimate, so aim for an uninterrupted test. Pausing or ending does not automatically lower resistance; apply a lower target manually after ending. At the device limit, the test ends after one final minute.</string>
 </resources>

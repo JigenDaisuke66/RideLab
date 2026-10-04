@@ -17,6 +17,21 @@ class WorkoutUiTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
+    @Test fun initialFtpTestCanStartWithoutFtpOnlyAfterConfirmation() {
+        val starts = mutableListOf<WorkoutId>()
+        compose.setContent { RideLabTheme {
+            WorkoutLibraryScreen(FtpState(loaded = true), true, {}, {}, { starts.add(it) })
+        } }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(context.getString(R.string.workout_initial_ftp)))
+        compose.onNodeWithText(context.getString(R.string.workout_initial_ftp)).performClick()
+        compose.onNodeWithText(context.getString(R.string.workout_ftp_required)).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.workout_start)).performScrollTo().assertIsEnabled().performClick()
+        compose.runOnIdle { assertTrue(starts.isEmpty()) }
+        compose.onAllNodesWithText(context.getString(R.string.workout_start))
+            .filter(hasClickAction() and hasAnyAncestor(isDialog())).onFirst().performClick()
+        compose.runOnIdle { assertEquals(listOf(WorkoutId.INITIAL_FTP_RAMP), starts) }
+    }
+
     @Test fun previewAndCancelNeverStartAutomaticControl() {
         val starts = mutableListOf<WorkoutId>()
         compose.setContent { RideLabTheme {
