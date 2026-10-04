@@ -47,7 +47,8 @@ fun HomeScreen(
     start: () -> Unit,
     openRide: () -> Unit,
     openHistory: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    openWorkouts: () -> Unit = {}
 ) {
     val latest = history.rides.firstOrNull {
         it.session.status == StoredRideStatus.COMPLETED
@@ -168,6 +169,12 @@ fun HomeScreen(
             }
 
             /* ---------- Devices ---------- */
+
+            item {
+                OutlinedButton(onClick = openWorkouts, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.workout_library))
+                }
+            }
 
             item {
                 Card(

@@ -31,6 +31,7 @@ import com.isaac.ridelab.ble.fec.*
 import com.isaac.ridelab.data.model.*
 import com.isaac.ridelab.service.*
 import kotlinx.coroutines.delay
+import com.isaac.ridelab.workout.*
 
 internal fun adjustedErgTarget(
     current: Int,
@@ -62,7 +63,12 @@ fun RideScreen(
     modifier: Modifier = Modifier,
     ergTarget: ErgTargetUi = ErgTargetUi(loaded = true),
     editTarget: (Int) -> Unit = {},
-    rememberApplied: (Int) -> Unit = {}
+    rememberApplied: (Int) -> Unit = {},
+    workout: WorkoutState = WorkoutState(),
+    pauseWorkout: () -> Unit = {}, resumeWorkout: () -> Unit = {},
+    skipWorkout: () -> Unit = {}, endWorkout: () -> Unit = {},
+    rampResult: RampTestResult? = null, ftp: FtpState = FtpState(),
+    acceptRamp: () -> Unit = {}, keepRamp: () -> Unit = {}, ftpSettings: () -> Unit = {}
 ) {
     var now by remember {
         mutableLongStateOf(SystemClock.elapsedRealtime())
@@ -103,7 +109,9 @@ fun RideScreen(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                RideControls(ride, controlsReady, start, end, appSettings, showElapsed = false)
+                if (ride.phase == RidePhase.ACTIVE && workout.phase in setOf(WorkoutPhase.ACTIVE, WorkoutPhase.PAUSED))
+                    WorkoutActions(workout, trainer.fec.canSend, pauseWorkout, resumeWorkout, skipWorkout, endWorkout)
+                else RideControls(ride, controlsReady && workout.phase != WorkoutPhase.PREPARING, start, end, appSettings, showElapsed = false)
             }
         }
     ) { innerPadding ->
@@ -257,7 +265,18 @@ fun RideScreen(
             Spacer(Modifier.height(12.dp))
 
             /* ---------- ERG ---------- */
-            ErgControls(
+            if (workout.definition != null) {
+                WorkoutProgress(workout, ftpSettings)
+                Spacer(Modifier.height(12.dp))
+            }
+            if (rampResult != null) {
+                RampResultPanel(rampResult, ftp, acceptRamp, keepRamp)
+                Spacer(Modifier.height(12.dp))
+            }
+            if (workout.controlsTrainer || ride.phase == RidePhase.STOPPING) Text(stringResource(
+                if (ride.phase == RidePhase.STOPPING) R.string.ride_stopping else R.string.workout_controls_target),
+                style = MaterialTheme.typography.bodyMedium)
+            else ErgControls(
                 trainer = trainer,
                 preference = ergTarget,
                 edit = editTarget,

@@ -27,13 +27,20 @@ private enum class Destination(val title: Int) { HOME(R.string.ui_home), RIDE(R.
 fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewModel, erg: ErgTargetViewModel,
     connectTrainer: (DiscoveredDevice) -> Unit, connectHr: (DiscoveredDevice) -> Unit,
     startRide: () -> Unit, scan: () -> Unit, appSettings: () -> Unit, bluetoothSettings: () -> Unit,
-    language: (String) -> Unit, enableOverlay: () -> Unit = {}, exportCsv: (Long, Long) -> Unit = { _, _ -> }) {
+    language: (String) -> Unit, enableOverlay: () -> Unit = {}, exportCsv: (Long, Long) -> Unit = { _, _ -> },
+    startWorkout: (com.isaac.ridelab.workout.WorkoutId) -> Unit = devices::startWorkout) {
     var destination by rememberSaveable { mutableStateOf(Destination.HOME) }
+    var library by rememberSaveable { mutableStateOf(false) }
     var picker by rememberSaveable { mutableStateOf<Int?>(null) }
     val holder = rememberSaveableStateHolder()
     val trainer by devices.trainerState.collectAsState()
     val hr by devices.heartRateState.collectAsState()
     val ride by devices.rideState.collectAsState()
+    val workout by devices.workoutState.collectAsState()
+    val rampResult by devices.rampResult.collectAsState()
+    LaunchedEffect(rampResult?.phase) {
+        if (rampResult?.phase == com.isaac.ridelab.workout.RampReviewPhase.ACCEPTED) ftp.refresh()
+    }
     val ready by devices.serviceReady.collectAsState()
     val overlay by devices.overlayState.collectAsState()
     val scanState by devices.scanner.state.collectAsState()
@@ -61,20 +68,29 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     }, bottomBar = {
         NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
             Destination.entries.forEach { item ->
-                NavigationBarItem(selected = destination == item, onClick = { destination = item },
+                NavigationBarItem(selected = destination == item, onClick = { library = false; destination = item },
                     icon = { NavigationGlyph(item) }, label = { Text(stringResource(item.title), maxLines = 1) })
             }
         }
     }) { padding ->
         holder.SaveableStateProvider(destination.name) {
             val modifier = Modifier.padding(padding)
+            if (library) {
+                WorkoutLibraryScreen(ftpState, ready && trainer.fec.canSend &&
+                    ride.phase in setOf(com.isaac.ridelab.service.RidePhase.IDLE, com.isaac.ridelab.service.RidePhase.ERROR) && !workout.controlsTrainer,
+                    { library = false }, { library = false; destination = Destination.SETTINGS },
+                    { id -> library = false; destination = Destination.RIDE; startWorkout(id) }, modifier)
+            } else
             when (destination) {
                 Destination.HOME -> HomeScreen(trainer, hr, ftpState, historyState, ride, ready,
                     { picker = R.string.role_trainer }, { picker = R.string.ui_heart_rate },
                     devices::disconnectTrainer, devices::disconnectHeartRate,
                     { destination = Destination.RIDE; startRide() }, { destination = Destination.RIDE },
-                    { destination = Destination.HISTORY }, modifier)
-                Destination.RIDE -> RideScreen(trainer, hr, ride, ready, startRide, devices::endRide, devices::sendFecTarget, appSettings, modifier, ergState, erg::edit, erg::rememberApplied)
+                    { destination = Destination.HISTORY }, modifier, { library = true })
+                Destination.RIDE -> RideScreen(trainer, hr, ride, ready, startRide, devices::endRide, devices::sendFecTarget, appSettings, modifier, ergState, erg::edit, erg::rememberApplied,
+                    workout, devices::pauseWorkout, devices::resumeWorkout, devices::skipWorkout, devices::endWorkout,
+                    rampResult, ftpState, devices::acceptRampResult, devices::keepRampResult,
+                    { destination = Destination.SETTINGS })
                 Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier, deleting, history::deleteRide, csvExport == CsvExportState.WRITING, exportCsv)
                 Destination.SETTINGS -> SettingsDestination(ftpState, { value, done -> ftp.save(value, done) }, ftp::saveWeight, language, modifier,
                     overlay, ready && ride.phase == com.isaac.ridelab.service.RidePhase.ACTIVE,

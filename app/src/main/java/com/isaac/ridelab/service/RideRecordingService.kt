@@ -24,6 +24,9 @@ import com.isaac.ridelab.locale.AppLocale
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import com.isaac.ridelab.workout.*
+import com.isaac.ridelab.ble.fec.ThinkRiderX2MaxProfile
+import com.isaac.ridelab.ble.fec.FecStatus
 
 /** Owns the only trainer and HR clients, including the pre-ride preview connection.
  * Starting a ride promotes this same instance; no GATT objects are migrated/recreated.
@@ -46,6 +49,20 @@ class RideRecordingService : Service() {
     private val binder = LocalBinder()
     private val repository get() = (application as RideLabApplication).rideRepository
     private val recorder by lazy { RideRecorder(repository) }
+    private val workout: WorkoutController = WorkoutController(ThinkRiderX2MaxProfile) { watts ->
+        if (!trainerControlReady) false else {
+            Log.i("RideLabWorkout", "Target request watts=$watts step=${workoutState.value.stepIndex}")
+            trainer.sendFecTarget(watts) // The same verified controller; no packet construction here.
+            trainer.state.value.fec.status in setOf(FecStatus.WRITING, FecStatus.SENT)
+        }
+    }
+    val workoutState get() = workout.state
+    private val trainerControlReady: Boolean get() = trainer.state.value.connection in
+        setOf(ConnectionState.CONNECTED, ConnectionState.SUBSCRIBING, ConnectionState.STREAMING) && trainer.state.value.fec.canSend
+    private val rampReview get() = (application as RideLabApplication).rampReview
+    private var workoutPreparing: Job? = null
+    private var workoutJob: Job? = null
+    private var pendingWorkout: WorkoutDefinition? = null
     private var startup: Job? = null
     private var recording: Job? = null
     private var finalizing: Job? = null
@@ -108,6 +125,16 @@ class RideRecordingService : Service() {
             }
         }
         scope.launch {
+            trainer.state.collect { value ->
+                val before = workoutState.value.phase
+                val now = SystemClock.elapsedRealtime()
+                if (value.connection in setOf(ConnectionState.DISCONNECTED, ConnectionState.FAILED)) workout.unavailable(now)
+                else if (value.fec.status == FecStatus.FAILED) workout.controlFailed(now)
+                if (before == WorkoutPhase.ACTIVE && workoutState.value.phase == WorkoutPhase.PAUSED)
+                    Log.w("RideLabWorkout", "Auto-pause issue=${workoutState.value.issue}; explicit resume required")
+            }
+        }
+        scope.launch {
             trainer.state.map { it.connection to it.issue?.reason }.distinctUntilChanged().collect { (connection, failure) ->
                 if (connection == ConnectionState.FAILED) reconnectTrainer(failure)
             }
@@ -123,6 +150,7 @@ class RideRecordingService : Service() {
 
     fun connectTrainer(device: DiscoveredDevice) {
         if (trainer.state.value.isActive && trainer.state.value.device?.address == device.address) return
+        workout.unavailable(SystemClock.elapsedRealtime())
         trainerRetry?.cancel(); trainerBudget.reset(); trainerWanted = device
         trainer.connect(device)
     }
@@ -134,6 +162,7 @@ class RideRecordingService : Service() {
     }
 
     fun disconnectTrainer() {
+        workout.unavailable(SystemClock.elapsedRealtime())
         trainerWanted = null; trainerRetry?.cancel(); trainerRetry = null
         trainer.disconnect()
     }
@@ -143,7 +172,48 @@ class RideRecordingService : Service() {
         heartRate.disconnect()
     }
 
-    fun sendFecTarget(watts: Int) = trainer.sendFecTarget(watts)
+    fun sendFecTarget(watts: Int) {
+        if (workoutState.value.controlsTrainer || rideState.value.phase == RidePhase.STOPPING) {
+            Log.w("RideLabWorkout", "Manual target blocked while workout owns trainer"); return
+        }
+        trainer.sendFecTarget(watts)
+    }
+
+    fun requestWorkout(id: WorkoutId) {
+        if (session.keepsConnections || workoutPreparing?.isActive == true ||
+            rampReview.state.value?.phase == RampReviewPhase.APPLYING) return
+        val definition = BuiltInWorkouts.find(id)
+        if (!workout.prepare(definition)) return
+        workoutPreparing = scope.launch {
+            try {
+                val ftp = (application as RideLabApplication).ftpSettings.read()
+                if (definition.requiresFtp && ftp == null) { workout.fail(WorkoutIssue.FTP_REQUIRED); return@launch }
+                if (!trainerControlReady) { workout.fail(WorkoutIssue.TRAINER_UNAVAILABLE); return@launch }
+                rampReview.clear()
+                pendingWorkout = definition
+                beginRide()
+                if (rideState.value.phase == RidePhase.ERROR) {
+                    pendingWorkout = null; workout.fail(WorkoutIssue.RIDE_FAILED)
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                Log.e("RideLabWorkout", "Preparation failed", e)
+                pendingWorkout = null; workout.fail(WorkoutIssue.RIDE_FAILED)
+            }
+        }
+    }
+    fun pauseWorkout() { workout.pause(SystemClock.elapsedRealtime()); Log.i("RideLabWorkout", "User pause; target unchanged") }
+    fun resumeWorkout() {
+        if (rideState.value.phase == RidePhase.ACTIVE) workout.resume(SystemClock.elapsedRealtime(), trainerControlReady)
+        Log.i("RideLabWorkout", "Resume phase=${workoutState.value.phase} step=${workoutState.value.stepIndex}")
+    }
+    fun skipWorkout() {
+        if (rideState.value.phase == RidePhase.ACTIVE) {
+            workout.skip(SystemClock.elapsedRealtime(), trainerControlReady)
+            if (workoutState.value.phase == WorkoutPhase.COMPLETED) endRide()
+        }
+    }
+    fun endWorkout() { endRide() }
 
     fun uiHidden() {
         Log.i(TAG, "UI hidden phase=${rideState.value.phase} preserve=${session.keepsConnections}")
@@ -151,6 +221,11 @@ class RideRecordingService : Service() {
     }
 
     fun requestStart() {
+        if (workoutState.value.controlsTrainer) return
+        workout.reset(); pendingWorkout = null
+        beginRide()
+    }
+    private fun beginRide() {
         if (!session.begin()) return
         recordingError = null
         Log.i(TAG, "Ride STARTING; retaining existing GATT sessions")
@@ -200,6 +275,16 @@ class RideRecordingService : Service() {
                     session.activate(start, id)
                     getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(start))
                     Log.i(TAG, "Ride ACTIVE sessionId=$id startedAtElapsedMs=$start trainer=${trainerDevice?.address} hr=${hrDevice?.address}")
+                    pendingWorkout?.let { definition ->
+                        pendingWorkout = null
+                        val snapshot = repository.analyticsSession(id)?.analyticsFtpWatts
+                        if (!workout.start(snapshot, SystemClock.elapsedRealtime(), start)) {
+                            Log.e("RideLabWorkout", "Workout refused phase=${workoutState.value.phase} issue=${workoutState.value.issue}")
+                            endRide(); return@launch
+                        }
+                        Log.i("RideLabWorkout", "Started id=${definition.id} session=$id ftpSnapshot=$snapshot")
+                        startWorkoutLoop()
+                    }
                     startRecordingLoop(start, id)
                     if (trainer.state.value.connection == ConnectionState.FAILED) reconnectTrainer(trainer.state.value.issue?.reason)
                     if (heartRate.state.value.connection == ConnectionState.FAILED) reconnectHeartRate(heartRate.state.value.issue?.reason)
@@ -211,6 +296,7 @@ class RideRecordingService : Service() {
         } catch (error: RuntimeException) {
             Log.e(TAG, "Foreground promotion failed", error)
             session.fail(RideError.START_FAILED)
+            if (workoutState.value.controlsTrainer) workout.fail(WorkoutIssue.RIDE_FAILED)
             stopForeground(STOP_FOREGROUND_REMOVE)
             releaseWakeLock()
             stopSelf()
@@ -223,15 +309,31 @@ class RideRecordingService : Service() {
         if (!session.beginStop()) return
         Log.i(TAG, "Ride STOPPING: explicit end")
         val endedAt = SystemClock.elapsedRealtime()
+        workout.finish(endedAt, testEnded = true)
+        val isRamp = workoutState.value.definition?.rampTest == true
+        val ranges = workout.effortRanges()
         val endEpoch = System.currentTimeMillis()
         val last = liveSnapshot(endedAt)
         finalizing = scope.launch {
             try {
                 startup?.join()
+                workoutJob?.cancelAndJoin()
                 recording?.cancelAndJoin()
                 recordingError?.let { throw it }
                 val id = checkNotNull(recorder.complete(last, endEpoch, endedAt))
                 Log.i(TAG, "Recording COMPLETED sessionId=$id endEpoch=$endEpoch")
+                if (isRamp) {
+                    try {
+                        val rows = repository.historySamples(id)
+                        val result = withContext(Dispatchers.Default) { RampTestCalculator.calculate(id, rows, ranges) }
+                        rampReview.publish(result)
+                        Log.i("RideLabWorkout", "Ramp result session=$id best60=${result.best60Watts} estimatedFtp=${result.estimatedFtp}; awaiting explicit acceptance")
+                    } catch (e: CancellationException) { throw e }
+                    catch (e: Exception) {
+                        Log.e("RideLabWorkout", "Ramp analysis failed; completed ride preserved", e)
+                        workout.fail(WorkoutIssue.RESULT_FAILED)
+                    }
+                }
                 session.end() // Flush/finalization succeeded before existing BLE shutdown.
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
@@ -269,7 +371,29 @@ class RideRecordingService : Service() {
         }
     }
 
+    private fun startWorkoutLoop() {
+        workoutJob?.cancel()
+        workoutJob = scope.launch {
+            try { while (isActive && rideState.value.phase == RidePhase.ACTIVE) {
+                val oldIndex = workoutState.value.stepIndex
+                workout.tick(SystemClock.elapsedRealtime())
+                if (oldIndex != workoutState.value.stepIndex)
+                    Log.i("RideLabWorkout", "Step index=${workoutState.value.stepIndex} target=${workoutState.value.targetWatts}")
+                if (workoutState.value.phase == WorkoutPhase.COMPLETED) { endRide(); break }
+                delay(250)
+            } } catch (e: CancellationException) { throw e }
+            catch (e: Exception) {
+                Log.e("RideLabWorkout", "Scheduler failed; stopping and preserving ride", e)
+                workout.finish(SystemClock.elapsedRealtime())
+                workout.fail(WorkoutIssue.CONTROL_FAILED)
+                endRide()
+            }
+        }
+    }
+
     private suspend fun recordingFailure(error: Exception) {
+        workout.finish(SystemClock.elapsedRealtime())
+        if (workoutState.value.definition != null) workout.fail(WorkoutIssue.RIDE_FAILED)
         recordingError = error
         Log.e(TAG, "Recording failed; aborting ride", error)
         session.beginStop()
@@ -324,7 +448,9 @@ class RideRecordingService : Service() {
             .setWhen(System.currentTimeMillis() - (SystemClock.elapsedRealtime() - startedAt))
             .setUsesChronometer(true).setOngoing(true).setOnlyAlertOnce(true)
             .setContentIntent(open)
-            .addAction(0, localized.getString(R.string.ride_end), end).build()
+            // Workout cancellation must pass through the UI confirmation, not a notification tap.
+            .addAction(0, localized.getString(if (workoutState.value.controlsTrainer) R.string.workout_open else R.string.ride_end),
+                if (workoutState.value.controlsTrainer) open else end).build()
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {

@@ -215,3 +215,13 @@ Presentation-only Home/Ride/History/Settings navigation implemented. Device diag
 ## Analytics Layer 1
 
 Implemented fixed 5s/15s/30s/1m/5m/20m/60m best efforts, fixed-point power duration, earlier-completed-ride PR comparison, ride-time weight snapshots/W/kg, and 7 FTP power zones. Explicit Room v2-to-v3 nullable weight migration. Physical/manual verification pending; see ANALYTICS_LAYER1_VERIFICATION.md. No eFTP, training load, workout automation or ride-pipeline changes.
+
+## Requested Workout Engine Phase 1 + FTP Ramp Test
+
+Implemented service-owned monotonic workouts, explicit-confirmed automatic ERG,
+pause/resume/skip, recovery/endurance/sweet-spot courses and FTP-relative ramp test.
+Uses ride-time FTP snapshots and existing FE-C/recording/reconnect systems. Test
+result is measured ramp-only best continuous 60s x75%, accepted only on explicit
+confirmation through normal FTP settings. No workout editor, metadata migration,
+automatic exhaustion detection or automatic FTP update. Unit/compile verification
+complete; physical acceptance PENDING. See WORKOUT_PHASE1_VERIFICATION.md.

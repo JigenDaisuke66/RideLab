@@ -42,8 +42,15 @@ class MainActivity : ComponentActivity() {
         }
     }
     private lateinit var devices: DevicesViewModel
+    private var notificationStartPending = false
+    private var notificationWorkout: com.isaac.ridelab.workout.WorkoutId? = null
     private val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) devices.startRide()
+        val requested = notificationStartPending
+        val workout = notificationWorkout
+        notificationStartPending = false; notificationWorkout = null
+        if (requested && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            if (workout == null) devices.startRide() else devices.startWorkout(workout)
+        }
     }
     private val permissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -66,6 +73,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         devices = ViewModelProvider(this)[DevicesViewModel::class.java]
+        notificationStartPending = savedInstanceState?.getBoolean("notification_start_pending") ?: false
+        notificationWorkout = com.isaac.ridelab.workout.WorkoutId.entries.firstOrNull {
+            it.name == savedInstanceState?.getString("notification_workout")
+        }
         val ftp = ViewModelProvider(this)[com.isaac.ridelab.ui.screen.FtpViewModel::class.java]
         val erg = ViewModelProvider(this)[com.isaac.ridelab.ui.screen.ErgTargetViewModel::class.java]
         history = ViewModelProvider(this)[HistoryViewModel::class.java]
@@ -98,13 +109,16 @@ class MainActivity : ComponentActivity() {
                     },
                     appSettings = { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))) },
                     bluetoothSettings = { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
-                    language = ::selectLanguage, enableOverlay = ::enableOverlay, exportCsv = ::exportCsv)
+                    language = ::selectLanguage, enableOverlay = ::enableOverlay, exportCsv = ::exportCsv,
+                    startWorkout = ::onStartWorkout)
             }
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         pendingCsvRide?.let { outState.putLong("csv_ride_id", it) }
+        outState.putBoolean("notification_start_pending", notificationStartPending)
+        outState.putString("notification_workout", notificationWorkout?.name)
         super.onSaveInstanceState(outState)
     }
 
@@ -165,8 +179,17 @@ class MainActivity : ComponentActivity() {
     private fun onStartRide() {
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this,
                 Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            notificationStartPending = true; notificationWorkout = null
             notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else devices.startRide()
+    }
+
+    private fun onStartWorkout(id: com.isaac.ridelab.workout.WorkoutId) {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this,
+                Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            notificationStartPending = true; notificationWorkout = id
+            notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else devices.startWorkout(id)
     }
 
     private fun enableOverlay() {

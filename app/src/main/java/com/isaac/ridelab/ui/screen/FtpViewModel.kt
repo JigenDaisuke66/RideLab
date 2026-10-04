@@ -15,7 +15,8 @@ class FtpViewModel(application: Application) : AndroidViewModel(application) {
     private val settings = (application as RideLabApplication).ftpSettings
     private val mutable = MutableStateFlow(FtpState())
     val state = mutable.asStateFlow()
-    init { viewModelScope.launch {
+    init { refresh() }
+    fun refresh() { viewModelScope.launch {
         try { mutable.value = FtpState(true, settings.read(), weightKg = weightSettings.read()) }
         catch (e: Exception) { Log.e("RideLabAnalytics", "FTP read failed", e); mutable.value = FtpState(failed = true) }
     } }

@@ -31,6 +31,21 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
     val heartRateState = mutableHeartRate.asStateFlow()
     val rideState = mutableRide.asStateFlow()
     val serviceReady = mutableReady.asStateFlow()
+    private val mutableWorkout = MutableStateFlow(com.isaac.ridelab.workout.WorkoutState())
+    val workoutState = mutableWorkout.asStateFlow()
+    private val rampReview = (application as com.isaac.ridelab.RideLabApplication).rampReview
+    val rampResult = rampReview.state
+    fun startWorkout(id: com.isaac.ridelab.workout.WorkoutId) { scanner.stop(); service?.requestWorkout(id) }
+    fun pauseWorkout() { service?.pauseWorkout() }
+    fun resumeWorkout() { service?.resumeWorkout() }
+    fun skipWorkout() { service?.skipWorkout() }
+    fun endWorkout() { service?.endWorkout() }
+    fun keepRampResult() { rampReview.keep() }
+    fun acceptRampResult() { scope.launch {
+        try { rampReview.accept() }
+        catch (e: CancellationException) { throw e }
+        catch (e: Exception) { Log.e("RideLabWorkout", "FTP acceptance save failed", e) }
+    } }
     var pendingConnection: DiscoveredDevice? = null
     var pendingHeartRateConnection: DiscoveredDevice? = null
 
@@ -44,6 +59,7 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
                 launch { owner.heartRateState.collect { mutableHeartRate.value = it } }
                 launch { owner.overlayState.collect { mutableOverlay.value = it } }
                 launch { owner.rideState.collect { mutableRide.value = it } }
+                launch { owner.workoutState.collect { mutableWorkout.value = it } }
             }
             mutableReady.value = true
             if (!visible) owner.uiHidden()
@@ -54,6 +70,8 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
             mutableTrainer.value = GattDeviceState(connection = ConnectionState.FAILED, issue = GattIssue(GattFailure.CONNECTION_LOST))
             mutableHeartRate.value = HeartRateState(connection = ConnectionState.FAILED, issue = GattIssue(GattFailure.CONNECTION_LOST))
             mutableRide.value = RideState(RidePhase.ERROR, error = RideError.SERVICE_LOST)
+            if (mutableWorkout.value.controlsTrainer) mutableWorkout.value = mutableWorkout.value.copy(
+                phase = com.isaac.ridelab.workout.WorkoutPhase.ERROR, issue = com.isaac.ridelab.workout.WorkoutIssue.RIDE_FAILED)
         }
     }
 
