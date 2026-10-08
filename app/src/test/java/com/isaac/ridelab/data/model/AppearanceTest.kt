@@ -4,6 +4,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AppearanceTest {
+    @Test fun oldPreferencesDefaultToLightAndExplicitModesRestore() {
+        assertEquals(ThemeMode.LIGHT, Appearance.restore("BLUE", null, "STRIP").mode)
+        ThemeMode.entries.forEach { mode ->
+            assertEquals(mode, Appearance.restore("BLUE", null, "STRIP", mode.name).mode)
+        }
+        assertEquals(ThemeMode.LIGHT, Appearance.restore(null, null, null, "invalid").mode)
+    }
     @Test fun freshInstallKeepsMintPanelAndFollowsTheme() {
         assertEquals(Appearance(), Appearance.restore(null, null, null))
         assertEquals(ThemePalette.MINT, Appearance().effectiveOverlayPalette)

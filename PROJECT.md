@@ -90,7 +90,8 @@ Training analytics phase 1 adds optional FTP settings and NP/IF/TSS. Schema v2 e
 
 ### Settings
 
-Appearance preferences add five dark palettes (mint, blue, violet, amber, rose),
+Appearance preferences add five palettes (mint, blue, violet, amber, rose) with
+Light (default), Dark or System modes for full backgrounds, cards, text and system bars,
 with independently selected overlay colors or Follow app theme. Three overlay
 layouts are available: panel, horizontal strip and dashboard. Changes apply live,
 are saved in the appearance SharedPreferences, and require no Activity/service

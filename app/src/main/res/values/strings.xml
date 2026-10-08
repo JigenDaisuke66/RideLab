@@ -444,4 +444,9 @@
     <string name="workout_initial_ftp">首次 FTP 测试（不知道 FTP）</string>
     <string name="workout_initial_ftp_desc">无需填写 FTP。先轻松热身，再每分钟加重一点，根据实际功率给出建议 FTP。</string>
     <string name="workout_initial_ftp_protocol">先以 50 W 热身 5 分钟，再从 50 W 开始，每分钟增加 10 W：50、60、70 W……保持舒服的踏频，踩不动时手动点“结束测试”，无需骑到设备上限。结果取递增阶段最佳连续一分钟实测平均功率的 75%，确认采纳才保存。暂停或缺失数据不会被拼接；中途休息会影响估算，建议完整连续完成。暂停和结束不会自动降低阻力；结束后可手动应用较低目标。达到设备上限后完成最后一分钟即结束。</string>
+    <string name="theme_mode_light">浅色</string>
+    <string name="theme_mode_dark">深色</string>
+    <string name="theme_mode_system">跟随系统</string>
+    <string name="overlay_width">宽度：%1$d%%</string>
+    <string name="overlay_height">高度：%1$d%%</string>
 </resources>

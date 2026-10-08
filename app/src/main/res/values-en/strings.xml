@@ -444,4 +444,9 @@
     <string name="workout_initial_ftp">First FTP test (FTP unknown)</string>
     <string name="workout_initial_ftp_desc">No FTP setting needed. Warm up gently, then increase power each minute to estimate FTP from measured power.</string>
     <string name="workout_initial_ftp_protocol">Warm up for 5 minutes at 50 W, then start at 50 W and add 10 W each minute: 50, 60, 70 W… Use a comfortable cadence and manually tap End Test when you cannot sustain the effort; you do not need to reach the device limit. Suggested FTP is 75% of the best continuous minute of measured power during the ramp, saved only when accepted. Pauses and missing data are not joined; resting affects the estimate, so aim for an uninterrupted test. Pausing or ending does not automatically lower resistance; apply a lower target manually after ending. At the device limit, the test ends after one final minute.</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
+    <string name="theme_mode_system">System</string>
+    <string name="overlay_width">Width: %1$d%%</string>
+    <string name="overlay_height">Height: %1$d%%</string>
 </resources>

@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -36,6 +37,12 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     val trainer by devices.trainerState.collectAsState()
     val hr by devices.heartRateState.collectAsState()
     val ride by devices.rideState.collectAsState()
+    val view = LocalView.current
+    DisposableEffect(view, ride.phase) {
+        val previous = view.keepScreenOn
+        view.keepScreenOn = ride.phase == com.isaac.ridelab.service.RidePhase.ACTIVE
+        onDispose { view.keepScreenOn = previous }
+    }
     val workout by devices.workoutState.collectAsState()
     val rampResult by devices.rampResult.collectAsState()
     LaunchedEffect(rampResult?.phase) {

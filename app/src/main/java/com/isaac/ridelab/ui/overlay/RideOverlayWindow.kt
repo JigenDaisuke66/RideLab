@@ -12,11 +12,13 @@ import android.widget.*
 import com.isaac.ridelab.R
 import com.isaac.ridelab.data.model.LiveRideData
 import com.isaac.ridelab.data.model.OverlayStyle
+import com.isaac.ridelab.data.model.ThemeMode
 import com.isaac.ridelab.data.repository.AppearanceSettings
 import com.isaac.ridelab.locale.AppLocale
 import com.isaac.ridelab.ui.theme.RideColors
 import com.isaac.ridelab.ui.theme.accentColor
 import com.isaac.ridelab.ui.theme.panelColor
+import com.isaac.ridelab.ui.theme.rideColorScheme
 import androidx.compose.ui.graphics.toArgb
 
 /** Read-only window; no BLE ownership or trainer-control actions. Main thread only. */
@@ -28,9 +30,16 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     private val preferences = service.getSharedPreferences("ride_overlay", Context.MODE_PRIVATE)
     private val appearanceSettings = AppearanceSettings(service)
     private var appearance = appearanceSettings.read()
-    private val accent get() = appearance.effectiveOverlayPalette.accentColor.toArgb()
-    private val panelColor get() = appearance.effectiveOverlayPalette.panelColor.toArgb()
-    private val preferredWidth get() = if (appearance.overlayStyle == OverlayStyle.STRIP) 360 else 300
+    private val overlayColors get() = rideColorScheme(appearance.effectiveOverlayPalette, when (appearance.mode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> context.resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    })
+    private val accent get() = overlayColors.primary.toArgb()
+    private val panelColor get() = overlayColors.surface.toArgb()
+    private var size = OverlaySize.restore(preferences.getInt("width_percent", 100), preferences.getInt("height_percent", 100))
+    private val preferredWidth get() = size.widthDp(appearance.overlayStyle)
     private var transparency = preferences.getInt("transparency", 6).coerceIn(0, 80)
     private var fontPercent = preferences.getInt("font_percent", 100).coerceIn(80, 140)
     private val scaledTexts = mutableListOf<Pair<TextView, Float>>()
@@ -51,7 +60,9 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         x = preferences.getInt("position_x", dp(16)); y = preferences.getInt("position_y", dp(120))
     }
 
-    fun show(data: LiveRideData): Boolean {
+    fun show(data: LiveRideData, keepScreenOn: Boolean = false): Boolean {
+        params.flags = if (keepScreenOn) params.flags or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            else params.flags and WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON.inv()
         val selectedAppearance = appearanceSettings.read()
         if (selectedAppearance != appearance) {
             hide()
@@ -74,7 +85,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     private fun label(text: String, size: Float, accent: Boolean = false) = TextView(context).apply {
         this.text = text
         scaleText(this, size)
-        setTextColor(if (accent) this@RideOverlayWindow.accent else RideColors.text.toArgb())
+        setTextColor(if (accent) this@RideOverlayWindow.accent else overlayColors.onSurface.toArgb())
         setTypeface(Typeface.DEFAULT, Typeface.BOLD)
     }
     private fun scaleText(view: TextView, baseSize: Float) {
@@ -90,7 +101,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
             background = GradientDrawable().apply {
                 if (appearance.overlayStyle == OverlayStyle.DASHBOARD) {
                     orientation = GradientDrawable.Orientation.TL_BR
-                    colors = intArrayOf(panelColor, RideColors.background.toArgb())
+                    colors = intArrayOf(panelColor, overlayColors.background.toArgb())
                 } else setColor(panelColor)
                 cornerRadius = dp(if (appearance.overlayStyle == OverlayStyle.STRIP) 16 else 20).toFloat()
                 setStroke(dp(1), accent)
@@ -105,7 +116,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         header.addView(Button(context).apply {
             text = context.getString(R.string.overlay_close)
             scaleText(this, 12f)
-            setTextColor(RideColors.secondaryText.toArgb()); background = null
+            setTextColor(overlayColors.onSurfaceVariant.toArgb()); background = null
             minWidth = 0; minimumWidth = 0; setPadding(0,0,0,0)
             setOnClickListener { close() }
         }, LinearLayout.LayoutParams(dp(56), dp(48)))
@@ -118,7 +129,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         val metrics = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
         fun metric(titleId: Int): TextView {
             val row = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0,dp(3),dp(4),dp(3)) }
-            row.addView(label(context.getString(titleId),12f).apply { setTextColor(RideColors.secondaryText.toArgb()) }, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(label(context.getString(titleId),12f).apply { setTextColor(overlayColors.onSurfaceVariant.toArgb()) }, LinearLayout.LayoutParams(0, -2, 1f))
             val value = label(context.getString(R.string.history_no_data), if (titleId == R.string.ui_power) 34f else 20f, titleId == R.string.ui_power).apply { typeface = Typeface.MONOSPACE }
             row.addView(value); metrics.addView(row); return value
         }
@@ -127,7 +138,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
                 orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
                 setPadding(dp(2), dp(8), dp(2), dp(10))
             }
-            column.addView(label(context.getString(titleId), 11f).apply { setTextColor(RideColors.secondaryText.toArgb()) })
+            column.addView(label(context.getString(titleId), 11f).apply { setTextColor(overlayColors.onSurfaceVariant.toArgb()) })
             val value = label(context.getString(R.string.history_no_data), size, titleId == R.string.ui_power).apply {
                 typeface = Typeface.MONOSPACE; gravity = Gravity.CENTER
             }
@@ -177,6 +188,36 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
                 override fun onStopTrackingTouch(bar: SeekBar) = Unit
             })
         }, LinearLayout.LayoutParams(-1, dp(48)))
+        fun sizeControl(width: Boolean) {
+            val resource = if (width) R.string.overlay_width else R.string.overlay_height
+            fun percent() = if (width) size.widthPercent else size.heightPercent
+            val caption = label(context.getString(resource, percent()), 12f)
+            metrics.addView(caption)
+            metrics.addView(SeekBar(context).apply {
+                min = if (width) OverlaySize.MIN_WIDTH else OverlaySize.MIN_HEIGHT
+                max = if (width) OverlaySize.MAX_WIDTH else OverlaySize.MAX_HEIGHT
+                progress = percent()
+                contentDescription = caption.text
+                progressTintList = ColorStateList.valueOf(accent)
+                thumbTintList = ColorStateList.valueOf(accent)
+                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
+                        if (!fromUser) return
+                        size = if (width) OverlaySize.restore(value, size.heightPercent)
+                            else OverlaySize.restore(size.widthPercent, value)
+                        caption.text = context.getString(resource, percent())
+                        bar.contentDescription = caption.text
+                        preferences.edit().putInt("width_percent", size.widthPercent)
+                            .putInt("height_percent", size.heightPercent).apply()
+                        position(false)
+                        panel.post { if (root === panel) position(false) }
+                    }
+                    override fun onStartTrackingTouch(bar: SeekBar) = Unit
+                    override fun onStopTrackingTouch(bar: SeekBar) = Unit
+                })
+            }, LinearLayout.LayoutParams(-1, dp(48)))
+        }
+        sizeControl(true); sizeControl(false)
         val fontLabel = label(context.getString(R.string.overlay_font_size, fontPercent), 12f)
         metrics.addView(fontLabel)
         metrics.addView(SeekBar(context).apply {
@@ -212,7 +253,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
                 super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(available, View.MeasureSpec.AT_MOST))
             }
         }.apply { addView(metrics); visibility = if (collapsed) View.GONE else View.VISIBLE }
-        panel.addView(body)
+        panel.addView(body, LinearLayout.LayoutParams(-1, 0, 1f))
         title.setOnClickListener {
             title.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
             android.transition.TransitionManager.beginDelayedTransition(panel,
@@ -242,6 +283,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         }
         val bounds = manager.currentWindowMetrics.bounds
         params.width = minOf(dp(preferredWidth), bounds.width())
+        params.height = minOf(dp(size.heightDp), bounds.height())
         root = panel
         try { manager.addView(panel,params) } catch(e: RuntimeException) {
             root=null; scaledTexts.clear(); power=null; hr=null; cadence=null; summary=null
@@ -257,7 +299,8 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         val usableWidth = (bounds.width() - insets.left - insets.right).coerceAtLeast(1)
         val usableHeight = (bounds.height() - insets.top - insets.bottom).coerceAtLeast(1)
         params.width = minOf(dp(preferredWidth), usableWidth)
-        val fitted=fitOverlay(params.x-insets.left,params.y-insets.top,usableWidth,usableHeight,params.width,view.height,snap)
+        params.height = minOf(dp(size.heightDp), usableHeight)
+        val fitted=fitOverlay(params.x-insets.left,params.y-insets.top,usableWidth,usableHeight,params.width,params.height,snap)
         params.x=fitted.x+insets.left; params.y=fitted.y+insets.top
         try { manager.updateViewLayout(view,params) }
         catch(e: RuntimeException) { android.util.Log.e("RideLabOverlay","Window update failed",e); close() }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -31,6 +32,17 @@ internal fun AppearanceControls() {
     val (appearance, settings) = rememberAppearance()
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.appearance_title), style = MaterialTheme.typography.titleMedium)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ThemeMode.entries.forEach { mode ->
+                FilterChip(selected = appearance.mode == mode,
+                    onClick = { settings.save(appearance.copy(mode = mode)) }, modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(when (mode) {
+                        ThemeMode.LIGHT -> R.string.theme_mode_light
+                        ThemeMode.DARK -> R.string.theme_mode_dark
+                        ThemeMode.SYSTEM -> R.string.theme_mode_system
+                    })) })
+            }
+        }
         Text(stringResource(R.string.appearance_theme), style = MaterialTheme.typography.labelLarge)
         PalettePicker(appearance.theme) { settings.save(appearance.copy(theme = it)) }
         HorizontalDivider()
@@ -72,16 +84,20 @@ private fun PalettePicker(selected: ThemePalette?, choose: (ThemePalette) -> Uni
 @Composable
 private fun OverlayAppearancePreview(appearance: Appearance) {
     val palette = appearance.effectiveOverlayPalette
-    Card(colors = CardDefaults.cardColors(containerColor = palette.panelColor),
+    val colors = rideColorScheme(palette, when (appearance.mode) {
+        ThemeMode.LIGHT -> false; ThemeMode.DARK -> true; ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    })
+    MaterialTheme(colorScheme = colors) {
+    Card(colors = CardDefaults.cardColors(containerColor = colors.surface),
         modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.overlay_title), color = palette.accentColor,
+            Text(stringResource(R.string.overlay_title), color = colors.primary,
                 style = MaterialTheme.typography.labelLarge)
             when (appearance.overlayStyle) {
                 OverlayStyle.PANEL -> listOf(R.string.ui_power, R.string.ui_heart_rate, R.string.cadence).forEach {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(stringResource(it), color = RideColors.secondaryText)
-                        Text(stringResource(R.string.history_no_data), color = if (it == R.string.ui_power) palette.accentColor else RideColors.text)
+                        Text(stringResource(it), color = colors.onSurfaceVariant)
+                        Text(stringResource(R.string.history_no_data), color = if (it == R.string.ui_power) colors.primary else colors.onSurface)
                     }
                 }
                 OverlayStyle.STRIP -> Row(Modifier.fillMaxWidth()) {
@@ -99,14 +115,15 @@ private fun OverlayAppearancePreview(appearance: Appearance) {
             }
         }
     }
+    }
 }
 
 @Composable
 private fun PreviewMetric(title: Int, palette: ThemePalette, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(title), color = RideColors.secondaryText, style = MaterialTheme.typography.labelMedium)
-        Text(stringResource(R.string.history_no_data), color = if (title == R.string.ui_power) palette.accentColor else RideColors.text,
+        Text(stringResource(title), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(R.string.history_no_data), color = if (title == R.string.ui_power) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.titleMedium)
     }
 }
