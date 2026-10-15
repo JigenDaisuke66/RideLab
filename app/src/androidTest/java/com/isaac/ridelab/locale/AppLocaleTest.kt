@@ -40,14 +40,13 @@ class AppLocaleTest {
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
     }
 
-    @Test fun legacyFreshInstallUsesChineseEvenWithEnglishBaseResources() {
+    @Test fun legacyFreshInstallKeepsFollowSystemWithoutWritingAPreference() {
         val english = context.createConfigurationContext(Configuration(context.resources.configuration).apply {
             setLocale(Locale.ENGLISH)
         })
         assertEquals("Devices", english.getString(R.string.devices_title))
         AppLocale.initializeLegacy(english)
-        assertEquals("zh-CN", preferences.getString(AppLocale.LEGACY_LANGUAGE, null))
-        assertEquals("设备", AppLocale.legacyContext(english).getString(R.string.devices_title))
+        assertNull(preferences.getString(AppLocale.LEGACY_LANGUAGE, null))
     }
 
     @Test fun legacyExplicitEnglishSurvivesInitializationAndNewContexts() {
@@ -62,15 +61,16 @@ class AppLocaleTest {
         assertFalse(AppLocale.selectLegacy(newContext, AppLocale.ENGLISH))
     }
 
-    @Test fun platformFreshInstallSeedsChineseAndFirstActivityUsesIt() {
+    @Test fun platformFreshInstallFollowsSystemAndFirstActivityUsesResolvedLanguage() {
         assumeTrue(Build.VERSION.SDK_INT >= 33)
         val manager = context.getSystemService(LocaleManager::class.java)
         manager.applicationLocales = LocaleList.getEmptyLocaleList()
         AppLocale.initialize(context)
-        assertEquals("zh-CN", manager.applicationLocales.toLanguageTags())
+        assertTrue(manager.applicationLocales.isEmpty)
         assertTrue(preferences.getBoolean(AppLocale.PLATFORM_INITIALIZED, false))
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity { assertEquals("设备", it.getString(R.string.devices_title)) }
+            scenario.onActivity { assertEquals(AppLocale.effectiveLanguage(context).tag,
+                it.resources.configuration.locales[0].toLanguageTag()) }
         }
     }
 
@@ -119,8 +119,8 @@ class AppLocaleTest {
         assumeTrue(Build.VERSION.SDK_INT >= 33)
         val manager = context.getSystemService(LocaleManager::class.java)
         manager.applicationLocales = LocaleList.getEmptyLocaleList()
-        assertEquals(manager.systemLocales,
-            AppLocale.overlayContext(context, context).resources.configuration.locales)
+        assertEquals(AppLocale.effectiveLanguage(context).tag,
+            AppLocale.overlayContext(context, context).resources.configuration.locales[0].toLanguageTag())
     }
 
     @Test fun upgradingFromLegacyMigratesSavedEnglishOnce() {
@@ -131,5 +131,24 @@ class AppLocaleTest {
         manager.applicationLocales = LocaleList.getEmptyLocaleList()
         AppLocale.initialize(context)
         assertEquals("en", manager.applicationLocales.toLanguageTags())
+    }
+
+    @Test fun everyManualLanguageLocalizesOverlayCsvAndNotificationResources() {
+        val display = context.createConfigurationContext(Configuration(context.resources.configuration).apply { setLocale(Locale.GERMAN) })
+        AppLanguage.entries.filter { it != AppLanguage.SYSTEM }.forEach { language ->
+            AppLocale.select(context, language.tag)
+            AppLocale.initialize(context) // Reload must not reset the override.
+            assertEquals(language, AppLocale.selection(context))
+            val activity = AppLocale.activityContext(context)
+            val overlay = AppLocale.overlayContext(display, context)
+            assertEquals(language.tag, overlay.resources.configuration.locales[0].toLanguageTag())
+            assertEquals(activity.getString(R.string.overlay_close), overlay.getString(R.string.overlay_close))
+            assertEquals(activity.getString(R.string.ride_active), overlay.getString(R.string.ride_active))
+            assertEquals(12, activity.resources.getStringArray(R.array.ride_csv_headers).size)
+            assertFalse(activity.getString(R.string.history_watts, 123.4).contains("%1$"))
+        }
+        AppLocale.select(context, "")
+        AppLocale.initialize(context)
+        assertEquals(AppLanguage.SYSTEM, AppLocale.selection(context))
     }
 }

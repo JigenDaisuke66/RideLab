@@ -57,6 +57,19 @@ class RideCsvExporterTest {
             assertTrue(chinese.contains(",32.25,"))
         } finally { Locale.setDefault(previous) }
     }
+    @Test fun allSevenHeaderLanguagesPreserveRawDotDecimalRows() {
+        val previous = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.FRANCE)
+            val row = csv(listOf(sample())).split("\r\n")[1]
+            listOf("values", "values-en", "values-ja", "values-zh-rTW", "values-es", "values-pt-rBR", "values-fr").forEach { folder ->
+                val lines = csv(listOf(sample()), folder).split("\r\n")
+                assertEquals(row, lines[1])
+                assertEquals("\uFEFF" + headers(folder).joinToString(","), lines[0])
+                assertEquals(12, headers(folder).size)
+            }
+        } finally { Locale.setDefault(previous) }
+    }
     @Test fun chronologicalOrderUsesElapsedAndDoesNotFillGaps() {
         val result = csv(listOf(sample(10_000), sample(0), sample(1000))).split("\r\n")
         assertEquals(listOf("0", "1000", "10000"), result.drop(1).filter { it.isNotEmpty() }.map { it.split(',')[2] })

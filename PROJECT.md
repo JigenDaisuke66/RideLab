@@ -197,11 +197,20 @@ saved checkpoint. No destructive migrations or advanced analytics. Minimal read-
 
 ## Localization
 
-Simplified Chinese (zh-CN) is the default/fallback language.
+Follow System is the default selection. Simplified Chinese (zh-CN) remains the unqualified fallback.
 
-English remains fully supported as an alternative language.
+Supported languages: Simplified Chinese, English, Japanese, Traditional Chinese (Taiwan),
+Spanish, Brazilian Portuguese and French.
 
-Fresh installations explicitly select zh-CN on first startup regardless of system language. On Android 13+, a one-time app_locale/platform_initialized preference seeds LocaleManager only if no existing per-app choice exists; Android persists all subsequent choices, including System default. On Android 12/12L, app_locale/legacy_language stores the selection and the Activity uses a localized context. The in-app language buttons support Chinese and English on all supported versions. A saved legacy choice migrates once when upgrading to Android 13+.
+Fresh installs leave the override empty and resolve supported system languages,
+falling back to zh-CN when none match. Android 13+ LocaleManager is the sole manual
+override store; an empty applicationLocales means Follow System. The existing
+one-time platform_initialized migration copies only a present legacy_language value,
+never a new Chinese default. Android 12/12L retains app_locale/legacy_language;
+Follow System removes that key. Existing explicit Chinese/English choices are preserved.
+Old auto-seeded Chinese is indistinguishable from manual Chinese and is also retained.
+Activity, notification and overlay contexts share LanguagePolicy. Settings ViewModel
+owns selection actions; Activity only performs legacy recreation. See LOCALIZATION_PHASE2.md.
 
 Chinese strings live in res/values/strings.xml; English translations live in res/values-en/strings.xml. Every visible string must exist in both languages. resources.properties declares unqualifiedResLocale=zh-CN.
 

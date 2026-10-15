@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -124,7 +125,7 @@ internal fun RideControls(
             enabled = ready && state.phase !in setOf(RidePhase.STARTING, RidePhase.STOPPING),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
+                .heightIn(min = 52.dp),
             shape = MaterialTheme.shapes.medium,
             colors = if (state.ongoing) {
                 ButtonDefaults.buttonColors(

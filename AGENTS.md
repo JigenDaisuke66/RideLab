@@ -51,6 +51,11 @@ freeze active elapsed time/sampling and workout progression, without changing ER
 
 Compose is presentation only.
 
+For UI work, follow UI_ARCHITECTURE.md. Keep screen rendering separate from
+route/ViewModel wiring. Reuse existing service state rather than a second mutable
+ride model. Settings render immutable state and dispatch typed preference actions;
+repositories own persistence. Preserve feature-specific confirmation/navigation behavior.
+
 Business/data layers must never contain translated UI strings.
 
 Use enum/sealed/data types instead of values such as:
@@ -112,11 +117,17 @@ BLE failures should be logged and represented through state.
 
 ## Localization
 
-Default/fallback language: Simplified Chinese (zh-CN).
+Default language mode: Follow System. Unsupported system languages fall back to Simplified Chinese (zh-CN).
 
 Additional initial language:
 
 - English (en)
+- Japanese (ja), Traditional Chinese Taiwan (zh-TW), Spanish (es),
+  Brazilian Portuguese (pt-BR), French (fr)
+
+Manual language selections persist and override system changes. Follow System clears
+the override. Use AppLocale/LanguagePolicy through the Settings ViewModel; never seed
+a new install with an explicit locale. Preserve legacy app_locale selections.
 
 All UI strings must use Android resources. Put default Chinese in res/values/strings.xml and complete English translations in res/values-en/strings.xml. Set unqualifiedResLocale=zh-CN in resources.properties.
 

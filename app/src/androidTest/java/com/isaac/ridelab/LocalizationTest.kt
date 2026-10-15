@@ -16,6 +16,11 @@ class LocalizationTest {
         }
         assertEquals("设备", title("zh-CN"))
         assertEquals("Devices", title("en"))
-        assertEquals("设备", title("fr-FR"))
+        assertEquals("Appareils", title("fr-FR"))
+        assertEquals("デバイス", title("ja"))
+        assertEquals("裝置", title("zh-TW"))
+        assertEquals("Dispositivos", title("es"))
+        assertEquals("Dispositivos", title("pt-BR"))
+        assertEquals("设备", title("de-DE"))
     }
 }

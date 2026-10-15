@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.isaac.ridelab.R
 import com.isaac.ridelab.data.model.*
 import com.isaac.ridelab.ui.theme.*
+import com.isaac.ridelab.ui.settings.AppearanceAction
 
 private val ThemePalette.title: Int get() = when (this) {
     ThemePalette.MINT -> R.string.theme_mint
@@ -28,14 +29,13 @@ private val OverlayStyle.title: Int get() = when (this) {
 }
 
 @Composable
-internal fun AppearanceControls() {
-    val (appearance, settings) = rememberAppearance()
+internal fun AppearanceControls(appearance: Appearance, onAction: (AppearanceAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.appearance_title), style = MaterialTheme.typography.titleMedium)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ThemeMode.entries.forEach { mode ->
                 FilterChip(selected = appearance.mode == mode,
-                    onClick = { settings.save(appearance.copy(mode = mode)) }, modifier = Modifier.weight(1f),
+                    onClick = { onAction(AppearanceAction.Mode(mode)) }, modifier = Modifier.weight(1f),
                     label = { Text(stringResource(when (mode) {
                         ThemeMode.LIGHT -> R.string.theme_mode_light
                         ThemeMode.DARK -> R.string.theme_mode_dark
@@ -44,18 +44,18 @@ internal fun AppearanceControls() {
             }
         }
         Text(stringResource(R.string.appearance_theme), style = MaterialTheme.typography.labelLarge)
-        PalettePicker(appearance.theme) { settings.save(appearance.copy(theme = it)) }
+        PalettePicker(appearance.theme) { onAction(AppearanceAction.Palette(it)) }
         HorizontalDivider()
         Text(stringResource(R.string.appearance_overlay_palette), style = MaterialTheme.typography.labelLarge)
         FilterChip(selected = appearance.overlayPalette == null,
-            onClick = { settings.save(appearance.copy(overlayPalette = null)) },
+            onClick = { onAction(AppearanceAction.OverlayPalette(null)) },
             label = { Text(stringResource(R.string.appearance_follow_theme)) })
-        PalettePicker(appearance.overlayPalette) { settings.save(appearance.copy(overlayPalette = it)) }
+        PalettePicker(appearance.overlayPalette) { onAction(AppearanceAction.OverlayPalette(it)) }
         Text(stringResource(R.string.appearance_overlay_style), style = MaterialTheme.typography.labelLarge)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OverlayStyle.entries.forEach { style ->
                 FilterChip(selected = appearance.overlayStyle == style,
-                    onClick = { settings.save(appearance.copy(overlayStyle = style)) },
+                    onClick = { onAction(AppearanceAction.Style(style)) },
                     label = { Text(stringResource(style.title)) }, modifier = Modifier.weight(1f))
             }
         }

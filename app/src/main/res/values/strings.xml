@@ -449,4 +449,10 @@
     <string name="theme_mode_system">跟随系统</string>
     <string name="overlay_width">宽度：%1$d%%</string>
     <string name="overlay_height">高度：%1$d%%</string>
+    <string name="language_system">跟随系统</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_traditional">繁體中文（台灣）</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_portuguese">Português (Brasil)</string>
+    <string name="language_french">Français</string>
 </resources>

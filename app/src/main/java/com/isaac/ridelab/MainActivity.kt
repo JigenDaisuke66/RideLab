@@ -98,6 +98,7 @@ class MainActivity : ComponentActivity() {
         }
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.rgb(9, 13, 18)))
+        val appearanceModel = ViewModelProvider(this)[com.isaac.ridelab.ui.settings.AppearanceViewModel::class.java]
         setContent {
             RideLabTheme {
                 com.isaac.ridelab.ui.screen.AppShell(devices, history, ftp, erg,
@@ -110,7 +111,7 @@ class MainActivity : ComponentActivity() {
                     appSettings = { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))) },
                     bluetoothSettings = { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
                     language = ::selectLanguage, enableOverlay = ::enableOverlay, exportCsv = ::exportCsv,
-                    startWorkout = ::onStartWorkout)
+                    startWorkout = ::onStartWorkout, appearanceModel = appearanceModel)
             }
         }
     }
@@ -206,6 +207,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun selectLanguage(language: String) {
-        if (AppLocale.select(this, language)) recreate()
+        val model = ViewModelProvider(this)[com.isaac.ridelab.ui.settings.AppearanceViewModel::class.java]
+        if (model.selectLanguage(com.isaac.ridelab.locale.AppLanguage.fromTag(language))) recreate()
     }
 }
