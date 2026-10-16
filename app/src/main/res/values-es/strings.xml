@@ -99,7 +99,7 @@
     <string name="wheel_raw">Revoluciones de rueda: %1$d; instante: %2$d (1/2048 s)</string>
     <string name="fec_detected">Detectado control FE-C experimental</string>
     <string name="fec_unavailable">FE-C no disponible: faltan servicios, características o propiedades</string>
-    <string name="fec_experiment_note">Experimental: 50–2000 W, solo se envía al pulsar. Escribir por GATT no confirma la aceptación ERG.</string>
+    <string name="fec_experiment_note">Experimental: %1$d–%2$d W, solo se envía al pulsar. Escribir por GATT no confirma la aceptación ERG.</string>
     <string name="fec_subscribing">Preparando notificaciones FE-C</string>
     <string name="fec_ready">FE-C listo; ningún objetivo enviado</string>
     <string name="fec_writing">Escribiendo o esperando el intervalo de envío</string>
@@ -211,7 +211,7 @@
     <string name="ui_erg">Potencia objetivo ERG</string>
     <string name="ui_requested_target">Objetivo solicitado: %1$s</string>
     <string name="ui_apply_target">Aplicar objetivo</string>
-    <string name="ui_erg_ready">Ajusta y aplica un objetivo de 50–2000 W.</string>
+    <string name="ui_erg_ready">Ajusta el objetivo y pulsa Aplicar objetivo.</string>
     <string name="ui_erg_sending">Enviando objetivo…</string>
     <string name="ui_erg_sent">Objetivo enviado. Comprueba la respuesta del rodillo.</string>
     <string name="ui_erg_failed">Falló el objetivo. Revisa la conexión y reintenta.</string>
@@ -453,4 +453,18 @@
     <string name="language_spanish">Español</string>
     <string name="language_portuguese">Português (Brasil)</string>
     <string name="language_french">Français</string>
+    <string name="control_fec">Control FE-C</string>
+    <string name="control_ftms">Control FTMS</string>
+    <string name="control_measurement_only">Solo medición · ERG no disponible</string>
+    <string name="control_requesting">Solicitando control</string>
+    <string name="control_request_failed">Control rechazado; vuelve a conectar</string>
+    <string name="control_invalid_target">Potencia no admitida; comprueba rango e incremento</string>
+    <string name="control_accepted">El rodillo confirmó la potencia objetivo</string>
+    <string name="control_timeout">Tiempo de respuesta agotado; vuelve a conectar</string>
+    <string name="control_permission_lost">Se perdió el permiso de control; vuelve a conectar</string>
+    <string name="control_range_unknown">Sin rango de potencia válido; ERG desactivado</string>
+    <string name="control_manual_only">Solo ERG manual; los entrenamientos automáticos aún no están verificados</string>
+    <string name="control_increment">Incremento de potencia: %1$d W</string>
+    <string name="control_conservative">Dispositivo no verificado; se usan límites conservadores</string>
+    <string name="control_target_rejected">El rodillo rechazó el objetivo; vuelve a conectar</string>
 </resources>

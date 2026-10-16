@@ -22,7 +22,7 @@ internal fun RideRoute(state: RideUiState, devices: DevicesViewModel, erg: ErgTa
     navigation: RideNavigationActions, modifier: Modifier = Modifier) {
     RideScreen(trainer = state.trainer, hr = state.heartRate, ride = state.ride,
         ready = state.serviceReady, start = navigation.start, end = devices::endRide,
-        send = devices::sendFecTarget, appSettings = navigation.appSettings, modifier = modifier,
+        send = devices::setTargetPower, appSettings = navigation.appSettings, modifier = modifier,
         ergTarget = state.erg, editTarget = erg::edit, rememberApplied = erg::rememberApplied,
         workout = state.workout, pauseWorkout = devices::pauseWorkout,
         resumeWorkout = devices::resumeWorkout, skipWorkout = devices::skipWorkout,

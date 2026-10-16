@@ -99,7 +99,7 @@
     <string name="wheel_raw">Revoluções da roda: %1$d; instante: %2$d (1/2048 s)</string>
     <string name="fec_detected">Controle FE-C experimental detectado</string>
     <string name="fec_unavailable">FE-C indisponível: faltam serviços, características ou propriedades</string>
-    <string name="fec_experiment_note">Experimental: 50–2000 W, enviado apenas ao tocar. Escrita GATT bem-sucedida não confirma aceitação ERG.</string>
+    <string name="fec_experiment_note">Experimental: %1$d–%2$d W, enviado apenas ao tocar. Escrita GATT bem-sucedida não confirma aceitação ERG.</string>
     <string name="fec_subscribing">Preparando notificações FE-C</string>
     <string name="fec_ready">FE-C pronto; nenhuma meta enviada</string>
     <string name="fec_writing">Escrevendo ou aguardando intervalo de envio</string>
@@ -211,7 +211,7 @@
     <string name="ui_erg">Potência alvo ERG</string>
     <string name="ui_requested_target">Meta solicitada: %1$s</string>
     <string name="ui_apply_target">Aplicar meta</string>
-    <string name="ui_erg_ready">Ajuste e aplique uma meta de 50–2000 W.</string>
+    <string name="ui_erg_ready">Ajuste a meta e toque em Aplicar meta.</string>
     <string name="ui_erg_sending">Enviando meta…</string>
     <string name="ui_erg_sent">Meta enviada. Confira a resposta do rolo.</string>
     <string name="ui_erg_failed">Falha na meta. Confira a conexão e tente novamente.</string>
@@ -453,4 +453,18 @@
     <string name="language_spanish">Español</string>
     <string name="language_portuguese">Português (Brasil)</string>
     <string name="language_french">Français</string>
+    <string name="control_fec">Controle FE-C</string>
+    <string name="control_ftms">Controle FTMS</string>
+    <string name="control_measurement_only">Somente medição · ERG indisponível</string>
+    <string name="control_requesting">Solicitando controle</string>
+    <string name="control_request_failed">Controle recusado; reconecte para tentar novamente</string>
+    <string name="control_invalid_target">Potência não suportada; confira faixa e incremento</string>
+    <string name="control_accepted">O rolo confirmou a potência alvo</string>
+    <string name="control_timeout">Tempo de resposta esgotado; reconecte</string>
+    <string name="control_permission_lost">Permissão de controle perdida; reconecte</string>
+    <string name="control_range_unknown">Faixa de potência inválida ou ausente; ERG desativado</string>
+    <string name="control_manual_only">Somente ERG manual; treinos automáticos ainda não verificados no aparelho</string>
+    <string name="control_increment">Incremento de potência: %1$d W</string>
+    <string name="control_conservative">Dispositivo não verificado; limites conservadores em uso</string>
+    <string name="control_target_rejected">O rolo recusou a potência alvo; reconecte</string>
 </resources>

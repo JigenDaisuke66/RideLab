@@ -99,7 +99,7 @@
     <string name="wheel_raw">累積ホイール回転数：%1$d、イベント時刻：%2$d (1/2048 s)</string>
     <string name="fec_detected">実験用 FE-C 制御を検出</string>
     <string name="fec_unavailable">FE-C 非対応：必要なサービス・特性・プロパティがありません</string>
-    <string name="fec_experiment_note">実験用：50–2000 W。ボタン操作時のみ送信します。GATT 書き込み成功だけでは ERG 受理を確認できません。</string>
+    <string name="fec_experiment_note">実験用：%1$d–%2$d W。ボタン操作時のみ送信します。GATT 書き込み成功だけでは ERG 受理を確認できません。</string>
     <string name="fec_subscribing">FE-C 通知を準備中</string>
     <string name="fec_ready">FE-C 準備完了。目標未送信</string>
     <string name="fec_writing">書き込み中または送信間隔の待機中</string>
@@ -211,7 +211,7 @@
     <string name="ui_erg">ERG 目標パワー</string>
     <string name="ui_requested_target">要求した目標：%1$s</string>
     <string name="ui_apply_target">目標を適用</string>
-    <string name="ui_erg_ready">50–2000 W の目標を調整して適用できます。</string>
+    <string name="ui_erg_ready">目標を調整し、目標を適用してください。</string>
     <string name="ui_erg_sending">目標を送信中…</string>
     <string name="ui_erg_sent">送信済み。トレーナーの反応を確認してください。</string>
     <string name="ui_erg_failed">目標送信失敗。接続を確認し再試行してください。</string>
@@ -453,4 +453,18 @@
     <string name="language_spanish">Español</string>
     <string name="language_portuguese">Português (Brasil)</string>
     <string name="language_french">Français</string>
+    <string name="control_fec">FE-C 制御</string>
+    <string name="control_ftms">FTMS 制御</string>
+    <string name="control_measurement_only">測定のみ · ERG 利用不可</string>
+    <string name="control_requesting">制御権を要求中</string>
+    <string name="control_request_failed">制御要求が拒否されました。再接続してください</string>
+    <string name="control_invalid_target">非対応の目標パワーです。範囲と刻み幅を確認してください</string>
+    <string name="control_accepted">トレーナーが目標パワーを受け付けました</string>
+    <string name="control_timeout">制御応答がタイムアウトしました。再接続してください</string>
+    <string name="control_permission_lost">制御権が失われました。再接続してください</string>
+    <string name="control_range_unknown">有効なパワー範囲がないため ERG は無効です</string>
+    <string name="control_manual_only">手動 ERG のみ利用可能です。自動ワークアウトは実機未検証です</string>
+    <string name="control_increment">パワーの刻み幅：%1$d W</string>
+    <string name="control_conservative">未検証のデバイスには保守的な上限を適用します</string>
+    <string name="control_target_rejected">目標パワーが拒否されました。再接続してください</string>
 </resources>

@@ -99,7 +99,7 @@
     <string name="wheel_raw">車輪累計轉數：%1$d；事件時間：%2$d（1/2048 秒）</string>
     <string name="fec_detected">已檢測到 FE-C 實驗控制通道</string>
     <string name="fec_unavailable">FE-C 控制不可用：缺少服務、特征或所需屬性</string>
-    <string name="fec_experiment_note">實驗功能：50–2000 W，僅按按鈕時發送。GATT 寫入成功不代表騎乘臺已接受 ERG 指令。</string>
+    <string name="fec_experiment_note">實驗功能：%1$d–%2$d W，僅按按鈕時發送。GATT 寫入成功不代表騎乘臺已接受 ERG 指令。</string>
     <string name="fec_subscribing">正在準備 FE-C 通知</string>
     <string name="fec_ready">FE-C 已就緒，尚未發送目標功率</string>
     <string name="fec_writing">正在寫入或等待發送冷卻</string>
@@ -210,7 +210,7 @@
     <string name="ui_erg">ERG 目標功率</string>
     <string name="ui_requested_target">已請求目標：%1$s</string>
     <string name="ui_apply_target">套用目標</string>
-    <string name="ui_erg_ready">調整后點擊應用，范圍為 50–2000 W。</string>
+    <string name="ui_erg_ready">調整後點選套用目標。</string>
     <string name="ui_erg_sending">正在發送目標…</string>
     <string name="ui_erg_sent">目標已發送，請確認騎乘臺的實際響應。</string>
     <string name="ui_erg_failed">目標發送失敗，請檢查連線后重試。</string>
@@ -455,4 +455,18 @@
     <string name="language_spanish">Español</string>
     <string name="language_portuguese">Português (Brasil)</string>
     <string name="language_french">Français</string>
+    <string name="control_fec">FE-C 控制</string>
+    <string name="control_ftms">FTMS 控制</string>
+    <string name="control_measurement_only">僅測量 · ERG 無法使用</string>
+    <string name="control_requesting">正在要求控制權限</string>
+    <string name="control_request_failed">控制要求遭拒，請重新連線後再試</string>
+    <string name="control_invalid_target">不支援此目標功率，請檢查範圍與步進值</string>
+    <string name="control_accepted">訓練台已確認接受目標功率</string>
+    <string name="control_timeout">控制回應逾時，請重新連線</string>
+    <string name="control_permission_lost">控制權限已失效，請重新連線</string>
+    <string name="control_range_unknown">裝置未提供有效功率範圍，ERG 已停用</string>
+    <string name="control_manual_only">此裝置僅開放手動 ERG；自動課程控制尚未通過實機驗證</string>
+    <string name="control_increment">裝置功率步進值：%1$d W</string>
+    <string name="control_conservative">未知裝置採用保守功率範圍，尚未通過實機驗證</string>
+    <string name="control_target_rejected">裝置拒絕目標功率，請重新連線後再試</string>
 </resources>

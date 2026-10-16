@@ -92,7 +92,7 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
     fun connectHeartRate(device: DiscoveredDevice) { scanner.stop(); service?.connectHeartRate(device) }
     fun disconnectTrainer() { service?.disconnectTrainer() }
     fun disconnectHeartRate() { service?.disconnectHeartRate() }
-    fun sendFecTarget(watts: Int) { service?.sendFecTarget(watts) }
+    fun setTargetPower(watts: Int) { service?.setTargetPower(watts) }
     fun startRide() { scanner.stop(); service?.requestStart() }
     fun endRide() { service?.endRide() }
     fun pauseRide() { service?.pauseRide() }

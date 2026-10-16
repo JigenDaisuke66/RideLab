@@ -26,7 +26,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import com.isaac.ridelab.workout.*
 import com.isaac.ridelab.ble.fec.ThinkRiderX2MaxProfile
-import com.isaac.ridelab.ble.fec.FecStatus
+import com.isaac.ridelab.ble.control.ControlOwner
+import com.isaac.ridelab.ble.control.ControlStatus
 
 /** Owns the only trainer and HR clients, including the pre-ride preview connection.
  * Starting a ride promotes this same instance; no GATT objects are migrated/recreated.
@@ -52,13 +53,12 @@ class RideRecordingService : Service() {
     private val workout: WorkoutController = WorkoutController(ThinkRiderX2MaxProfile) { watts ->
         if (!trainerControlReady) false else {
             Log.i("RideLabWorkout", "Target request watts=$watts step=${workoutState.value.stepIndex}")
-            trainer.sendFecTarget(watts) // The same verified controller; no packet construction here.
-            trainer.state.value.fec.status in setOf(FecStatus.WRITING, FecStatus.SENT)
+            trainer.setTargetPower(watts, ControlOwner.WORKOUT, workoutState.value.controlsTrainer)
         }
     }
     val workoutState get() = workout.state
     private val trainerControlReady: Boolean get() = trainer.state.value.connection in
-        setOf(ConnectionState.CONNECTED, ConnectionState.SUBSCRIBING, ConnectionState.STREAMING) && trainer.state.value.fec.canSend
+        setOf(ConnectionState.CONNECTED, ConnectionState.SUBSCRIBING, ConnectionState.STREAMING) && trainer.state.value.control.canWorkout
     private val rampReview get() = (application as RideLabApplication).rampReview
     private var workoutPreparing: Job? = null
     private var workoutJob: Job? = null
@@ -133,7 +133,7 @@ class RideRecordingService : Service() {
                 val before = workoutState.value.phase
                 val now = rideClock()
                 if (value.connection in setOf(ConnectionState.DISCONNECTED, ConnectionState.FAILED)) workout.unavailable(now)
-                else if (value.fec.status == FecStatus.FAILED) workout.controlFailed(now)
+                else if (value.control.status == ControlStatus.FAILED) workout.controlFailed(now)
                 if (before == WorkoutPhase.ACTIVE && workoutState.value.phase == WorkoutPhase.PAUSED)
                     Log.w("RideLabWorkout", "Auto-pause issue=${workoutState.value.issue}; explicit resume required")
             }
@@ -180,11 +180,11 @@ class RideRecordingService : Service() {
         stopRetainedPreviewIfDisconnected()
     }
 
-    fun sendFecTarget(watts: Int) {
+    fun setTargetPower(watts: Int) {
         if (workoutState.value.controlsTrainer || rideState.value.phase == RidePhase.STOPPING) {
             Log.w("RideLabWorkout", "Manual target blocked while workout owns trainer"); return
         }
-        trainer.sendFecTarget(watts)
+        trainer.setTargetPower(watts, ControlOwner.MANUAL, workoutState.value.controlsTrainer)
     }
 
     fun requestWorkout(id: WorkoutId) {
@@ -347,7 +347,7 @@ class RideRecordingService : Service() {
         val isRamp = workoutState.value.definition?.rampTest == true
         val ranges = workout.effortRanges()
         val endEpoch = System.currentTimeMillis()
-        val last = if (wasPaused) LiveRideData(targetPowerWatts = trainer.state.value.fec.lastTargetWatts) else liveSnapshot(endedAt)
+        val last = if (wasPaused) LiveRideData(targetPowerWatts = trainer.state.value.lastRequestedTarget) else liveSnapshot(endedAt)
         finalizing = scope.launch {
             try {
                 startup?.join()
@@ -473,7 +473,7 @@ class RideRecordingService : Service() {
             delay(3_000)
             if (rideState.value.ongoing && trainerWanted == device && !trainer.state.value.isActive) {
                 Log.i(TAG, "Reconnect invoked role=trainer address=${device.address}")
-                trainer.connect(device) // Existing client closes/replaces its own failed session.
+                trainer.connect(device, trainer.state.value.capabilities.protocol) // Keep protocol pinned across automatic recovery.
             }
         }
     }

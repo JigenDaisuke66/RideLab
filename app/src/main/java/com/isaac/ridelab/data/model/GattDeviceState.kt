@@ -8,6 +8,8 @@ import com.isaac.ridelab.ble.power.CyclingPowerMeasurement
 import com.isaac.ridelab.ble.power.CyclingPowerParser
 import java.util.UUID
 import com.isaac.ridelab.ble.fec.FecState
+import com.isaac.ridelab.ble.control.*
+import com.isaac.ridelab.ble.ftms.FtmsControlState
 
 data class GattCharacteristicInfo(val uuid: UUID, val properties: Int, val descriptorUuids: List<UUID>)
 data class GattServiceInfo(val uuid: UUID, val instanceId: Int, val characteristics: List<GattCharacteristicInfo>)
@@ -57,7 +59,14 @@ data class GattDeviceState(
     val measurementSource: MeasurementSource? = null,
     val cyclingPower: CyclingPowerLiveData? = null,
     val fec: FecState = FecState(),
+    val capabilities: TrainerCapabilities = TrainerCapabilities(),
+    val ftmsControl: FtmsControlState = FtmsControlState(),
 ) {
+    val control: TrainerControlState get() = TrainerControlPolicy.project(capabilities, fec, ftmsControl)
+    val lastRequestedTarget: Int? get() = when (capabilities.protocol) {
+        ControlProtocol.FTMS -> ftmsControl.requestedWatts
+        else -> fec.lastTargetWatts
+    }
     val hasFtms: Boolean get() = services.any { it.uuid == BleUuids.FITNESS_MACHINE }
     val hasCyclingPower: Boolean get() = services.any { it.uuid == BleUuids.CYCLING_POWER }
     val hasCyclingPowerMeasurement: Boolean get() = services.any { service ->

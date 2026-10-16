@@ -99,7 +99,7 @@
     <string name="wheel_raw">车轮累计转数：%1$d；事件时间：%2$d（1/2048 秒）</string>
     <string name="fec_detected">已检测到 FE-C 实验控制通道</string>
     <string name="fec_unavailable">FE-C 控制不可用：缺少服务、特征或所需属性</string>
-    <string name="fec_experiment_note">实验功能：50–2000 W，仅按按钮时发送。GATT 写入成功不代表骑行台已接受 ERG 指令。</string>
+    <string name="fec_experiment_note">实验功能：%1$d–%2$d W，仅按按钮时发送。GATT 写入成功不代表骑行台已接受 ERG 指令。</string>
     <string name="fec_subscribing">正在准备 FE-C 通知</string>
     <string name="fec_ready">FE-C 已就绪，尚未发送目标功率</string>
     <string name="fec_writing">正在写入或等待发送冷却</string>
@@ -210,7 +210,7 @@
     <string name="ui_erg">ERG 目标功率</string>
     <string name="ui_requested_target">已请求目标：%1$s</string>
     <string name="ui_apply_target">应用目标</string>
-    <string name="ui_erg_ready">调整后点击应用，范围为 50–2000 W。</string>
+    <string name="ui_erg_ready">调整后点击应用目标。</string>
     <string name="ui_erg_sending">正在发送目标…</string>
     <string name="ui_erg_sent">目标已发送，请确认骑行台的实际响应。</string>
     <string name="ui_erg_failed">目标发送失败，请检查连接后重试。</string>
@@ -455,4 +455,18 @@
     <string name="language_spanish">Español</string>
     <string name="language_portuguese">Português (Brasil)</string>
     <string name="language_french">Français</string>
+    <string name="control_fec">FE-C 控制</string>
+    <string name="control_ftms">FTMS 控制</string>
+    <string name="control_measurement_only">仅测量 · ERG 不可用</string>
+    <string name="control_requesting">正在请求控制权限</string>
+    <string name="control_request_failed">控制请求被拒绝，请重新连接后再试</string>
+    <string name="control_invalid_target">目标功率不受支持，请检查范围与步长</string>
+    <string name="control_accepted">设备已确认接受目标功率</string>
+    <string name="control_timeout">控制响应超时，请重新连接</string>
+    <string name="control_permission_lost">控制权限已丢失，请重新连接</string>
+    <string name="control_range_unknown">设备未提供有效功率范围，ERG 已禁用</string>
+    <string name="control_manual_only">此设备仅开放手动 ERG；自动课程控制尚未实测验证</string>
+    <string name="control_increment">设备功率步长：%1$d W</string>
+    <string name="control_conservative">未知设备使用保守功率范围，尚未实测验证</string>
+    <string name="control_target_rejected">设备拒绝目标功率，请重新连接后再试</string>
 </resources>

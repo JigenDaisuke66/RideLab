@@ -13,6 +13,9 @@ import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import com.isaac.ridelab.ble.control.*
+import com.isaac.ridelab.ble.ftms.FtmsControlState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.Modifier
@@ -38,6 +41,42 @@ import org.junit.Test
 class RidePresentationUiTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test fun stalePreferenceProfileCannotApplyDuringCapabilityChange() {
+        val trainer = GattDeviceState(connection = ConnectionState.STREAMING,
+            capabilities = TrainerCapabilities(ControlProtocol.FTMS, TrainerErgProfile(50, 500)),
+            ftmsControl = FtmsControlState(status = ControlStatus.READY))
+        compose.setContent { RideLabTheme {
+            ErgControls(trainer, ErgTargetUi(loaded = true, profile = ThinkRiderX2MaxProfile)) { fail("Stale profile") }
+        } }
+        compose.onNodeWithText(context.getString(R.string.ui_apply_target)).assertIsNotEnabled()
+    }
+
+    @Test fun measurementOnlyKeepsErgDisabled() {
+        compose.setContent { RideLabTheme { ErgControls(GattDeviceState(connection = ConnectionState.STREAMING)) {} } }
+        compose.onNodeWithText(context.getString(R.string.ui_apply_target)).assertIsNotEnabled()
+        compose.onNodeWithText(context.getString(R.string.control_measurement_only)).assertExists()
+    }
+
+    @Test fun ftmsApplyUsesGenericCallbackAndAcceptanceWaitsForProtocolState() {
+        val sent = mutableListOf<Int>()
+        var trainer by mutableStateOf(GattDeviceState(connection = ConnectionState.STREAMING,
+            capabilities = TrainerCapabilities(ControlProtocol.FTMS, TrainerErgProfile(50, 500)),
+            ftmsControl = FtmsControlState(status = ControlStatus.READY)))
+        compose.setContent { RideLabTheme { ErgControls(trainer) { sent.add(it) } } }
+        compose.onNodeWithText(context.getString(R.string.control_accepted)).assertDoesNotExist()
+        compose.onNodeWithText(context.getString(R.string.ui_apply_target)).performClick()
+        compose.runOnIdle {
+            assertEquals(listOf(100), sent)
+            trainer = trainer.copy(ftmsControl = FtmsControlState(status = ControlStatus.WRITING, requestedWatts = 100))
+        }
+        compose.onNodeWithText(context.getString(R.string.ui_apply_target)).assertIsNotEnabled()
+        compose.onNodeWithText(context.getString(R.string.control_accepted)).assertDoesNotExist()
+        compose.runOnIdle {
+            trainer = trainer.copy(ftmsControl = FtmsControlState(status = ControlStatus.ACCEPTED, authorized = true, requestedWatts = 100, acceptedWatts = 100))
+        }
+        compose.onNodeWithText(context.getString(R.string.control_accepted)).assertExists()
+    }
 
     @Test fun pauseResumeAndEndAreSeparateActions() {
         var paused = 0; var resumed = 0; var ended = 0
@@ -82,8 +121,10 @@ class RidePresentationUiTest {
     @Test fun ergAdjustmentDoesNotSendUntilApply() {
         val sent = mutableListOf<Int>()
         val trainer = GattDeviceState(connection = ConnectionState.STREAMING,
-            fec = FecState(FecCapability(true, 0x10, 0x0c, true), FecStatus.READY))
-        compose.setContent { var pending by remember { mutableStateOf(ErgTargetUi(loaded = true)) }; RideLabTheme { ErgControls(trainer, pending, { pending = pending.copy(target = it) }) { sent.add(it) } } }
+            fec = FecState(FecCapability(true, 0x10, 0x0c, true), FecStatus.READY),
+            capabilities = com.isaac.ridelab.ble.control.TrainerCapabilities(
+                com.isaac.ridelab.ble.control.ControlProtocol.FEC, ThinkRiderX2MaxProfile, automaticErg = true))
+        compose.setContent { var pending by remember { mutableStateOf(ErgTargetUi(loaded = true, profile = ThinkRiderX2MaxProfile)) }; RideLabTheme { ErgControls(trainer, pending, { pending = pending.copy(target = it) }) { sent.add(it) } } }
         compose.runOnIdle { assertTrue(sent.isEmpty()) }
         compose.onNodeWithContentDescription(context.getString(R.string.fec_plus)).performClick()
         compose.runOnIdle { assertTrue(sent.isEmpty()) }
@@ -93,9 +134,11 @@ class RidePresentationUiTest {
 
     @Test fun restoredAndConfirmedTargetsNeverSendWithoutApply() {
         val sent = mutableListOf<Int>()
-        var pending by mutableStateOf(ErgTargetUi(target = 135, loaded = true))
+        var pending by mutableStateOf(ErgTargetUi(target = 135, loaded = true, profile = ThinkRiderX2MaxProfile))
         val trainer = GattDeviceState(connection = ConnectionState.STREAMING,
-            fec = FecState(FecCapability(true, 0x10, 0x0c, true), FecStatus.READY))
+            fec = FecState(FecCapability(true, 0x10, 0x0c, true), FecStatus.READY),
+            capabilities = com.isaac.ridelab.ble.control.TrainerCapabilities(
+                com.isaac.ridelab.ble.control.ControlProtocol.FEC, ThinkRiderX2MaxProfile, automaticErg = true))
         compose.setContent { RideLabTheme { ErgControls(trainer, pending, { pending = pending.copy(target = it) }) { sent.add(it) } } }
         compose.runOnIdle { assertTrue(sent.isEmpty()) }
         compose.onNodeWithText(context.getString(R.string.power_value, 135)).performClick()

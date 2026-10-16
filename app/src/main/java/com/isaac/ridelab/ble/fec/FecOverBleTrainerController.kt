@@ -25,6 +25,7 @@ class FecOverBleTrainerController(
     private var notify: BluetoothGattCharacteristic? = null
     private var write: BluetoothGattCharacteristic? = null
     private var pending: BluetoothGattDescriptor? = null
+    private var profile = TrainerErgProfile(50, 200)
     private val timeout = Runnable {
         failure("timeout; reconnect required")
         onTimeout() // Close session: a late callback must never complete a newer operation.
@@ -33,8 +34,9 @@ class FecOverBleTrainerController(
 
     private fun update(value: FecState) { state = value; publish(value) }
 
-    fun detect(gatt: BluetoothGatt, services: List<GattServiceInfo>) {
+    fun detect(gatt: BluetoothGatt, services: List<GattServiceInfo>, profile: TrainerErgProfile) {
         reset()
+        this.profile = profile
         this.gatt = gatt
         val capability = FecProtocol.detect(services)
         val service = gatt.getService(FecProtocol.SERVICE)
@@ -82,7 +84,11 @@ class FecOverBleTrainerController(
         }
         val session = gatt ?: return
         val characteristic = write ?: return
-        val watts = ThinkRiderX2MaxProfile.clamp(requestedWatts)
+        if (!profile.accepts(requestedWatts) || requestedWatts !in FecProtocol.MIN_ENCODABLE_WATTS..FecProtocol.MAX_ENCODABLE_WATTS) {
+            failure("target outside operating range requestedWatts=$requestedWatts profile=$profile")
+            return
+        }
+        val watts = requestedWatts
         val bytes = FecProtocol.targetPower(watts)
         // Prefer an ATT response when available. This confirms transport only, not ERG acceptance.
         val type = if (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0)

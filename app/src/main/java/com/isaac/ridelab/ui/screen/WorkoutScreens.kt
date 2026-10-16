@@ -13,7 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.isaac.ridelab.R
-import com.isaac.ridelab.ble.fec.ThinkRiderX2MaxProfile
+import com.isaac.ridelab.ble.control.TrainerControlState
 import com.isaac.ridelab.workout.*
 import com.isaac.ridelab.ui.theme.RideLabCard
 
@@ -47,13 +47,15 @@ private fun workoutTime(ms: Long): String {
 
 @Composable
 internal fun WorkoutLibraryScreen(ftp: FtpState, trainerReady: Boolean, close: () -> Unit,
-    settings: () -> Unit, start: (WorkoutId) -> Unit, modifier: Modifier = Modifier) {
+    settings: () -> Unit, start: (WorkoutId) -> Unit, modifier: Modifier = Modifier,
+    control: TrainerControlState = TrainerControlState()) {
+    val profile = control.capabilities.powerRange
     var selected by rememberSaveable { mutableStateOf<WorkoutId?>(null) }
     var confirm by rememberSaveable { mutableStateOf(false) }
     val view = LocalView.current
     BackHandler { if (selected != null) selected = null else close() }
     val definition = selected?.let(BuiltInWorkouts::find)
-    val allowed = trainerReady && ftp.loaded && definition != null && (!definition.requiresFtp || ftp.ftp != null)
+    val allowed = trainerReady && control.capabilities.automaticErg && ftp.loaded && definition != null && (!definition.requiresFtp || ftp.ftp != null)
     if (confirm && definition != null) AlertDialog(onDismissRequest = { confirm = false },
         title = { Text(stringResource(R.string.workout_start)) },
         text = { Text(stringResource(R.string.workout_auto_warning)) },
@@ -88,13 +90,15 @@ internal fun WorkoutLibraryScreen(ftp: FtpState, trainerReady: Boolean, close: (
                     } ?: stringResource(R.string.history_no_data))
                     Text(stringResource(R.string.workout_snapshot_note), style = MaterialTheme.typography.bodySmall)
                 }
-                Text(stringResource(R.string.workout_clamp_note, ThinkRiderX2MaxProfile.minErgWatts,
-                    ThinkRiderX2MaxProfile.maxErgWatts), style = MaterialTheme.typography.bodySmall)
+                if (profile != null && control.capabilities.automaticErg)
+                    Text(stringResource(R.string.workout_clamp_note, profile.minErgWatts,
+                        profile.maxErgWatts), style = MaterialTheme.typography.bodySmall)
+                if (!control.capabilities.automaticErg) TrainerControlSummary(control)
             }
             definition.steps.forEachIndexed { index, step -> item {
                 RideLabCard(Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.workout_preview_step, index + 1, stringResource(stepName(step.type))))
-                    val watts = if (!definition.requiresFtp || ftp.ftp != null) workoutWatts(step.target, ftp.ftp, ThinkRiderX2MaxProfile) else null
+                    val watts = if (profile != null && (!definition.requiresFtp || ftp.ftp != null)) workoutWatts(step.target, ftp.ftp, profile) else null
                     DetailMetricRow(workoutTime(step.durationSeconds * 1000L),
                         watts?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data))
                     (step.target as? WorkoutTarget.FtpPercent)?.let {

@@ -8,6 +8,8 @@ import com.isaac.ridelab.ui.theme.RideLabTheme
 import com.isaac.ridelab.workout.*
 import com.isaac.ridelab.service.*
 import com.isaac.ridelab.data.model.*
+import com.isaac.ridelab.ble.control.*
+import com.isaac.ridelab.ble.fec.ThinkRiderX2MaxProfile
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -16,11 +18,12 @@ import org.junit.Test
 class WorkoutUiTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+    private val verifiedControl = TrainerControlState(TrainerCapabilities(ControlProtocol.FEC, ThinkRiderX2MaxProfile, automaticErg = true), ControlStatus.READY)
 
     @Test fun initialFtpTestCanStartWithoutFtpOnlyAfterConfirmation() {
         val starts = mutableListOf<WorkoutId>()
         compose.setContent { RideLabTheme {
-            WorkoutLibraryScreen(FtpState(loaded = true), true, {}, {}, { starts.add(it) })
+            WorkoutLibraryScreen(FtpState(loaded = true), true, {}, {}, { starts.add(it) }, control = verifiedControl)
         } }
         compose.onNode(hasScrollAction()).performScrollToNode(hasText(context.getString(R.string.workout_initial_ftp)))
         compose.onNodeWithText(context.getString(R.string.workout_initial_ftp)).performClick()
@@ -35,7 +38,7 @@ class WorkoutUiTest {
     @Test fun previewAndCancelNeverStartAutomaticControl() {
         val starts = mutableListOf<WorkoutId>()
         compose.setContent { RideLabTheme {
-            WorkoutLibraryScreen(FtpState(loaded = true, ftp = 150), true, {}, {}, { starts.add(it) })
+            WorkoutLibraryScreen(FtpState(loaded = true, ftp = 150), true, {}, {}, { starts.add(it) }, control = verifiedControl)
         } }
         compose.onNodeWithText(context.getString(R.string.workout_recovery)).performClick()
         compose.onNodeWithText(context.getString(R.string.workout_start)).performScrollTo().performClick()
@@ -49,7 +52,7 @@ class WorkoutUiTest {
     }
     @Test fun absentFtpCannotStartWorkout() {
         compose.setContent { RideLabTheme {
-            WorkoutLibraryScreen(FtpState(loaded = true), true, {}, {}, { fail("No FTP must not start") })
+            WorkoutLibraryScreen(FtpState(loaded = true), true, {}, {}, { fail("No FTP must not start") }, control = verifiedControl)
         } }
         compose.onNodeWithText(context.getString(R.string.workout_recovery)).performClick()
         compose.onNodeWithText(context.getString(R.string.workout_start)).performScrollTo().assertIsNotEnabled()

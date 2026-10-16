@@ -24,6 +24,9 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import com.isaac.ridelab.ble.BleUuids
 import com.isaac.ridelab.ble.fec.FecOverBleTrainerController
+import com.isaac.ridelab.ble.fec.TrainerErgProfile
+import com.isaac.ridelab.ble.fec.FecStatus
+import com.isaac.ridelab.ble.control.*
 import com.isaac.ridelab.data.model.ConnectionState
 import com.isaac.ridelab.data.model.DiscoveredDevice
 import com.isaac.ridelab.data.model.GattCharacteristicInfo
@@ -54,11 +57,26 @@ class FtmsClient(context: Context) {
     private val crankCadence = CrankCadenceCalculator()
     private var pendingCccd: BluetoothGattDescriptor? = null
     private var closed = false
+    private var ftmsControl: FtmsGattControl? = null
+    private var requiredProtocol: ControlProtocol? = null
     private val fec = FecOverBleTrainerController(handler,
         publish = { mutableState.value = state.value.copy(fec = it) },
         onTimeout = { fail(GattFailure.TIMEOUT) })
 
-    fun sendFecTarget(watts: Int) = fec.sendTargetPower(watts)
+    /** Sole dispatch point for both callers; never broadcast to both protocols. */
+    fun setTargetPower(watts: Int, owner: ControlOwner, workoutOwnsControl: Boolean): Boolean {
+        val current = state.value
+        if (!current.isActive || !TrainerControlPolicy.permits(current.control, watts, owner, workoutOwnsControl)) {
+            Log.w(TAG, "Trainer target rejected watts=$watts owner=$owner workoutOwner=$workoutOwnsControl control=${current.control}")
+            return false
+        }
+        Log.i(TAG, "Trainer target dispatch watts=$watts owner=$owner protocol=${current.capabilities.protocol}")
+        return TrainerControlPolicy.dispatch(current.control, watts, owner, workoutOwnsControl,
+            fec = { target ->
+                fec.sendTargetPower(target)
+                state.value.fec.status in setOf(FecStatus.WRITING, FecStatus.SENT)
+            }, ftms = { target -> ftmsControl?.setTargetPower(target) == true })
+    }
     private val timeout = Runnable {
         Log.e(TAG, "Operation timeout phase=${state.value.connection} address=${state.value.device?.address}")
         fail(GattFailure.TIMEOUT)
@@ -80,7 +98,7 @@ class FtmsClient(context: Context) {
 
     private fun adapter() = context.getSystemService(BluetoothManager::class.java)?.adapter
 
-    fun connect(device: DiscoveredDevice) {
+    fun connect(device: DiscoveredDevice, requiredProtocol: ControlProtocol? = null) {
         if (closed) {
             Log.e(TAG, "Connect rejected: client is closed address=${device.address}")
             mutableState.value = GattDeviceState(device = device, connection = ConnectionState.FAILED,
@@ -88,6 +106,7 @@ class FtmsClient(context: Context) {
             return
         }
         disconnect()
+        this.requiredProtocol = requiredProtocol
         mutableState.value = GattDeviceState(device = device, connection = ConnectionState.CONNECTING)
         Log.i(TAG, "Connect address=${device.address} name=${device.name} advertised=${device.advertisedServices}")
         guarded {
@@ -157,13 +176,15 @@ class FtmsClient(context: Context) {
             }
             mutableState.value = state.value.copy(measurementSource = if (measurementCharacteristic != null) source else null)
             Log.i(TAG, "Measurement source=${state.value.measurementSource} characteristic=${measurementCharacteristic?.uuid}")
-            fec.detect(gatt, services)
-            // Serialize the two CCCD writes; the FE-C controller never discovers services itself.
+            val initial = TrainerControlPolicy.select(state.value.device?.name, services, null, null)
+            fec.detect(gatt, services, initial.powerRange ?: TrainerErgProfile(50, 200))
+            // Existing measurement CCCD first, then FTMS setup, then selected FE-C CCCD.
             if (measurementCharacteristic != null) subscribe(gatt, measurementCharacteristic!!)
-            else fec.subscribe()
+            else startControlSetup(gatt)
         }
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) = dispatch(gatt) {
+            if (ftmsControl?.onDescriptor(descriptor, status) == true) return@dispatch
             if (fec.onDescriptorWrite(descriptor, status)) return@dispatch
             if (descriptor !== pendingCccd || state.value.connection != ConnectionState.SUBSCRIBING) return@dispatch
             Log.i(TAG, "CCCD write completed uuid=${descriptor.uuid} status=$status")
@@ -174,12 +195,27 @@ class FtmsClient(context: Context) {
                 handler.removeCallbacks(timeout)
                 mutableState.value = state.value.copy(connection = ConnectionState.STREAMING)
                 Log.i(TAG, "Notifications enabled characteristic=${measurementCharacteristic?.uuid}; waiting for packets")
-                fec.subscribe()
+                startControlSetup(gatt)
             }
         }
 
         override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) = dispatch(gatt) {
+            ftmsControl?.onWrite(characteristic, status)
             fec.onCharacteristicWrite(characteristic, status)
+        }
+
+        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray, status: Int) {
+            val snapshot = value.copyOf()
+            dispatch(gatt) { ftmsControl?.onRead(characteristic, status, snapshot) }
+        }
+
+        @Deprecated("Legacy callback for Android 12 and 12L")
+        @Suppress("DEPRECATION")
+        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+            if (Build.VERSION.SDK_INT < 33) {
+                val snapshot = characteristic.value?.copyOf() ?: byteArrayOf()
+                dispatch(gatt) { ftmsControl?.onRead(characteristic, status, snapshot) }
+            }
         }
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
@@ -201,6 +237,15 @@ class FtmsClient(context: Context) {
             Log.w(TAG, "GATT database changed; reconnect to rediscover services")
             fail(GattFailure.DISCOVERY_FAILED)
         }
+    }
+
+    private fun startControlSetup(session: BluetoothGatt) {
+        ftmsControl = FtmsGattControl(session, handler,
+            publish = { mutableState.value = state.value.copy(ftmsControl = it) },
+            capabilities = { mutableState.value = state.value.copy(capabilities = it) }, finished = {
+                if (state.value.capabilities.protocol == ControlProtocol.FEC) fec.subscribe()
+            }, transportTimeout = { fail(GattFailure.TIMEOUT) })
+        ftmsControl!!.start(state.value.device?.name, state.value.services, requiredProtocol)
     }
 
     @Suppress("DEPRECATION")
@@ -232,6 +277,7 @@ class FtmsClient(context: Context) {
     }
 
     private fun receive(characteristic: BluetoothGattCharacteristic, value: ByteArray) {
+        if (ftmsControl?.receive(characteristic, value) == true) return
         if (fec.receive(characteristic, value)) return
         if (characteristic !== measurementCharacteristic || state.value.connection !in setOf(ConnectionState.SUBSCRIBING, ConnectionState.STREAMING)) return
         val hex = value.joinToString("") { "%02x".format(it.toInt() and 0xff) }
@@ -304,6 +350,7 @@ class FtmsClient(context: Context) {
 
     private fun releaseGatt(): Boolean {
         handler.removeCallbacks(timeout)
+        ftmsControl?.close(); ftmsControl = null
         fec.reset()
         val previous = gatt
         gatt = null // Invalidate queued callbacks before disconnect/close.

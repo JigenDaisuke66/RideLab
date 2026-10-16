@@ -137,7 +137,14 @@ Derived metrics must not replace raw samples.
 
 ## Trainer control
 
-RideLab will eventually support:
+Requested compatibility Phase 3 adds manual FTMS target power via actual feature/range
+discovery, CP indications and Request Control. FE-C remains preferred when both layouts
+exist; only the recognized X2 MAX profile retains automatic workouts and 50–2000 W.
+Unverified FE-C is manual 50–200 W; FTMS uses its reported range and stays manual-only.
+Missing valid FTMS ranges disable ERG, retaining measurements. Both callers share the
+service-owned control path. FTMS hardware verification is pending; see TRAINER_COMPATIBILITY.md.
+
+Implemented control:
 
 ERG target power
 

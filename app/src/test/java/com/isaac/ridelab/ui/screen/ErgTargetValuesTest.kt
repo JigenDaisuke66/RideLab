@@ -4,6 +4,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ErgTargetValuesTest {
+    @Test fun ftmsPendingValuesUseReportedRangeWithoutSendingOrSilentlyChangingDirectInput() {
+        val profile = com.isaac.ridelab.ble.fec.TrainerErgProfile(25, 500, 5)
+        assertEquals(500, restoredErgTarget(2000, null, profile))
+        assertEquals(25, restoredErgTarget(-1, null, profile))
+        assertEquals(100, restoredErgTarget(null, null, profile))
+        assertEquals(135, parseErgTarget("135", profile))
+        assertNull(parseErgTarget("136", profile)); assertNull(parseErgTarget("501", profile))
+        assertEquals(105, adjustedErgTarget(100, 5, profile))
+        assertEquals(500, adjustedErgTarget(500, 5, profile))
+    }
     @Test fun validDirectInput() { assertEquals(135, parseErgTarget("135")); assertEquals(50, parseErgTarget("50")); assertEquals(2000, parseErgTarget("2000")); assertEquals(1350, parseErgTarget("1350")) }
     @Test fun invalidDirectInput() { listOf("", "49", "2001", "-100", "135.5", "1a0", " 100", "9999999999999999").forEach { assertNull(parseErgTarget(it)) } }
     @Test fun savedTargetPrecedesLastSent() { assertEquals(135, restoredErgTarget(135, 100)) }

@@ -33,13 +33,6 @@ import com.isaac.ridelab.service.*
 import kotlinx.coroutines.delay
 import com.isaac.ridelab.workout.*
 
-internal fun adjustedErgTarget(
-    current: Int,
-    step: Int
-) = (current + step).coerceIn(
-    ThinkRiderX2MaxProfile.minErgWatts,
-    ThinkRiderX2MaxProfile.maxErgWatts
-)
 
 @Composable
 private fun LiveMetric(
@@ -111,7 +104,7 @@ fun RideScreen(
         bottomBar = {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 if (ride.ongoing && workout.phase in setOf(WorkoutPhase.ACTIVE, WorkoutPhase.PAUSED))
-                    WorkoutActions(workout, trainer.fec.canSend, pauseWorkout, resumeWorkout, skipWorkout, endWorkout)
+                    WorkoutActions(workout, trainer.control.canWorkout, pauseWorkout, resumeWorkout, skipWorkout, endWorkout)
                 else RideControls(ride, controlsReady && workout.phase != WorkoutPhase.PREPARING, start, end, appSettings,
                     showElapsed = false, pause = pauseRide, resume = resumeRide)
             }
@@ -295,24 +288,27 @@ fun RideScreen(
 @Composable
 internal fun ErgControls(
     trainer: GattDeviceState,
-    preference: ErgTargetUi = ErgTargetUi(target = trainer.fec.lastTargetWatts ?: 100, loaded = true),
+    preference: ErgTargetUi = ErgTargetUi(target = trainer.lastRequestedTarget ?: 100, loaded = true, profile = trainer.capabilities.powerRange),
     edit: (Int) -> Unit = {},
     rememberApplied: (Int) -> Unit = {},
     send: (Int) -> Unit
 ) {
-    val state = trainer.fec
+    val state = trainer.control
+    val profile = state.capabilities.powerRange
     val view = LocalView.current
     val target = preference.target
     var dialog by rememberSaveable(trainer.device?.address) { mutableStateOf(false) }
     var input by rememberSaveable(trainer.device?.address) { mutableStateOf("") }
-    val ready = preference.loaded && preference.address == trainer.device?.address
-    val enabled = ready && trainer.connection.readyForRide() && state.canSend
+    val ready = preference.loaded && preference.address == trainer.device?.address &&
+        profile != null && preference.profile == profile
+    val enabled = ready && trainer.connection.readyForRide() && state.canSend && profile?.accepts(target) == true
     if (dialog) {
-        val valid = parseErgTarget(input)
+        val valid = profile?.let { parseErgTarget(input, it) }
         AlertDialog(onDismissRequest = { dialog = false },
             title = { Text(stringResource(R.string.erg_set_target)) },
             text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.erg_available_range, ThinkRiderX2MaxProfile.minErgWatts, ThinkRiderX2MaxProfile.maxErgWatts))
+                profile?.let { Text(stringResource(R.string.erg_available_range, it.minErgWatts, it.maxErgWatts))
+                    Text(stringResource(R.string.control_increment, it.incrementWatts)) }
                 OutlinedTextField(value = input,
                     onValueChange = { text -> if (text.all { it in '0'..'9' }) input = text },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -327,17 +323,17 @@ internal fun ErgControls(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.ui_erg), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.ui_requested_target,
-                state.lastTargetWatts?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data)),
+                state.requestedWatts?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data)),
                 style = MaterialTheme.typography.bodySmall)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                FilledTonalIconButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); edit(adjustedErgTarget(target, -5)) }, enabled = ready && target > ThinkRiderX2MaxProfile.minErgWatts, modifier = Modifier.size(48.dp)) {
+                FilledTonalIconButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); profile?.let { edit(adjustedErgTarget(target, -5, it)) } }, enabled = ready && target > (profile?.minErgWatts ?: 0), modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.fec_minus))
                 }
                 OutlinedButton(onClick = { input = target.toString(); dialog = true }, enabled = ready, modifier = Modifier.weight(1f).padding(horizontal = 8.dp).heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.power_value, target), style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
                 }
-                FilledTonalIconButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); edit(adjustedErgTarget(target, 5)) }, enabled = ready && target < ThinkRiderX2MaxProfile.maxErgWatts, modifier = Modifier.size(48.dp)) {
+                FilledTonalIconButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); profile?.let { edit(adjustedErgTarget(target, 5, it)) } }, enabled = ready && target < (profile?.maxErgWatts ?: 0), modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.fec_plus))
                 }
             }
@@ -345,14 +341,8 @@ internal fun ErgControls(
                 Text(stringResource(R.string.ui_apply_target), fontWeight = FontWeight.Bold)
             }
             if (preference.failed) Text(stringResource(R.string.erg_preference_error))
-            Text(stringResource(when (state.status) {
-                FecStatus.WRITING -> R.string.ui_erg_sending
-                FecStatus.SENT -> R.string.ui_erg_sent
-                FecStatus.FAILED -> R.string.ui_erg_failed
-                FecStatus.READY -> R.string.ui_erg_ready
-                FecStatus.WAITING, FecStatus.SUBSCRIBING -> R.string.ui_erg_preparing
-                else -> R.string.ui_erg_unavailable
-            }), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TrainerControlSummary(state)
+            if (profile != null && !profile.accepts(target)) Text(stringResource(R.string.control_invalid_target))
         }
     }
 }

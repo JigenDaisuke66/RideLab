@@ -43,7 +43,10 @@ fun ConnectionDetails(state: GattDeviceState, onDisconnect: () -> Unit, onFecTar
             Text(connectionStatusText(state.connection))
             Text(stringResource(R.string.foreground_connection_note))
             if (state.isActive) TextButton(onClick = onDisconnect) { Text(stringResource(R.string.disconnect_device)) }
-            if (state.discoveryComplete) FecDebugControl(state.fec, state.isActive, onFecTarget)
+            if (state.discoveryComplete) {
+                TrainerControlSummary(state.control)
+                FecDebugControl(state.fec, state.isActive, state.capabilities.powerRange, onFecTarget)
+            }
             state.issue?.let { issue ->
                 Text(stringResource(when (issue.reason) {
                     GattFailure.PERMISSION_REQUIRED -> R.string.gatt_permission_error

@@ -117,6 +117,10 @@ Both power values can coexist.
 
 ## Phase 5 - Trainer Control
 
+Requested protocol-compatibility Phase 3: manual FTMS ERG implementation and unit/compile
+verification added. FTMS hardware acceptance remains pending. Existing X2 MAX FE-C behavior
+is preserved; automatic courses remain limited to its verified profile. See TRAINER_COMPATIBILITY.md.
+
 Implement FTMS Control Point.
 
 Initial feature:

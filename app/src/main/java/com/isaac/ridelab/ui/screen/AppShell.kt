@@ -65,7 +65,9 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     val deleting by history.deleting.collectAsState()
     val chartState by history.charts.collectAsState()
     val ergState by erg.state.collectAsState()
-    LaunchedEffect(trainer.device?.address) { erg.select(trainer.device?.address, trainer.fec.lastTargetWatts) }
+    LaunchedEffect(trainer.device?.address, trainer.capabilities.powerRange) {
+        erg.select(trainer.device?.address, trainer.lastRequestedTarget, trainer.capabilities.powerRange)
+    }
     val ftpState by ftp.state.collectAsState()
     BackHandler(destination != Destination.HOME) { destination = Destination.HOME }
     picker?.let { role ->
@@ -93,10 +95,10 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
         holder.SaveableStateProvider(destination.name) {
             val modifier = Modifier.padding(padding)
             if (library) {
-                WorkoutLibraryScreen(ftpState, ready && trainer.fec.canSend &&
+                WorkoutLibraryScreen(ftpState, ready && trainer.control.canWorkout &&
                     ride.phase in setOf(com.isaac.ridelab.service.RidePhase.IDLE, com.isaac.ridelab.service.RidePhase.ERROR) && !workout.controlsTrainer,
                     { library = false }, { library = false; destination = Destination.SETTINGS },
-                    { id -> library = false; destination = Destination.RIDE; startWorkout(id) }, modifier)
+                    { id -> library = false; destination = Destination.RIDE; startWorkout(id) }, modifier, control = trainer.control)
             } else
             when (destination) {
                 Destination.HOME -> HomeScreen(trainer, hr, ftpState, historyState, ride, ready,

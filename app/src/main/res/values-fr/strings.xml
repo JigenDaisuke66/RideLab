@@ -99,7 +99,7 @@
     <string name="wheel_raw">Tours cumulés de roue : %1$d ; instant : %2$d (1/2048 s)</string>
     <string name="fec_detected">Commande FE-C expérimentale détectée</string>
     <string name="fec_unavailable">FE-C indisponible : services, caractéristiques ou propriétés manquants</string>
-    <string name="fec_experiment_note">Expérimental : 50–2000 W, envoi uniquement sur pression. Une écriture GATT réussie ne confirme pas l’acceptation ERG.</string>
+    <string name="fec_experiment_note">Expérimental : %1$d–%2$d W, envoi uniquement sur pression. Une écriture GATT réussie ne confirme pas l’acceptation ERG.</string>
     <string name="fec_subscribing">Préparation des notifications FE-C</string>
     <string name="fec_ready">FE-C prêt ; aucune cible envoyée</string>
     <string name="fec_writing">Écriture ou attente du délai d’envoi</string>
@@ -211,7 +211,7 @@
     <string name="ui_erg">Puissance cible ERG</string>
     <string name="ui_requested_target">Cible demandée : %1$s</string>
     <string name="ui_apply_target">Appliquer la cible</string>
-    <string name="ui_erg_ready">Réglez et appliquez une cible de 50–2000 W.</string>
+    <string name="ui_erg_ready">Réglez la cible, puis appuyez sur Appliquer la cible.</string>
     <string name="ui_erg_sending">Envoi de la cible…</string>
     <string name="ui_erg_sent">Cible envoyée. Vérifiez la réaction du home trainer.</string>
     <string name="ui_erg_failed">Échec de la cible. Vérifiez la connexion puis réessayez.</string>
@@ -453,4 +453,18 @@
     <string name="language_spanish">Español</string>
     <string name="language_portuguese">Português (Brasil)</string>
     <string name="language_french">Français</string>
+    <string name="control_fec">Contrôle FE-C</string>
+    <string name="control_ftms">Contrôle FTMS</string>
+    <string name="control_measurement_only">Mesure uniquement · ERG indisponible</string>
+    <string name="control_requesting">Demande de contrôle</string>
+    <string name="control_request_failed">Contrôle refusé ; reconnectez-vous pour réessayer</string>
+    <string name="control_invalid_target">Puissance non prise en charge ; vérifiez la plage et le pas</string>
+    <string name="control_accepted">Le home trainer a confirmé la puissance cible</string>
+    <string name="control_timeout">Délai de réponse dépassé ; reconnectez-vous</string>
+    <string name="control_permission_lost">Autorisation de contrôle perdue ; reconnectez-vous</string>
+    <string name="control_range_unknown">Plage de puissance absente ou invalide ; ERG désactivé</string>
+    <string name="control_manual_only">ERG manuel uniquement ; entraînements automatiques non validés sur appareil</string>
+    <string name="control_increment">Pas de puissance : %1$d W</string>
+    <string name="control_conservative">Appareil non vérifié ; limites prudentes appliquées</string>
+    <string name="control_target_rejected">Le home trainer a refusé la cible ; reconnectez-vous</string>
 </resources>

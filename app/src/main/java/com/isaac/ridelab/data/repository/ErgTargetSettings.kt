@@ -7,6 +7,7 @@ import java.util.Locale
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.isaac.ridelab.ble.fec.ThinkRiderX2MaxProfile
+import com.isaac.ridelab.ble.fec.TrainerErgProfile
 
 class ErgTargetSettings(context: Context) {
     private val mutex = Mutex()
@@ -15,8 +16,8 @@ class ErgTargetSettings(context: Context) {
     suspend fun read(address: String): Int? = mutex.withLock { withContext(Dispatchers.IO) {
         if (preferences.contains(key(address))) preferences.getInt(key(address), 100) else null
     } }
-    suspend fun save(address: String, watts: Int) = mutex.withLock { withContext(Dispatchers.IO) {
-        require(watts in ThinkRiderX2MaxProfile.minErgWatts..ThinkRiderX2MaxProfile.maxErgWatts)
+    suspend fun save(address: String, watts: Int, profile: TrainerErgProfile = ThinkRiderX2MaxProfile) = mutex.withLock { withContext(Dispatchers.IO) {
+        require(profile.accepts(watts))
         check(preferences.edit().putInt(key(address), watts).commit())
     } }
 }
