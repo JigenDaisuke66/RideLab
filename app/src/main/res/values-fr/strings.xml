@@ -467,4 +467,7 @@
     <string name="control_increment">Pas de puissance : %1$d W</string>
     <string name="control_conservative">Appareil non vérifié ; limites prudentes appliquées</string>
     <string name="control_target_rejected">Le home trainer a refusé la cible ; reconnectez-vous</string>
+    <string name="overlay_adjust">Réglages flottants</string>
+    <string name="overlay_chart_show">Afficher les courbes</string>
+    <string name="overlay_chart_hide">Masquer les courbes</string>
 </resources>

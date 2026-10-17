@@ -469,4 +469,7 @@
     <string name="control_increment">设备功率步长：%1$d W</string>
     <string name="control_conservative">未知设备使用保守功率范围，尚未实测验证</string>
     <string name="control_target_rejected">设备拒绝目标功率，请重新连接后再试</string>
+    <string name="overlay_adjust">悬浮窗设置</string>
+    <string name="overlay_chart_show">展开实时曲线</string>
+    <string name="overlay_chart_hide">收起实时曲线</string>
 </resources>

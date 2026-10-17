@@ -50,6 +50,10 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     private var cadence: TextView? = null
     private var summary: TextView? = null
     private var collapsed = false
+    private var chartsExpanded = false
+    private var chart: OverlayTrendView? = null
+    private val trend = OverlayTrend()
+    private val preferenceStore = com.isaac.ridelab.data.repository.OverlayPreferencesStore(service)
     private fun dp(value: Int) = (value * context.resources.displayMetrics.density).toInt()
     private val params = WindowManager.LayoutParams(
         WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
@@ -63,6 +67,13 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     fun show(data: LiveRideData, keepScreenOn: Boolean = false): Boolean {
         params.flags = if (keepScreenOn) params.flags or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             else params.flags and WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON.inv()
+        val config = preferenceStore.read()
+        val nextSize = OverlaySize.restore(config.width, config.height)
+        if (nextSize != size || config.font != fontPercent || config.transparency != transparency) {
+            hide(); size = nextSize; fontPercent = config.font; transparency = config.transparency
+        }
+        trend.add(android.os.SystemClock.elapsedRealtime(), data.trainerPowerWatts, data.heartRateBpm)
+        chart?.invalidate()
         val selectedAppearance = appearanceSettings.read()
         if (selectedAppearance != appearance) {
             hide()
@@ -87,6 +98,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         scaleText(this, size)
         setTextColor(if (accent) this@RideOverlayWindow.accent else overlayColors.onSurface.toArgb())
         setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+        setShadowLayer(3f, 0f, 0f, Color.WHITE)
     }
     private fun scaleText(view: TextView, baseSize: Float) {
         scaledTexts.add(view to baseSize)
@@ -95,17 +107,9 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     private fun attach() {
         val panel = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL; setPadding(dp(14),dp(4),dp(8),dp(12))
-            elevation = dp(2).toFloat()
-            // Fade the entire panel, including its text and controls.
+            elevation = 0f
             alpha = (100 - transparency) / 100f
-            background = GradientDrawable().apply {
-                if (appearance.overlayStyle == OverlayStyle.DASHBOARD) {
-                    orientation = GradientDrawable.Orientation.TL_BR
-                    colors = intArrayOf(panelColor, overlayColors.background.toArgb())
-                } else setColor(panelColor)
-                cornerRadius = dp(if (appearance.overlayStyle == OverlayStyle.STRIP) 16 else 20).toFloat()
-                setStroke(dp(1), accent)
-            }
+            background = null
         }
         val header = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }
         val title = label(context.getString(R.string.overlay_title), 13f, true).apply {
@@ -165,84 +169,21 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
                 cadence = tile(row, R.string.cadence, 20f); metrics.addView(row)
             }
         }
-        val transparencyLabel = label(context.getString(R.string.overlay_transparency, transparency), 12f)
-        metrics.addView(transparencyLabel)
-        metrics.addView(SeekBar(context).apply {
-            max = 80
-            progressTintList = ColorStateList.valueOf(accent)
-            thumbTintList = ColorStateList.valueOf(accent)
-            progress = transparency
-            contentDescription = context.getString(R.string.overlay_transparency, transparency)
-            minimumHeight = dp(48)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
-                    if (!fromUser) return
-                    transparency = value.coerceIn(0, 80)
-                    panel.alpha = (100 - transparency) / 100f
-                    val text = context.getString(R.string.overlay_transparency, transparency)
-                    transparencyLabel.text = text
-                    bar.contentDescription = text
-                    preferences.edit().putInt("transparency", transparency).apply()
-                }
-                override fun onStartTrackingTouch(bar: SeekBar) = Unit
-                override fun onStopTrackingTouch(bar: SeekBar) = Unit
-            })
-        }, LinearLayout.LayoutParams(-1, dp(48)))
-        fun sizeControl(width: Boolean) {
-            val resource = if (width) R.string.overlay_width else R.string.overlay_height
-            fun percent() = if (width) size.widthPercent else size.heightPercent
-            val caption = label(context.getString(resource, percent()), 12f)
-            metrics.addView(caption)
-            metrics.addView(SeekBar(context).apply {
-                min = if (width) OverlaySize.MIN_WIDTH else OverlaySize.MIN_HEIGHT
-                max = if (width) OverlaySize.MAX_WIDTH else OverlaySize.MAX_HEIGHT
-                progress = percent()
-                contentDescription = caption.text
-                progressTintList = ColorStateList.valueOf(accent)
-                thumbTintList = ColorStateList.valueOf(accent)
-                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
-                        if (!fromUser) return
-                        size = if (width) OverlaySize.restore(value, size.heightPercent)
-                            else OverlaySize.restore(size.widthPercent, value)
-                        caption.text = context.getString(resource, percent())
-                        bar.contentDescription = caption.text
-                        preferences.edit().putInt("width_percent", size.widthPercent)
-                            .putInt("height_percent", size.heightPercent).apply()
-                        position(false)
-                        panel.post { if (root === panel) position(false) }
-                    }
-                    override fun onStartTrackingTouch(bar: SeekBar) = Unit
-                    override fun onStopTrackingTouch(bar: SeekBar) = Unit
-                })
-            }, LinearLayout.LayoutParams(-1, dp(48)))
+        val toggle = Button(context).apply {
+            background = null
+            setTextColor(accent)
+            text = context.getString(if (chartsExpanded) R.string.overlay_chart_hide else R.string.overlay_chart_show)
+            setOnClickListener {
+                chartsExpanded = !chartsExpanded
+                chart?.visibility = if (chartsExpanded) View.VISIBLE else View.GONE
+                text = context.getString(if (chartsExpanded) R.string.overlay_chart_hide else R.string.overlay_chart_show)
+            }
         }
-        sizeControl(true); sizeControl(false)
-        val fontLabel = label(context.getString(R.string.overlay_font_size, fontPercent), 12f)
-        metrics.addView(fontLabel)
-        metrics.addView(SeekBar(context).apply {
-            min = 80
-            progressTintList = ColorStateList.valueOf(accent)
-            thumbTintList = ColorStateList.valueOf(accent)
-            max = 140
-            progress = fontPercent
-            contentDescription = context.getString(R.string.overlay_font_size, fontPercent)
-            minimumHeight = dp(48)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
-                    if (!fromUser) return
-                    fontPercent = value.coerceIn(80, 140)
-                    scaledTexts.forEach { (view, base) -> view.textSize = base * fontPercent / 100f }
-                    val text = context.getString(R.string.overlay_font_size, fontPercent)
-                    fontLabel.text = text
-                    bar.contentDescription = text
-                    preferences.edit().putInt("font_percent", fontPercent).apply()
-                    panel.post { if (root === panel) position(false) }
-                }
-                override fun onStartTrackingTouch(bar: SeekBar) = Unit
-                override fun onStopTrackingTouch(bar: SeekBar) = Unit
-            })
-        }, LinearLayout.LayoutParams(-1, dp(48)))
+        metrics.addView(toggle)
+        chart = OverlayTrendView(context, trend, accent, overlayColors.error.toArgb()).apply {
+            visibility = if (chartsExpanded) View.VISIBLE else View.GONE
+        }
+        metrics.addView(chart, LinearLayout.LayoutParams(-1, dp(150)))
         // Keep header/close reachable on landscape and large-font displays.
         val body = object : ScrollView(context) {
             override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -283,7 +224,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         }
         val bounds = manager.currentWindowMetrics.bounds
         params.width = minOf(dp(preferredWidth), bounds.width())
-        params.height = minOf(dp(size.heightDp), bounds.height())
+        params.height = minOf(dp(if (collapsed) 100 else size.heightDp), bounds.height())
         root = panel
         try { manager.addView(panel,params) } catch(e: RuntimeException) {
             root=null; scaledTexts.clear(); power=null; hr=null; cadence=null; summary=null
@@ -299,7 +240,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         val usableWidth = (bounds.width() - insets.left - insets.right).coerceAtLeast(1)
         val usableHeight = (bounds.height() - insets.top - insets.bottom).coerceAtLeast(1)
         params.width = minOf(dp(preferredWidth), usableWidth)
-        params.height = minOf(dp(size.heightDp), usableHeight)
+        params.height = minOf(dp(if (collapsed) 100 else size.heightDp), usableHeight)
         val fitted=fitOverlay(params.x-insets.left,params.y-insets.top,usableWidth,usableHeight,params.width,params.height,snap)
         params.x=fitted.x+insets.left; params.y=fitted.y+insets.top
         try { manager.updateViewLayout(view,params) }

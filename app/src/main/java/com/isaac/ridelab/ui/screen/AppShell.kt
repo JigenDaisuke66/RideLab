@@ -35,6 +35,7 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     language: (String) -> Unit, enableOverlay: () -> Unit = {}, exportCsv: (Long, Long) -> Unit = { _, _ -> },
     startWorkout: (com.isaac.ridelab.workout.WorkoutId) -> Unit = devices::startWorkout,
     appearanceModel: AppearanceViewModel) {
+    val overlayPreferences by appearanceModel.overlayPreferences.collectAsState()
     val appearance by appearanceModel.state.collectAsState()
     val selectedLanguage by appearanceModel.language.collectAsState()
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -80,7 +81,7 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
         if (destination == Destination.RIDE) {
             Column(Modifier.statusBarsPadding().padding(horizontal = 16.dp)) {
                 OverlayControl(overlay, ready && ride.ongoing,
-                    enableOverlay, { devices.setOverlay(false) })
+                    enableOverlay, { devices.setOverlay(false) }, overlayPreferences, appearanceModel::saveOverlay)
             }
         }
     }, bottomBar = {
@@ -111,9 +112,9 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
                     RideNavigationActions(startRide, appSettings, { destination = Destination.SETTINGS }), modifier)
                 Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier, deleting, history::deleteRide, csvExport == CsvExportState.WRITING, exportCsv)
                 Destination.SETTINGS -> SettingsDestination(
-                    SettingsUiState(ftpState, overlay, ready && ride.ongoing, appearance, selectedLanguage),
+                    SettingsUiState(ftpState, overlay, ready && ride.ongoing, appearance, selectedLanguage, overlayPreferences),
                     SettingsActions(ftp::save, ftp::saveWeight, language, enableOverlay,
-                        { devices.setOverlay(false) }, appearanceModel::onAction), modifier)
+                        { devices.setOverlay(false) }, appearanceModel::onAction, appearanceModel::saveOverlay), modifier)
             }
         }
     }

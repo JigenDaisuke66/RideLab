@@ -469,4 +469,7 @@
     <string name="control_increment">Device power increment: %1$d W</string>
     <string name="control_conservative">Unknown device uses conservative limits; not hardware-verified</string>
     <string name="control_target_rejected">Trainer rejected the target; reconnect to retry</string>
+    <string name="overlay_adjust">Overlay settings</string>
+    <string name="overlay_chart_show">Show live charts</string>
+    <string name="overlay_chart_hide">Hide live charts</string>
 </resources>

@@ -25,6 +25,12 @@ internal fun Appearance.changedBy(action: AppearanceAction): Appearance = when (
 
 /** UI preferences only. Ride/service state is never copied or controlled here. */
 class AppearanceViewModel(application: Application) : AndroidViewModel(application) {
+    private val overlayStore = com.isaac.ridelab.data.repository.OverlayPreferencesStore(application)
+    private val mutableOverlay = MutableStateFlow(overlayStore.read())
+    val overlayPreferences = mutableOverlay.asStateFlow()
+    fun saveOverlay(value: com.isaac.ridelab.data.repository.OverlayPreferences) {
+        overlayStore.save(value); mutableOverlay.value = overlayStore.read()
+    }
     private val settings = AppearanceSettings(application)
     private val mutable = MutableStateFlow(settings.read())
     val state = mutable.asStateFlow()

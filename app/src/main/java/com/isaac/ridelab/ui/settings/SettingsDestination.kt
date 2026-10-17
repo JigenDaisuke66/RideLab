@@ -42,7 +42,7 @@ internal fun SettingsDestination(ui: SettingsUiState, actions: SettingsActions, 
         }
         item {
             Text(stringResource(R.string.ui_display), style = MaterialTheme.typography.titleMedium)
-            OverlayControl(ui.overlay, ui.overlayAvailable, actions.enableOverlay, actions.disableOverlay)
+            OverlayControl(ui.overlay, ui.overlayAvailable, actions.enableOverlay, actions.disableOverlay, ui.overlayPreferences, actions.saveOverlay)
             Text(stringResource(R.string.ui_overlay_opacity_hint), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

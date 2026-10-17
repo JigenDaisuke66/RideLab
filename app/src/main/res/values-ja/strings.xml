@@ -467,4 +467,7 @@
     <string name="control_increment">パワーの刻み幅：%1$d W</string>
     <string name="control_conservative">未検証のデバイスには保守的な上限を適用します</string>
     <string name="control_target_rejected">目標パワーが拒否されました。再接続してください</string>
+    <string name="overlay_adjust">フローティング表示設定</string>
+    <string name="overlay_chart_show">グラフを表示</string>
+    <string name="overlay_chart_hide">グラフを非表示</string>
 </resources>

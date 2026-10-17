@@ -469,4 +469,7 @@
     <string name="control_increment">裝置功率步進值：%1$d W</string>
     <string name="control_conservative">未知裝置採用保守功率範圍，尚未通過實機驗證</string>
     <string name="control_target_rejected">裝置拒絕目標功率，請重新連線後再試</string>
+    <string name="overlay_adjust">浮動視窗設定</string>
+    <string name="overlay_chart_show">展開即時曲線</string>
+    <string name="overlay_chart_hide">收合即時曲線</string>
 </resources>

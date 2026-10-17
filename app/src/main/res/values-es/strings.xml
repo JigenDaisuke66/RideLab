@@ -467,4 +467,7 @@
     <string name="control_increment">Incremento de potencia: %1$d W</string>
     <string name="control_conservative">Dispositivo no verificado; se usan límites conservadores</string>
     <string name="control_target_rejected">El rodillo rechazó el objetivo; vuelve a conectar</string>
+    <string name="overlay_adjust">Ajustes flotantes</string>
+    <string name="overlay_chart_show">Mostrar gráficos</string>
+    <string name="overlay_chart_hide">Ocultar gráficos</string>
 </resources>

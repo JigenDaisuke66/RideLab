@@ -467,4 +467,7 @@
     <string name="control_increment">Incremento de potência: %1$d W</string>
     <string name="control_conservative">Dispositivo não verificado; limites conservadores em uso</string>
     <string name="control_target_rejected">O rolo recusou a potência alvo; reconecte</string>
+    <string name="overlay_adjust">Ajustes flutuantes</string>
+    <string name="overlay_chart_show">Mostrar gráficos</string>
+    <string name="overlay_chart_hide">Ocultar gráficos</string>
 </resources>

@@ -28,7 +28,11 @@ Ownership:
   refresh this projection; platform applicationLocales remains authoritative.
 - ui/screen/AppearanceControls: state-only reusable rendering, no repository writes.
 - ui/shared/OverlayControl: shared permission/help/enable UI used by Ride and Settings.
-  Drag/collapse/opacity/resize remain in the existing native ui/overlay window.
+  The Ride and Settings entry points expose a prominent enable button and an adjustment dialog.
+  AppearanceViewModel saves overlay font/opacity/size through OverlayPreferencesStore using
+  the existing ride_overlay keys. The native transparent window reads these preferences live;
+  it retains only drag, close and collapse interactions. Its bounded two-minute OverlayTrend
+  is presentation history, independent of Room recording, with null/time gaps breaking curves.
 - ui/theme/RideLabComponents: keep existing RideLabCard, MetricTile, StatusPill and
   SettingRow. Extraction solely for renaming these would not reduce duplication.
 - HistoryViewModel owns repository queries, analytics orchestration, deletion and
