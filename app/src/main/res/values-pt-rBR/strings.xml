@@ -470,4 +470,17 @@
     <string name="overlay_adjust">Ajustes flutuantes</string>
     <string name="overlay_chart_show">Mostrar gráficos</string>
     <string name="overlay_chart_hide">Ocultar gráficos</string>
+    <string name="backup_export">Exportar todos</string>
+    <string name="backup_restore">Restaurar backup</string>
+    <string name="backup_busy">Processando…</string>
+    <string name="backup_exported">%1$d pedais exportados</string>
+    <string name="backup_restored">%1$d restaurados; %2$d duplicados ignorados</string>
+    <string name="backup_failed">Falha. Verifique o arquivo, a versão compatível e o espaço disponível.</string>
+    <string name="backup_explanation">Selecione um backup RideLab para mesclar. Os registros existentes são mantidos e os idênticos são ignorados. Inclui endereços de sensores e dados completos, mas não pedais ativos nem configurações. CSV não pode ser restaurado.</string>
+    <string name="backup_choose">Selecionar backup</string>
+    <string name="backup_cancel">Cancelar</string>
+    <string name="csv_archive_export">Exportar todos os CSV (ZIP)</string>
+    <string name="csv_archive_help">Extraia para ver o resumo e cada pedal no Excel. Para restaurar no app, use o backup abaixo.</string>
+    <string name="csv_archive_file">Arquivo de amostras</string>
+    <string name="ride_live_charts">Gráficos ao vivo · Últimos 5 minutos</string>
 </resources>

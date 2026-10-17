@@ -12,6 +12,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 enum class CsvExportState { IDLE, WRITING, SUCCESS, FAILED }
+enum class BackupPhase { IDLE, BUSY, EXPORTED, RESTORED, FAILED }
+data class BackupState(val phase: BackupPhase = BackupPhase.IDLE, val added: Int = 0, val skipped: Int = 0)
 
 data class HistoryState(val loading: Boolean = true, val failed: Boolean = false,
     val rides: List<RideHistoryEntry> = emptyList())
@@ -22,6 +24,55 @@ data class ChartState(val sessionId: Long? = null, val data: RideCharts? = null,
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = (application as RideLabApplication).rideRepository
+    private val _backup = MutableStateFlow(BackupState())
+    val backup = _backup.asStateFlow()
+    fun exportAllCsv(uri: android.net.Uri, labels: com.isaac.ridelab.export.CsvArchiveLabels) {
+        if (_backup.value.phase == BackupPhase.BUSY) return
+        _backup.value = BackupState(BackupPhase.BUSY)
+        viewModelScope.launch {
+            try {
+                val count = withContext(Dispatchers.IO) {
+                    val rides = repository.backupHistory()
+                    val context = currentCoroutineContext()
+                    requireNotNull(getApplication<Application>().contentResolver.openOutputStream(uri, "wt")).use {
+                        com.isaac.ridelab.export.RideCsvArchive.write(rides, it, labels) { context.ensureActive() }
+                    }
+                    rides.size
+                }
+                _backup.value = BackupState(BackupPhase.EXPORTED, count)
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { backupFailed(error) }
+        }
+    }
+    fun backupFailed(error: Exception) {
+        Log.e("RideLabBackup", "Document operation failed", error)
+        _backup.value = BackupState(BackupPhase.FAILED)
+    }
+    fun backupHistory(uri: android.net.Uri, restore: Boolean) {
+        if (_backup.value.phase == BackupPhase.BUSY) return
+        _backup.value = BackupState(BackupPhase.BUSY)
+        viewModelScope.launch {
+            try {
+                _backup.value = withContext(Dispatchers.IO) {
+                    val resolver = getApplication<Application>().contentResolver
+                    if (restore) {
+                        val rides = requireNotNull(resolver.openInputStream(uri)).use {
+                            com.isaac.ridelab.export.RideBackup.read(it)
+                        }
+                        val result = repository.restoreHistory(rides)
+                        BackupState(BackupPhase.RESTORED, result.added, result.skipped)
+                    } else {
+                        val rides = repository.backupHistory()
+                        requireNotNull(resolver.openOutputStream(uri, "wt")).use {
+                            com.isaac.ridelab.export.RideBackup.write(rides, it)
+                        }
+                        BackupState(BackupPhase.EXPORTED, rides.size)
+                    }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (error: Exception) { backupFailed(error) }
+        }
+    }
     private val _charts = MutableStateFlow(ChartState())
     val charts = _charts.asStateFlow()
     private var chartJob: Job? = null

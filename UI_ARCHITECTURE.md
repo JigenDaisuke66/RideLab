@@ -40,6 +40,14 @@ Ownership:
 - RideRecordingService exclusively owns BLE, workout timing and recording. Untouched.
 
 Where to add features:
+Ride page live curves use a bounded five-minute LiveRideTrend in DevicesViewModel,
+sampling existing fresh sensor state once per second while the Activity is visible.
+RideRoute passes immutable chart state to LiveRideCharts. This UI buffer is not
+recording: it does not backfill background/process-loss intervals from Room.
+Pause/missing readings and missed updates break segments. Rotation/tab switching
+retain the ViewModel buffer; a new ride clears it. RideChart accepts an optional
+start time for scrolling windows; history charts retain their zero-based default.
+
 Put new feature route/contracts beside ui/ride or ui/settings. Add settings controls
 as state plus events, with writes in a ViewModel and existing repository. Continue
 using existing ui/screen home/history/workout/devices files until a concrete change

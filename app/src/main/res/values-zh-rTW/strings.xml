@@ -472,4 +472,17 @@
     <string name="overlay_adjust">浮動視窗設定</string>
     <string name="overlay_chart_show">展開即時曲線</string>
     <string name="overlay_chart_hide">收合即時曲線</string>
+    <string name="backup_export">匯出全部紀錄</string>
+    <string name="backup_restore">還原備份</string>
+    <string name="backup_busy">處理中，請稍候…</string>
+    <string name="backup_exported">已匯出 %1$d 筆騎行紀錄</string>
+    <string name="backup_restored">已還原 %1$d 筆，略過 %2$d 筆重複紀錄</string>
+    <string name="backup_failed">操作失敗：請檢查檔案完整性、版本及儲存空間。</string>
+    <string name="backup_explanation">選擇 RideLab 備份以合併還原。保留現有紀錄並略過完全相同的紀錄。備份包含感測器位址及完整騎行資料，不含進行中的騎行或應用程式設定。CSV 檔案無法還原。</string>
+    <string name="backup_choose">選擇備份檔案</string>
+    <string name="backup_cancel">取消</string>
+    <string name="csv_archive_export">匯出全部 CSV（ZIP）</string>
+    <string name="csv_archive_help">解壓縮後可用 Excel 查看摘要及每次騎行資料；還原至應用程式請使用下方備份。</string>
+    <string name="csv_archive_file">採樣檔案</string>
+    <string name="ride_live_charts">即時曲線 · 最近 5 分鐘</string>
 </resources>

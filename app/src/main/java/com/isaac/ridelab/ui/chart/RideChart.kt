@@ -17,7 +17,8 @@ import com.isaac.ridelab.ui.theme.RideColors
 import com.isaac.ridelab.R
 
 @Composable
-fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long, showTitle: Boolean = true) {
+fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long, showTitle: Boolean = true,
+    startMillis: Long = 0) {
     val points = remember(series) { series.segments.flatten() }
     val low = remember(points) { minOf(0.0, points.minOfOrNull { it.value } ?: 0.0) }
     val high = remember(points) { maxOf(1.0, points.maxOfOrNull { it.value } ?: 1.0) }
@@ -34,7 +35,7 @@ fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long,
             Canvas(Modifier.fillMaxWidth().height(150.dp)) {
                 val pad = 3.dp.toPx()
                 fun position(point: ChartPoint) = Offset(
-                    pad + (point.elapsedMillis.toDouble() / endMillis.coerceAtLeast(1) * (size.width - pad * 2)).toFloat(),
+                    pad + ((point.elapsedMillis - startMillis).toDouble() / (endMillis - startMillis).coerceAtLeast(1) * (size.width - pad * 2)).toFloat(),
                     pad + ((high - point.value) / (high - low) * (size.height - pad * 2)).toFloat())
                 for (fraction in listOf(0f, 0.5f, 1f)) {
                     val y = pad + fraction * (size.height - pad * 2)
@@ -63,7 +64,7 @@ fun RideChart(series: ChartSeries, title: Int, unitFormat: Int, endMillis: Long,
             Text(stringResource(unitFormat, low), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(stringResource(R.string.history_time_value, 0L, 0L, 0L), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.history_time_value, startMillis / 3600000, startMillis / 60000 % 60, startMillis / 1000 % 60), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(stringResource(R.string.history_time_value, endMillis / 3600000, endMillis / 60000 % 60, endMillis / 1000 % 60), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(stringResource(R.string.chart_elapsed), style = MaterialTheme.typography.labelSmall)

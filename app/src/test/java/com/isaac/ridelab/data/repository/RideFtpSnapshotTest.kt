@@ -10,6 +10,7 @@ import org.junit.Test
 class RideFtpSnapshotTest {
     private class MemoryDao : RideDao() {
         val sessions = mutableMapOf<Long, RideSession>()
+        override suspend fun backupSessions() = sessions.values.filter { it.status != StoredRideStatus.ACTIVE }
         override suspend fun insertSession(session: RideSession): Long {
             val id = sessions.size + 1L
             sessions[id] = session.copy(id = id)

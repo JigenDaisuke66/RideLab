@@ -62,7 +62,8 @@ fun RideScreen(
     skipWorkout: () -> Unit = {}, endWorkout: () -> Unit = {},
     rampResult: RampTestResult? = null, ftp: FtpState = FtpState(),
     acceptRamp: () -> Unit = {}, keepRamp: () -> Unit = {}, ftpSettings: () -> Unit = {},
-    pauseRide: () -> Unit = {}, resumeRide: () -> Unit = {}
+    pauseRide: () -> Unit = {}, resumeRide: () -> Unit = {},
+    liveTrend: com.isaac.ridelab.ui.ride.LiveTrendState = com.isaac.ridelab.ui.ride.LiveTrendState()
 ) {
     var now by remember {
         mutableLongStateOf(SystemClock.elapsedRealtime())
@@ -280,6 +281,8 @@ fun RideScreen(
                 send = send
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+            com.isaac.ridelab.ui.ride.LiveRideCharts(liveTrend)
             Spacer(modifier = Modifier.height(12.dp))
         }
     }

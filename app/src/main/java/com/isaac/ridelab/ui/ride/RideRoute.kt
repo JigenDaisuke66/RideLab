@@ -1,6 +1,8 @@
 package com.isaac.ridelab.ui.ride
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.isaac.ridelab.data.model.*
 import com.isaac.ridelab.service.RideState
@@ -20,6 +22,7 @@ class RideNavigationActions(val start: () -> Unit, val appSettings: () -> Unit,
 @Composable
 internal fun RideRoute(state: RideUiState, devices: DevicesViewModel, erg: ErgTargetViewModel,
     navigation: RideNavigationActions, modifier: Modifier = Modifier) {
+    val trend by devices.liveTrend.collectAsState()
     RideScreen(trainer = state.trainer, hr = state.heartRate, ride = state.ride,
         ready = state.serviceReady, start = navigation.start, end = devices::endRide,
         send = devices::setTargetPower, appSettings = navigation.appSettings, modifier = modifier,
@@ -28,5 +31,6 @@ internal fun RideRoute(state: RideUiState, devices: DevicesViewModel, erg: ErgTa
         resumeWorkout = devices::resumeWorkout, skipWorkout = devices::skipWorkout,
         endWorkout = devices::endWorkout, rampResult = state.rampResult, ftp = state.profile,
         acceptRamp = devices::acceptRampResult, keepRamp = devices::keepRampResult,
-        ftpSettings = navigation.ftpSettings, pauseRide = devices::pauseRide, resumeRide = devices::resumeRide)
+        ftpSettings = navigation.ftpSettings, pauseRide = devices::pauseRide, resumeRide = devices::resumeRide,
+        liveTrend = trend)
 }

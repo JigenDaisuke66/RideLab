@@ -31,6 +31,9 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
     val heartRateState = mutableHeartRate.asStateFlow()
     val rideState = mutableRide.asStateFlow()
     val serviceReady = mutableReady.asStateFlow()
+    private val trend = com.isaac.ridelab.ui.ride.LiveRideTrend()
+    private val mutableTrend = MutableStateFlow(com.isaac.ridelab.ui.ride.LiveTrendState())
+    val liveTrend = mutableTrend.asStateFlow()
     private val mutableWorkout = MutableStateFlow(com.isaac.ridelab.workout.WorkoutState())
     val workoutState = mutableWorkout.asStateFlow()
     private val rampReview = (application as com.isaac.ridelab.RideLabApplication).rampReview
@@ -76,6 +79,16 @@ class DevicesViewModel(application: Application) : AndroidViewModel(application)
     }
 
     init {
+        scope.launch {
+            while (isActive) {
+                if (visible) {
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    mutableTrend.value = trend.update(mutableRide.value, now,
+                        LiveRideData.snapshot(mutableTrainer.value, mutableHeartRate.value, now))
+                }
+                delay(1000)
+            }
+        }
         try {
             bound = application.bindService(Intent(application, RideRecordingService::class.java), connection, Context.BIND_AUTO_CREATE)
             if (!bound) mutableRide.value = RideState(RidePhase.ERROR, error = RideError.SERVICE_LOST)

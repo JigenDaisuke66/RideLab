@@ -49,7 +49,8 @@ fun HistoryScreen(
     deleting: Boolean = false,
     onDelete: (Long, (Boolean) -> Unit) -> Unit = { _, done -> done(false) },
     exporting: Boolean = false,
-    onExport: (Long, Long) -> Unit = { _, _ -> }
+    onExport: (Long, Long) -> Unit = { _, _ -> },
+    backupControls: @Composable () -> Unit = {}
 ) {
     val view = LocalView.current
     var pendingDelete by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -167,6 +168,7 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (currentSelectedId == null) item { backupControls() }
                 when {
                     state.loading -> item { LoadingView(R.string.history_loading) }
 

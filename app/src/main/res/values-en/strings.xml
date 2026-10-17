@@ -472,4 +472,17 @@
     <string name="overlay_adjust">Overlay settings</string>
     <string name="overlay_chart_show">Show live charts</string>
     <string name="overlay_chart_hide">Hide live charts</string>
+    <string name="backup_export">Export all rides</string>
+    <string name="backup_restore">Restore backup</string>
+    <string name="backup_busy">Processing, please wait…</string>
+    <string name="backup_exported">Exported %1$d rides</string>
+    <string name="backup_restored">Restored %1$d; skipped %2$d duplicates</string>
+    <string name="backup_failed">Operation failed. Check file integrity, supported version and storage space.</string>
+    <string name="backup_explanation">Choose a RideLab backup to merge. Existing records are kept; identical rides are skipped. Backups contain sensor addresses and full ride data, excluding ongoing rides and app settings. CSV files cannot be restored.</string>
+    <string name="backup_choose">Choose backup file</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="csv_archive_export">Export all CSV (ZIP)</string>
+    <string name="csv_archive_help">Unzip to view the summary and each ride in Excel. Use the backup below to restore into the app.</string>
+    <string name="csv_archive_file">Sample file</string>
+    <string name="ride_live_charts">Live charts · Last 5 minutes</string>
 </resources>

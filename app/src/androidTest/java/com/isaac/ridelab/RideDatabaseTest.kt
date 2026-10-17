@@ -21,6 +21,38 @@ class RideDatabaseTest {
     }
     @After fun tearDown() { db.close() }
 
+    @Test fun backupMergeRemapsIdsSkipsDuplicatesAndKeepsActiveRide() = runBlocking {
+        val dao = db.rides()
+        val active = dao.insertSession(RideSession(startTimeEpochMillis = 10000))
+        val ride = com.isaac.ridelab.export.BackupRide(
+            RideSession(id = active, startTimeEpochMillis = 1000, durationMillis = 1000,
+                endTimeEpochMillis = 2000, status = StoredRideStatus.COMPLETED,
+                activeSlot = null, analyticsFtpWatts = 130, bodyWeightKg = 70.0),
+            listOf(LiveRideData(trainerPowerWatts = 0).sample(active, 1000, 0)))
+        assertEquals(1, dao.restoreHistory(listOf(ride)).added)
+        val saved = dao.backupHistory().single()
+        assertNotEquals(active, saved.session.id)
+        assertEquals(saved.session.id, saved.samples.single().sessionId)
+        assertEquals(StoredRideStatus.ACTIVE, dao.session(active)!!.status)
+        assertEquals(1, dao.restoreHistory(listOf(ride)).skipped)
+        assertEquals(2, dao.sessionCount())
+        dao.deleteHistory(saved.session.id)
+        assertEquals(1, dao.restoreHistory(listOf(ride)).added)
+    }
+
+    @Test fun failedRestoreRollsBackWholeBatch() = runBlocking {
+        val dao = db.rides()
+        val good = com.isaac.ridelab.export.BackupRide(
+            RideSession(startTimeEpochMillis = 0, status = StoredRideStatus.COMPLETED, activeSlot = null),
+            emptyList())
+        val sample = LiveRideData().sample(0, 10, 0)
+        val bad = good.copy(session = good.session.copy(startTimeEpochMillis = 10),
+            samples = listOf(sample, sample))
+        try { dao.restoreHistory(listOf(good, bad)); fail("Expected duplicate primary key") }
+        catch (_: android.database.sqlite.SQLiteConstraintException) { }
+        assertEquals(0, dao.sessionCount())
+    }
+
     @Test fun exportLoadsOnlySelectedFinishedRideInElapsedOrder() = runBlocking {
         val dao = db.rides()
         val id = dao.insertSession(RideSession(startTimeEpochMillis = 1000))

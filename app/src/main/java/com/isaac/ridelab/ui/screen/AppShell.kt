@@ -110,7 +110,8 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
                 Destination.RIDE -> RideRoute(
                     RideUiState(trainer, hr, ride, ready, ergState, workout, rampResult, ftpState), devices, erg,
                     RideNavigationActions(startRide, appSettings, { destination = Destination.SETTINGS }), modifier)
-                Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier, deleting, history::deleteRide, csvExport == CsvExportState.WRITING, exportCsv)
+                Destination.HISTORY -> HistoryScreen(historyState, { destination = Destination.HOME }, history::retry, chartState, history::loadCharts, modifier, deleting, history::deleteRide, csvExport == CsvExportState.WRITING, exportCsv,
+                    backupControls = { HistoryBackupControls(history) })
                 Destination.SETTINGS -> SettingsDestination(
                     SettingsUiState(ftpState, overlay, ready && ride.ongoing, appearance, selectedLanguage, overlayPreferences),
                     SettingsActions(ftp::save, ftp::saveWeight, language, enableOverlay,

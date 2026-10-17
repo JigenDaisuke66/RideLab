@@ -470,4 +470,17 @@
     <string name="overlay_adjust">Ajustes flotantes</string>
     <string name="overlay_chart_show">Mostrar gráficos</string>
     <string name="overlay_chart_hide">Ocultar gráficos</string>
+    <string name="backup_export">Exportar todos</string>
+    <string name="backup_restore">Restaurar copia</string>
+    <string name="backup_busy">Procesando…</string>
+    <string name="backup_exported">%1$d recorridos exportados</string>
+    <string name="backup_restored">%1$d restaurados; %2$d duplicados omitidos</string>
+    <string name="backup_failed">Error. Comprueba el archivo, la versión compatible y el espacio disponible.</string>
+    <string name="backup_explanation">Selecciona una copia de RideLab para combinarla. Se conservan los registros existentes y se omiten los idénticos. Incluye direcciones de sensores y datos completos, pero no recorridos activos ni ajustes. No se puede restaurar un CSV.</string>
+    <string name="backup_choose">Seleccionar copia</string>
+    <string name="backup_cancel">Cancelar</string>
+    <string name="csv_archive_export">Exportar todos los CSV (ZIP)</string>
+    <string name="csv_archive_help">Descomprime para ver el resumen y cada recorrido en Excel. Para restaurar en la app, usa la copia de seguridad de abajo.</string>
+    <string name="csv_archive_file">Archivo de muestras</string>
+    <string name="ride_live_charts">Gráficos en vivo · Últimos 5 minutos</string>
 </resources>

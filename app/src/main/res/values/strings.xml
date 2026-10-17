@@ -472,4 +472,17 @@
     <string name="overlay_adjust">悬浮窗设置</string>
     <string name="overlay_chart_show">展开实时曲线</string>
     <string name="overlay_chart_hide">收起实时曲线</string>
+    <string name="backup_export">导出全部记录</string>
+    <string name="backup_restore">恢复备份</string>
+    <string name="backup_busy">正在处理，请稍候…</string>
+    <string name="backup_exported">已导出 %1$d 条骑行记录</string>
+    <string name="backup_restored">已恢复 %1$d 条，跳过 %2$d 条重复记录</string>
+    <string name="backup_failed">操作失败：请检查文件是否完整、版本是否支持及存储空间。</string>
+    <string name="backup_explanation">选择 RideLab 备份文件合并恢复。不会覆盖现有记录，完全相同的记录会跳过。备份含传感器地址和完整骑行数据，不含进行中的骑行或应用设置。CSV 文件不能用于恢复。</string>
+    <string name="backup_choose">选择备份文件</string>
+    <string name="backup_cancel">取消</string>
+    <string name="csv_archive_export">导出全部 CSV（ZIP）</string>
+    <string name="csv_archive_help">解压后可用 Excel 查看汇总表和每次骑行的数据；恢复到应用请使用下方备份。</string>
+    <string name="csv_archive_file">采样文件</string>
+    <string name="ride_live_charts">实时曲线 · 最近 5 分钟</string>
 </resources>

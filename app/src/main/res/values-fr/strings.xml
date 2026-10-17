@@ -470,4 +470,17 @@
     <string name="overlay_adjust">Réglages flottants</string>
     <string name="overlay_chart_show">Afficher les courbes</string>
     <string name="overlay_chart_hide">Masquer les courbes</string>
+    <string name="backup_export">Tout exporter</string>
+    <string name="backup_restore">Restaurer</string>
+    <string name="backup_busy">Traitement en cours…</string>
+    <string name="backup_exported">%1$d sorties exportées</string>
+    <string name="backup_restored">%1$d restaurées ; %2$d doublons ignorés</string>
+    <string name="backup_failed">Échec. Vérifiez le fichier, la version compatible et l’espace disponible.</string>
+    <string name="backup_explanation">Choisissez une sauvegarde RideLab à fusionner. Les données existantes sont conservées et les doublons identiques ignorés. Les adresses des capteurs et les données complètes sont incluses, sauf les sorties en cours et les réglages. Les fichiers CSV ne peuvent pas être restaurés.</string>
+    <string name="backup_choose">Choisir une sauvegarde</string>
+    <string name="backup_cancel">Annuler</string>
+    <string name="csv_archive_export">Exporter tous les CSV (ZIP)</string>
+    <string name="csv_archive_help">Décompressez pour consulter le résumé et chaque sortie dans Excel. Pour restaurer dans cette application, utilisez la sauvegarde ci-dessous.</string>
+    <string name="csv_archive_file">Fichier des échantillons</string>
+    <string name="ride_live_charts">Courbes en direct · 5 dernières minutes</string>
 </resources>

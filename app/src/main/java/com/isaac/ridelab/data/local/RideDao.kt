@@ -7,6 +7,32 @@ import com.isaac.ridelab.data.model.StoredRideStatus
 
 @Dao
 abstract class RideDao {
+    @Query("SELECT * FROM ride_sessions WHERE status IN ('COMPLETED', 'ABORTED') ORDER BY startTimeEpochMillis DESC, id DESC")
+    abstract suspend fun backupSessions(): List<RideSession>
+
+    @Transaction
+    open suspend fun backupHistory(): List<com.isaac.ridelab.export.BackupRide> =
+        backupSessions().map { com.isaac.ridelab.export.BackupRide(it, samples(it.id)) }
+
+    // All-or-nothing merge. Never overwrite local IDs, active sessions or historical snapshots.
+    @Transaction
+    open suspend fun restoreHistory(rides: List<com.isaac.ridelab.export.BackupRide>): com.isaac.ridelab.export.RestoreResult {
+        val existing = backupSessions().toMutableList()
+        var added = 0
+        for (ride in rides) {
+            val duplicate = existing.filter { it.startTimeEpochMillis == ride.session.startTimeEpochMillis }
+                .any { com.isaac.ridelab.export.RideBackup.same(ride,
+                    com.isaac.ridelab.export.BackupRide(it, samples(it.id))) }
+            if (duplicate) continue
+            check(ride.session.status != StoredRideStatus.ACTIVE && ride.session.activeSlot == null)
+            val id = insertSession(ride.session.copy(id = 0, activeSlot = null))
+            ride.samples.forEach { insertSample(it.copy(sessionId = id)) }
+            existing.add(ride.session.copy(id = id))
+            added++
+        }
+        return com.isaac.ridelab.export.RestoreResult(added, rides.size - added)
+    }
+
     @Query("SELECT * FROM ride_sessions WHERE status = 'COMPLETED' AND (startTimeEpochMillis < :timestamp OR (startTimeEpochMillis = :timestamp AND id < :id)) ORDER BY startTimeEpochMillis, id")
     abstract suspend fun previousCompleted(timestamp: Long, id: Long): List<RideSession>
     @Query("""SELECT r.*, COUNT(s.sessionId) AS sampleCount,

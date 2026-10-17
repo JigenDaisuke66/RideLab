@@ -33,6 +33,8 @@ class RoomRideRepository(private val dao: RideDao, private val currentFtp: suspe
         current.copy(prs = current.efforts.mapIndexed { i, effort -> PowerAnalysisCalculator.compare(effort.watts, previous[i], session.status) })
     }
     suspend fun exportSamples(id: Long) = dao.exportSamples(id)
+    suspend fun backupHistory() = dao.backupHistory()
+    suspend fun restoreHistory(rides: List<com.isaac.ridelab.export.BackupRide>) = dao.restoreHistory(rides)
     suspend fun deleteHistory(id: Long): Boolean = dao.deleteHistory(id) == 1
     suspend fun analyticsSession(id: Long) = dao.session(id)
     suspend fun historySamples(id: Long) = dao.samples(id)
