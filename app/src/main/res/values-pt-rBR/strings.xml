@@ -307,7 +307,7 @@
     <string name="ui_history_summary">Potência média %1$s · FC média %2$s</string>
     <string name="ui_display">Exibição</string>
     <string name="ui_help">Ajuda</string>
-    <string name="ui_overlay_opacity_hint">Ajuste transparência e texto na janela expandida. Afeta fundo e texto; as configurações são salvas automaticamente.</string>
+    <string name="ui_overlay_opacity_hint">Ajuste a opacidade, a fonte e o tamanho em Ajustes flutuantes na tela do pedal ou de configurações. As alterações são salvas automaticamente.</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">Média</string>
@@ -483,4 +483,8 @@
     <string name="csv_archive_help">Extraia para ver o resumo e cada pedal no Excel. Para restaurar no app, use o backup abaixo.</string>
     <string name="csv_archive_file">Arquivo de amostras</string>
     <string name="ride_live_charts">Gráficos ao vivo · Últimos 5 minutos</string>
+    <string name="overlay_ride_time">Tempo do pedal</string>
+    <string name="overlay_fold">Recolher janela</string>
+    <string name="overlay_unfold">Expandir janela</string>
+    <string name="overlay_chart_window">Últimos 2 minutos</string>
 </resources>

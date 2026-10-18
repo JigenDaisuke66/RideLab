@@ -309,7 +309,7 @@
     <string name="ui_history_summary">平均功率 %1$s · 平均心率 %2$s</string>
     <string name="ui_display">显示</string>
     <string name="ui_help">帮助</string>
-    <string name="ui_overlay_opacity_hint">在展开的悬浮窗内调节透明度和字体大小。透明度同时影响背景和文字，设置会自动保存。</string>
+    <string name="ui_overlay_opacity_hint">在骑行页或设置页的“悬浮窗设置”中调整透明度、字体及尺寸。设置会自动保存。</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">本次平均</string>
@@ -485,4 +485,8 @@
     <string name="csv_archive_help">解压后可用 Excel 查看汇总表和每次骑行的数据；恢复到应用请使用下方备份。</string>
     <string name="csv_archive_file">采样文件</string>
     <string name="ride_live_charts">实时曲线 · 最近 5 分钟</string>
+    <string name="overlay_ride_time">骑行时间</string>
+    <string name="overlay_fold">折叠悬浮窗</string>
+    <string name="overlay_unfold">展开悬浮窗</string>
+    <string name="overlay_chart_window">最近 2 分钟</string>
 </resources>

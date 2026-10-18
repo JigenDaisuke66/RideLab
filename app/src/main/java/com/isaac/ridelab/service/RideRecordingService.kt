@@ -90,7 +90,7 @@ class RideRecordingService : Service() {
                     val locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
                     val interactive = getSystemService(PowerManager::class.java).isInteractive
                     if (locked || !interactive) overlayWindow?.hide()
-                    else if (overlayWindow?.show(liveSnapshot(SystemClock.elapsedRealtime()),
+                    else if (overlayWindow?.show(liveSnapshot(SystemClock.elapsedRealtime()), rideState.value,
                             keepScreenOn = rideState.value.phase == RidePhase.ACTIVE) != true) {
                         mutableOverlay.value = RideOverlayState.FAILED
                         break

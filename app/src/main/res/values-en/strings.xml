@@ -309,7 +309,7 @@
     <string name="ui_history_summary">Avg power %1$s · Avg HR %2$s</string>
     <string name="ui_display">Display</string>
     <string name="ui_help">Help</string>
-    <string name="ui_overlay_opacity_hint">Adjust transparency and font size inside the expanded floating window. Transparency affects both background and text; settings are saved automatically.</string>
+    <string name="ui_overlay_opacity_hint">Adjust opacity, font and size in Overlay settings on the Ride or Settings page. Changes are saved automatically.</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">Average</string>
@@ -485,4 +485,8 @@
     <string name="csv_archive_help">Unzip to view the summary and each ride in Excel. Use the backup below to restore into the app.</string>
     <string name="csv_archive_file">Sample file</string>
     <string name="ride_live_charts">Live charts · Last 5 minutes</string>
+    <string name="overlay_ride_time">Ride time</string>
+    <string name="overlay_fold">Collapse overlay</string>
+    <string name="overlay_unfold">Expand overlay</string>
+    <string name="overlay_chart_window">Last 2 minutes</string>
 </resources>

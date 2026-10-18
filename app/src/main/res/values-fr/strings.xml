@@ -307,7 +307,7 @@
     <string name="ui_history_summary">Puissance moy. %1$s · FC moy. %2$s</string>
     <string name="ui_display">Affichage</string>
     <string name="ui_help">Aide</string>
-    <string name="ui_overlay_opacity_hint">Réglez la transparence et la taille du texte dans la fenêtre déployée. Le fond et le texte sont concernés ; les réglages sont enregistrés automatiquement.</string>
+    <string name="ui_overlay_opacity_hint">Réglez la transparence, la police et la taille dans Réglages flottants depuis la sortie ou les réglages. Les modifications sont enregistrées automatiquement.</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">Moyenne</string>
@@ -483,4 +483,8 @@
     <string name="csv_archive_help">Décompressez pour consulter le résumé et chaque sortie dans Excel. Pour restaurer dans cette application, utilisez la sauvegarde ci-dessous.</string>
     <string name="csv_archive_file">Fichier des échantillons</string>
     <string name="ride_live_charts">Courbes en direct · 5 dernières minutes</string>
+    <string name="overlay_ride_time">Temps de sortie</string>
+    <string name="overlay_fold">Réduire la fenêtre</string>
+    <string name="overlay_unfold">Développer la fenêtre</string>
+    <string name="overlay_chart_window">2 dernières minutes</string>
 </resources>

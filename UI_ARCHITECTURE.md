@@ -33,6 +33,12 @@ Ownership:
   the existing ride_overlay keys. The native transparent window reads these preferences live;
   it retains only drag, close and collapse interactions. Its bounded two-minute OverlayTrend
   is presentation history, independent of Room recording, with null/time gaps breaking curves.
+  RideOverlayWindow hosts the native window/drag positioning; OverlayPanel renders the
+  transparent HUD in the three existing styles (large power, HR/cadence, compact strip).
+  OverlayReadout projects elapsed time from the service's existing RideState, including
+  pause semantics. There is no independent timer. Collapsed mode retains time/power.
+  Font/height scaling and chart expansion update bounded window dimensions; the header
+  and close/collapse buttons remain outside the scrollable metric body.
 - ui/theme/RideLabComponents: keep existing RideLabCard, MetricTile, StatusPill and
   SettingRow. Extraction solely for renaming these would not reduce duplication.
 - HistoryViewModel owns repository queries, analytics orchestration, deletion and

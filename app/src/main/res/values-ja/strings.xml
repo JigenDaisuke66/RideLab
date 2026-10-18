@@ -307,7 +307,7 @@
     <string name="ui_history_summary">平均パワー %1$s · 平均心拍 %2$s</string>
     <string name="ui_display">表示</string>
     <string name="ui_help">ヘルプ</string>
-    <string name="ui_overlay_opacity_hint">展開したウィンドウ内で透明度と文字サイズを調整できます。背景と文字が一緒に透過し、設定は自動保存します。</string>
+    <string name="ui_overlay_opacity_hint">走行画面または設定画面のフローティング表示設定で透明度、文字、サイズを調整できます。変更は自動保存されます。</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">平均</string>
@@ -483,4 +483,8 @@
     <string name="csv_archive_help">展開すると Excel で一覧と各走行を確認できます。アプリへの復元には下のバックアップを使用してください。</string>
     <string name="csv_archive_file">サンプルファイル</string>
     <string name="ride_live_charts">リアルタイムグラフ · 直近5分</string>
+    <string name="overlay_ride_time">走行時間</string>
+    <string name="overlay_fold">フローティング表示を折りたたむ</string>
+    <string name="overlay_unfold">フローティング表示を展開</string>
+    <string name="overlay_chart_window">直近2分</string>
 </resources>

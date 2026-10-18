@@ -309,7 +309,7 @@
     <string name="ui_history_summary">平均功率 %1$s · 平均心率 %2$s</string>
     <string name="ui_display">顯示</string>
     <string name="ui_help">幫助</string>
-    <string name="ui_overlay_opacity_hint">在展開的浮動視窗內調節透明度和字體大小。透明度同時影響背景和文字，設定會自動保存。</string>
+    <string name="ui_overlay_opacity_hint">在騎行或設定頁的「浮動視窗設定」中調整透明度、字體及尺寸。設定會自動儲存。</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">本次平均</string>
@@ -485,4 +485,8 @@
     <string name="csv_archive_help">解壓縮後可用 Excel 查看摘要及每次騎行資料；還原至應用程式請使用下方備份。</string>
     <string name="csv_archive_file">採樣檔案</string>
     <string name="ride_live_charts">即時曲線 · 最近 5 分鐘</string>
+    <string name="overlay_ride_time">騎行時間</string>
+    <string name="overlay_fold">收合浮動視窗</string>
+    <string name="overlay_unfold">展開浮動視窗</string>
+    <string name="overlay_chart_window">最近 2 分鐘</string>
 </resources>
