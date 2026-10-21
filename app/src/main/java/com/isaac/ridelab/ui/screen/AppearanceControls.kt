@@ -22,12 +22,6 @@ private val ThemePalette.title: Int get() = when (this) {
     ThemePalette.AMBER -> R.string.theme_amber
     ThemePalette.ROSE -> R.string.theme_rose
 }
-private val OverlayStyle.title: Int get() = when (this) {
-    OverlayStyle.PANEL -> R.string.overlay_style_panel
-    OverlayStyle.STRIP -> R.string.overlay_style_strip
-    OverlayStyle.DASHBOARD -> R.string.overlay_style_dashboard
-}
-
 @Composable
 internal fun AppearanceControls(appearance: Appearance, onAction: (AppearanceAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -45,22 +39,6 @@ internal fun AppearanceControls(appearance: Appearance, onAction: (AppearanceAct
         }
         Text(stringResource(R.string.appearance_theme), style = MaterialTheme.typography.labelLarge)
         PalettePicker(appearance.theme) { onAction(AppearanceAction.Palette(it)) }
-        HorizontalDivider()
-        Text(stringResource(R.string.appearance_overlay_palette), style = MaterialTheme.typography.labelLarge)
-        FilterChip(selected = appearance.overlayPalette == null,
-            onClick = { onAction(AppearanceAction.OverlayPalette(null)) },
-            label = { Text(stringResource(R.string.appearance_follow_theme)) })
-        PalettePicker(appearance.overlayPalette) { onAction(AppearanceAction.OverlayPalette(it)) }
-        Text(stringResource(R.string.appearance_overlay_style), style = MaterialTheme.typography.labelLarge)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OverlayStyle.entries.forEach { style ->
-                FilterChip(selected = appearance.overlayStyle == style,
-                    onClick = { onAction(AppearanceAction.Style(style)) },
-                    label = { Text(stringResource(style.title)) }, modifier = Modifier.weight(1f))
-            }
-        }
-        Text(stringResource(R.string.appearance_preview), style = MaterialTheme.typography.labelSmall)
-        OverlayAppearancePreview(appearance)
         Text(stringResource(R.string.appearance_saved_hint), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -78,52 +56,5 @@ private fun PalettePicker(selected: ThemePalette?, choose: (ThemePalette) -> Uni
             }
             repeat(3 - palettes.size) { Spacer(Modifier.weight(1f)) }
         }
-    }
-}
-
-@Composable
-private fun OverlayAppearancePreview(appearance: Appearance) {
-    val palette = appearance.effectiveOverlayPalette
-    val colors = rideColorScheme(palette, when (appearance.mode) {
-        ThemeMode.LIGHT -> false; ThemeMode.DARK -> true; ThemeMode.SYSTEM -> isSystemInDarkTheme()
-    })
-    MaterialTheme(colorScheme = colors) {
-    Card(colors = CardDefaults.cardColors(containerColor = colors.surface),
-        modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.overlay_title), color = colors.primary,
-                style = MaterialTheme.typography.labelLarge)
-            when (appearance.overlayStyle) {
-                OverlayStyle.PANEL -> listOf(R.string.ui_power, R.string.ui_heart_rate, R.string.cadence).forEach {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(stringResource(it), color = colors.onSurfaceVariant)
-                        Text(stringResource(R.string.history_no_data), color = if (it == R.string.ui_power) colors.primary else colors.onSurface)
-                    }
-                }
-                OverlayStyle.STRIP -> Row(Modifier.fillMaxWidth()) {
-                    listOf(R.string.ui_power, R.string.ui_heart_rate, R.string.cadence).forEach {
-                        PreviewMetric(it, palette, Modifier.weight(1f))
-                    }
-                }
-                OverlayStyle.DASHBOARD -> {
-                    PreviewMetric(R.string.ui_power, palette, Modifier.fillMaxWidth())
-                    Row(Modifier.fillMaxWidth()) {
-                        PreviewMetric(R.string.ui_heart_rate, palette, Modifier.weight(1f))
-                        PreviewMetric(R.string.cadence, palette, Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-    }
-}
-
-@Composable
-private fun PreviewMetric(title: Int, palette: ThemePalette, modifier: Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(title), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
-        Text(stringResource(R.string.history_no_data), color = if (title == R.string.ui_power) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleMedium)
     }
 }

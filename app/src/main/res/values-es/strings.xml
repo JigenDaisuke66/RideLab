@@ -307,7 +307,7 @@
     <string name="ui_history_summary">Potencia media %1$s · FC media %2$s</string>
     <string name="ui_display">Pantalla</string>
     <string name="ui_help">Ayuda</string>
-    <string name="ui_overlay_opacity_hint">Ajusta la opacidad, la fuente y el tamaño en Ajustes flotantes, en la pantalla de recorrido o de ajustes. Los cambios se guardan automáticamente.</string>
+    <string name="ui_overlay_opacity_hint">Ajusta tamaño y opacidad. Se adapta proporcionalmente a la pantalla. Configura y previsualiza sin conectar dispositivos.</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">Media</string>
@@ -487,4 +487,7 @@
     <string name="overlay_fold">Contraer ventana</string>
     <string name="overlay_unfold">Expandir ventana</string>
     <string name="overlay_chart_window">Últimos 2 minutos</string>
+    <string name="capsule_size">Tamaño total: %1$d%%</string>
+    <string name="capsule_preview">Vista previa (ejemplo; desliza horizontalmente)</string>
+    <string name="capsule_recent">Potencia reciente</string>
 </resources>

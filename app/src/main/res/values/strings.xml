@@ -309,7 +309,7 @@
     <string name="ui_history_summary">平均功率 %1$s · 平均心率 %2$s</string>
     <string name="ui_display">显示</string>
     <string name="ui_help">帮助</string>
-    <string name="ui_overlay_opacity_hint">在骑行页或设置页的“悬浮窗设置”中调整透明度、字体及尺寸。设置会自动保存。</string>
+    <string name="ui_overlay_opacity_hint">仅调整整体大小和透明度；超过屏幕时自动等比缩小。无需连接设备即可设置和预览。</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">本次平均</string>
@@ -489,4 +489,7 @@
     <string name="overlay_fold">折叠悬浮窗</string>
     <string name="overlay_unfold">展开悬浮窗</string>
     <string name="overlay_chart_window">最近 2 分钟</string>
+    <string name="capsule_size">整体大小：%1$d%%</string>
+    <string name="capsule_preview">样式预览（示例数据，可左右滑动）</string>
+    <string name="capsule_recent">最近功率</string>
 </resources>

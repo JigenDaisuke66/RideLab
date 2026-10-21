@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.isaac.ridelab.R
 
 @Composable
@@ -35,14 +36,12 @@ internal fun OverlayControl(state: com.isaac.ridelab.ui.overlay.RideOverlayState
     if (settings) AlertDialog(onDismissRequest = { settings = false },
         title = { Text(stringResource(R.string.overlay_adjust)) },
         text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+            com.isaac.ridelab.ui.overlay.CapsulePreview(preferences)
+            Spacer(Modifier.height(16.dp))
             Text(stringResource(R.string.overlay_transparency, preferences.transparency))
             Slider(preferences.transparency.toFloat(), { save(preferences.copy(transparency = it.toInt())) }, valueRange = 0f..80f)
-            Text(stringResource(R.string.overlay_font_size, preferences.font))
-            Slider(preferences.font.toFloat(), { save(preferences.copy(font = it.toInt())) }, valueRange = 80f..140f)
-            Text(stringResource(R.string.overlay_width, preferences.width))
-            Slider(preferences.width.toFloat(), { save(preferences.copy(width = it.toInt())) }, valueRange = 80f..160f)
-            Text(stringResource(R.string.overlay_height, preferences.height))
-            Slider(preferences.height.toFloat(), { save(preferences.copy(height = it.toInt())) }, valueRange = 40f..140f)
+            Text(stringResource(R.string.capsule_size, preferences.size))
+            Slider(preferences.size.toFloat(), { save(preferences.copy(size = it.toInt())) }, valueRange = 60f..140f)
         } }, confirmButton = { TextButton(onClick = { settings = false }) { Text(stringResource(R.string.erg_confirm)) } })
     if (help) AlertDialog(onDismissRequest = { help = false },
         title = { Text(stringResource(R.string.overlay_title)) }, text = { Text(note) },

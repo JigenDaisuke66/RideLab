@@ -307,7 +307,7 @@
     <string name="ui_history_summary">Potência média %1$s · FC média %2$s</string>
     <string name="ui_display">Exibição</string>
     <string name="ui_help">Ajuda</string>
-    <string name="ui_overlay_opacity_hint">Ajuste a opacidade, a fonte e o tamanho em Ajustes flutuantes na tela do pedal ou de configurações. As alterações são salvas automaticamente.</string>
+    <string name="ui_overlay_opacity_hint">Ajuste tamanho e opacidade. A janela se adapta proporcionalmente à tela. Configure e visualize sem conectar dispositivos.</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">Média</string>
@@ -487,4 +487,7 @@
     <string name="overlay_fold">Recolher janela</string>
     <string name="overlay_unfold">Expandir janela</string>
     <string name="overlay_chart_window">Últimos 2 minutos</string>
+    <string name="capsule_size">Tamanho geral: %1$d%%</string>
+    <string name="capsule_preview">Prévia (exemplo; deslize na horizontal)</string>
+    <string name="capsule_recent">Potência recente</string>
 </resources>

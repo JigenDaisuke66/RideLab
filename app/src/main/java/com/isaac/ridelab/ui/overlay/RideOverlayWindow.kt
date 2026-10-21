@@ -5,6 +5,7 @@ import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.os.SystemClock
 import android.view.*
+import com.isaac.ridelab.R
 import androidx.compose.ui.graphics.toArgb
 import com.isaac.ridelab.data.model.LiveRideData
 import com.isaac.ridelab.data.repository.AppearanceSettings
@@ -24,11 +25,11 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     private var appearance = appearanceSettings.read()
     private val preferenceStore = OverlayPreferencesStore(service)
     private var config = preferenceStore.read()
-    private val size get() = OverlaySize.restore(config.width, config.height)
+    private var capsule: CapsuleView? = null
+    private var lastReadout = OverlayReadout(LiveRideData(), 0, false)
     private val manager = windowContext.getSystemService(WindowManager::class.java)
-    private var root: OverlayPanel? = null
+    private var root: android.widget.FrameLayout? = null
     private var collapsed = false
-    private var chartsExpanded = false
     private var sessionStart: Long? = null
     private var trend = OverlayTrend()
     private fun dp(value: Int) = (value * context.resources.displayMetrics.density).toInt()
@@ -57,30 +58,45 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
             hide(); sessionStart = ride.startedAtMs; trend = OverlayTrend()
         }
         val now = SystemClock.elapsedRealtime()
-        trend.add(now, data.trainerPowerWatts, data.heartRateBpm)
+        trend.add(now, data.trainerPowerWatts, data.heartRateBpm, data.cadenceRpm)
+        lastReadout = OverlayReadout.from(data, ride, now)
         if (root == null) attach()
-        root?.bind(OverlayReadout.from(data, ride, now))
+        capsule?.apply {
+            readout = lastReadout
+            samples = trend.points.toList()
+            contentDescription = context.getString(R.string.ui_overlay_compact,
+                data.trainerPowerWatts?.let { context.getString(R.string.power_value, it) } ?: context.getString(R.string.history_no_data),
+                data.heartRateBpm?.let { context.getString(R.string.hr_value, it) } ?: context.getString(R.string.history_no_data),
+                data.cadenceRpm?.let { context.getString(R.string.cadence_value, it) } ?: context.getString(R.string.history_no_data))
+        }
         position(false)
         return root != null
     }
 
     private fun attach() {
-        val panel = OverlayPanel(context, appearance.overlayStyle, config.font,
-            appearance.effectiveOverlayPalette.accentColor.toArgb(), trend, collapsed, chartsExpanded,
-            close = close,
-            toggleCollapsed = {
-                collapsed = !collapsed
-                root?.setCollapsed(collapsed)
-                position(false)
-            },
-            toggleCharts = {
-                chartsExpanded = !chartsExpanded
-                root?.setChartsExpanded(chartsExpanded)
-                position(false)
-            }).apply { alpha = (100 - config.transparency) / 100f }
-        installDrag(panel.dragHandle)
         updateSize()
-        root = panel
+        val panel = android.widget.FrameLayout(context).apply { alpha = (100 - config.transparency) / 100f }
+        capsule = CapsuleView(context).apply {
+            collapsed = this@RideOverlayWindow.collapsed; readout = lastReadout; samples = trend.points.toList()
+        }
+        panel.addView(capsule, android.widget.FrameLayout.LayoutParams(-1, -1))
+        fun button(icon: Int, label: Int, gravity: Int, action: () -> Unit) {
+            panel.addView(android.widget.ImageButton(context).apply {
+                setImageResource(icon); imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.LTGRAY)
+                val pad = minOf(dp(8), params.height / 8)
+                background = null; setPadding(pad, pad, pad, pad)
+                contentDescription = context.getString(label); setOnClickListener { action() }
+            }, android.widget.FrameLayout.LayoutParams(minOf(dp(32), params.height / 2), minOf(dp(32), params.height / 2), gravity))
+        }
+        button(R.drawable.overlay_close, R.string.overlay_close, Gravity.TOP or Gravity.RIGHT, close)
+        button(if (collapsed) R.drawable.overlay_expand else R.drawable.overlay_collapse,
+            if (collapsed) R.string.overlay_unfold else R.string.overlay_fold, Gravity.BOTTOM or Gravity.RIGHT) {
+            collapsed = !collapsed; hide(); attach()
+        }
+        panel.contentDescription = context.getString(R.string.overlay_drag_hint)
+        panel.setOnClickListener { collapsed = !collapsed; hide(); attach() }
+        installDrag(panel)
+        updateSize(); root = panel
         try { manager.addView(panel, params) }
         catch (error: RuntimeException) { root = null; throw error }
         panel.post { if (root === panel) position(false) }
@@ -119,10 +135,11 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         val window = manager.currentWindowMetrics
         val insets = window.windowInsets.getInsetsIgnoringVisibility(
             WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
-        params.width = minOf(dp(size.widthDp(appearance.overlayStyle)),
-            (window.bounds.width() - insets.left - insets.right).coerceAtLeast(1))
-        params.height = minOf(dp(size.windowHeightDp(appearance.overlayStyle, collapsed, chartsExpanded, config.font)),
-            (window.bounds.height() - insets.top - insets.bottom).coerceAtLeast(1))
+        val fitted = CapsuleGeometry.fit(config.size,
+            (window.bounds.width() - insets.left - insets.right).coerceAtLeast(1),
+            (window.bounds.height() - insets.top - insets.bottom).coerceAtLeast(1),
+            context.resources.displayMetrics.density, collapsed)
+        params.width = fitted.first; params.height = fitted.second
     }
 
     private fun position(snap: Boolean) {

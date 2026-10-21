@@ -307,7 +307,7 @@
     <string name="ui_history_summary">Puissance moy. %1$s · FC moy. %2$s</string>
     <string name="ui_display">Affichage</string>
     <string name="ui_help">Aide</string>
-    <string name="ui_overlay_opacity_hint">Réglez la transparence, la police et la taille dans Réglages flottants depuis la sortie ou les réglages. Les modifications sont enregistrées automatiquement.</string>
+    <string name="ui_overlay_opacity_hint">Réglez taille et transparence. La fenêtre conserve ses proportions pour tenir à l’écran. Configuration et aperçu sans appareil connecté.</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">Moyenne</string>
@@ -487,4 +487,7 @@
     <string name="overlay_fold">Réduire la fenêtre</string>
     <string name="overlay_unfold">Développer la fenêtre</string>
     <string name="overlay_chart_window">2 dernières minutes</string>
+    <string name="capsule_size">Taille globale : %1$d%%</string>
+    <string name="capsule_preview">Aperçu (exemple ; défilement horizontal)</string>
+    <string name="capsule_recent">Puissance récente</string>
 </resources>

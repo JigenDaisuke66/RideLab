@@ -307,7 +307,7 @@
     <string name="ui_history_summary">平均パワー %1$s · 平均心拍 %2$s</string>
     <string name="ui_display">表示</string>
     <string name="ui_help">ヘルプ</string>
-    <string name="ui_overlay_opacity_hint">走行画面または設定画面のフローティング表示設定で透明度、文字、サイズを調整できます。変更は自動保存されます。</string>
+    <string name="ui_overlay_opacity_hint">サイズと透明度を調整します。画面に収まるよう比率を保って縮小します。機器未接続でも設定とプレビューができます。</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">平均</string>
@@ -487,4 +487,7 @@
     <string name="overlay_fold">フローティング表示を折りたたむ</string>
     <string name="overlay_unfold">フローティング表示を展開</string>
     <string name="overlay_chart_window">直近2分</string>
+    <string name="capsule_size">全体サイズ：%1$d%%</string>
+    <string name="capsule_preview">プレビュー（サンプル・左右にスクロール）</string>
+    <string name="capsule_recent">直近のパワー</string>
 </resources>

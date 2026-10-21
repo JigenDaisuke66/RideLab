@@ -309,7 +309,7 @@
     <string name="ui_history_summary">Avg power %1$s · Avg HR %2$s</string>
     <string name="ui_display">Display</string>
     <string name="ui_help">Help</string>
-    <string name="ui_overlay_opacity_hint">Adjust opacity, font and size in Overlay settings on the Ride or Settings page. Changes are saved automatically.</string>
+    <string name="ui_overlay_opacity_hint">Adjust size and opacity. Automatically scales to fit the screen. Configure and preview without connecting a device.</string>
     <string name="ui_overlay_compact">%1$s | %2$s | %3$s</string>
     <string name="detail_percent">%1$.1f%%</string>
     <string name="detail_average">Average</string>
@@ -489,4 +489,7 @@
     <string name="overlay_fold">Collapse overlay</string>
     <string name="overlay_unfold">Expand overlay</string>
     <string name="overlay_chart_window">Last 2 minutes</string>
+    <string name="capsule_size">Overall size: %1$d%%</string>
+    <string name="capsule_preview">Preview (example data; scroll horizontally)</string>
+    <string name="capsule_recent">Recent power</string>
 </resources>

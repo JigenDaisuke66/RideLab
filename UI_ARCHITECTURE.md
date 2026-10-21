@@ -29,16 +29,16 @@ Ownership:
 - ui/screen/AppearanceControls: state-only reusable rendering, no repository writes.
 - ui/shared/OverlayControl: shared permission/help/enable UI used by Ride and Settings.
   The Ride and Settings entry points expose a prominent enable button and an adjustment dialog.
-  AppearanceViewModel saves overlay font/opacity/size through OverlayPreferencesStore using
-  the existing ride_overlay keys. The native transparent window reads these preferences live;
-  it retains only drag, close and collapse interactions. Its bounded two-minute OverlayTrend
-  is presentation history, independent of Room recording, with null/time gaps breaking curves.
-  RideOverlayWindow hosts the native window/drag positioning; OverlayPanel renders the
-  transparent HUD in the three existing styles (large power, HR/cadence, compact strip).
-  OverlayReadout projects elapsed time from the service's existing RideState, including
-  pause semantics. There is no independent timer. Collapsed mode retains time/power.
-  Font/height scaling and chart expansion update bounded window dimensions; the header
-  and close/collapse buttons remain outside the scrollable metric body.
+  AppearanceViewModel persists only proportional size and transparency via OverlayPreferencesStore.
+  Legacy transparency is preserved; scale_percent falls back to the former width_percent,
+  clamped to 60–140. Independent font/width/height and overlay style/palette controls are retired.
+  CapsuleView renders the SVG-inspired dark horizontal capsule and is shared verbatim by
+  the real window and CapsulePreview. The latter uses explicitly labelled example data only,
+  requires no sensor, service or overlay permission, and cannot affect recording.
+  CapsuleGeometry fits both axes proportionally; the window keeps drag, close and collapse.
+  OverlayReadout still uses the service RideState clock, including pauses. No timer owner changed.
+  Short power bars and HR/cadence traces use real bounded history. They do not claim FTP zones
+  or ERG acceptance. Legacy OverlayPanel/OverlayTrendView rendering has been removed.
 - ui/theme/RideLabComponents: keep existing RideLabCard, MetricTile, StatusPill and
   SettingRow. Extraction solely for renaming these would not reduce duplication.
 - HistoryViewModel owns repository queries, analytics orchestration, deletion and
