@@ -11,6 +11,30 @@ import org.junit.Test
 
 /** Compile-only here: native rendering still requires physical visual acceptance. */
 class OverlayPanelTest {
+    @Test fun powerBarsRenderFourColorsWithFtp() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            val view = CapsuleView(instrumentation.targetContext).apply {
+                ftpWatts = 200
+                samples = listOf(40, 160, 200, 280).mapIndexed { index, watts ->
+                    OverlayTrend.Point(index * 1000L, watts, null)
+                }
+            }
+            view.measure(View.MeasureSpec.makeMeasureSpec(480, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(92, View.MeasureSpec.EXACTLY))
+            view.layout(0, 0, 480, 92)
+            val bitmap = Bitmap.createBitmap(480, 92, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val expected = listOf(android.graphics.Color.rgb(41, 182, 246),
+                android.graphics.Color.rgb(102, 187, 106), android.graphics.Color.rgb(255, 214, 0),
+                android.graphics.Color.rgb(255, 100, 113))
+            expected.forEachIndexed { i, color ->
+                val x = (243.5f + (11 + i) * 4.5f).toInt()
+                assertEquals(color, bitmap.getPixel(x, 67))
+            }
+            bitmap.recycle()
+        }
+    }
     @Test fun capsuleRendersNarrowAndCollapsedWithoutDeviceOrService() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {

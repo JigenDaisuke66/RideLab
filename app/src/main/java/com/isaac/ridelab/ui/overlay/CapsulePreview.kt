@@ -36,6 +36,8 @@ fun CapsulePreview(preferences: OverlayPreferences) {
         .horizontalScroll(rememberScrollState()), contentAlignment = Alignment.CenterStart) {
         AndroidView(factory = { CapsuleView(it) },
             modifier = Modifier.size(with(density) { fitted.first.toDp() }, with(density) { fitted.second.toDp() }),
-            update = { it.readout = example; it.samples = samples; it.alpha = (100 - preferences.transparency) / 100f })
+            update = { it.readout = example; it.samples = samples; it.ftpWatts = 200
+                it.alpha = (100 - preferences.transparency) / 100f })
     }
+    Text(stringResource(R.string.overlay_band_legend), style = MaterialTheme.typography.bodySmall)
 }

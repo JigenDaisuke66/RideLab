@@ -8,6 +8,8 @@ import com.isaac.ridelab.data.model.LiveRideData
 
 /** Same renderer for real telemetry and the explicitly labelled settings example. */
 class CapsuleView(context: Context) : View(context) {
+    var ftpWatts: Int? = null
+        set(value) { field = value; invalidate() }
     var readout = OverlayReadout(LiveRideData(), 0, false)
         set(value) { field = value; invalidate() }
     var samples: List<OverlayTrend.Point> = emptyList()
@@ -19,6 +21,20 @@ class CapsuleView(context: Context) : View(context) {
     private val red = Color.rgb(255, 100, 113)
     private val blue = Color.rgb(41, 182, 246)
     private val muted = Color.rgb(151, 162, 179)
+    private fun bandColor(band: OverlayPowerBand): Int = when (band) {
+        OverlayPowerBand.RECOVERY -> blue
+        OverlayPowerBand.AEROBIC -> Color.rgb(102, 187, 106)
+        OverlayPowerBand.THRESHOLD -> yellow
+        OverlayPowerBand.ANAEROBIC -> red
+        OverlayPowerBand.UNKNOWN -> muted
+    }
+    private fun bandLabel(band: OverlayPowerBand): Int = when (band) {
+        OverlayPowerBand.RECOVERY -> R.string.overlay_band_recovery
+        OverlayPowerBand.AEROBIC -> R.string.overlay_band_aerobic
+        OverlayPowerBand.THRESHOLD -> R.string.overlay_band_threshold
+        OverlayPowerBand.ANAEROBIC -> R.string.overlay_band_anaerobic
+        OverlayPowerBand.UNKNOWN -> if (ftpWatts == null || ftpWatts!! <= 0) R.string.overlay_band_no_ftp else R.string.history_no_data
+    }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -50,13 +66,15 @@ class CapsuleView(context: Context) : View(context) {
         text(readout.data.trainerPowerWatts?.let { context.getString(R.string.power_value, it) } ?: noData,
             137f, 57f, 28f, maxWidth = if (collapsed) 75f else 100f)
         if (!collapsed) {
-            text(context.getString(R.string.capsule_recent), 139f, 76f, 9f, muted, 96f)
+            val band = overlayPowerBand(readout.data.trainerPowerWatts, ftpWatts)
+            text(context.getString(bandLabel(band)), 139f, 76f, 9f, bandColor(band), 96f)
             val recent = samples.takeLast(15)
-            val high = recent.mapNotNull { it.power }.maxOrNull()?.coerceAtLeast(1) ?: 1
-            recent.forEachIndexed { i, point ->
-                point.power?.let { v ->
+            val bars = recentOverlayPower(samples)
+            val high = bars.filterNotNull().maxOrNull()?.coerceAtLeast(1) ?: 1
+            bars.forEachIndexed { i, power ->
+                power?.let { v ->
                     val h = v.coerceAtLeast(0) / high.toFloat() * 44
-                    paint.color = yellow
+                    paint.color = bandColor(overlayPowerBand(v, ftpWatts))
                     canvas.drawRoundRect(242f + i * 4.5f, 69 - h, 245f + i * 4.5f,
                         70f, 1.5f, 1.5f, paint)
                 }

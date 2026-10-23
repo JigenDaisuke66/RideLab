@@ -14,7 +14,7 @@ import com.isaac.ridelab.locale.AppLocale
 import com.isaac.ridelab.service.RideState
 import com.isaac.ridelab.ui.theme.accentColor
 
-/** Read-only window host. Rendering lives in OverlayPanel; service owns the ride and clock. */
+/** Read-only window host. Rendering lives in CapsuleView; service owns the ride and clock. */
 class RideOverlayWindow(private val service: Context, private val close: () -> Unit) {
     private val windowContext = service.createWindowContext(
         service.getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY),
@@ -27,6 +27,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
     private var config = preferenceStore.read()
     private var capsule: CapsuleView? = null
     private var lastReadout = OverlayReadout(LiveRideData(), 0, false)
+    private var lastFtp: Int? = null
     private val manager = windowContext.getSystemService(WindowManager::class.java)
     private var root: android.widget.FrameLayout? = null
     private var collapsed = false
@@ -43,7 +44,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         x = preferences.getInt("position_x", dp(16)); y = preferences.getInt("position_y", dp(120))
     }
 
-    fun show(data: LiveRideData, ride: RideState, keepScreenOn: Boolean = false): Boolean {
+    fun show(data: LiveRideData, ride: RideState, keepScreenOn: Boolean = false, ftpWatts: Int? = null): Boolean {
         params.flags = if (keepScreenOn) params.flags or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             else params.flags and WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON.inv()
         val nextConfig = preferenceStore.read()
@@ -60,8 +61,10 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         val now = SystemClock.elapsedRealtime()
         trend.add(now, data.trainerPowerWatts, data.heartRateBpm, data.cadenceRpm)
         lastReadout = OverlayReadout.from(data, ride, now)
+        lastFtp = ftpWatts
         if (root == null) attach()
         capsule?.apply {
+            this.ftpWatts = ftpWatts
             readout = lastReadout
             samples = trend.points.toList()
             contentDescription = context.getString(R.string.ui_overlay_compact,
@@ -77,6 +80,7 @@ class RideOverlayWindow(private val service: Context, private val close: () -> U
         updateSize()
         val panel = android.widget.FrameLayout(context).apply { alpha = (100 - config.transparency) / 100f }
         capsule = CapsuleView(context).apply {
+            ftpWatts = lastFtp
             collapsed = this@RideOverlayWindow.collapsed; readout = lastReadout; samples = trend.points.toList()
         }
         panel.addView(capsule, android.widget.FrameLayout.LayoutParams(-1, -1))

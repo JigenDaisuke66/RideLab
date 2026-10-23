@@ -492,4 +492,10 @@
     <string name="capsule_size">Overall size: %1$d%%</string>
     <string name="capsule_preview">Preview (example data; scroll horizontally)</string>
     <string name="capsule_recent">Recent power</string>
+    <string name="overlay_band_recovery">Recovery / warm-up</string>
+    <string name="overlay_band_aerobic">Aerobic</string>
+    <string name="overlay_band_threshold">Threshold / high intensity</string>
+    <string name="overlay_band_anaerobic">Anaerobic / sprint</string>
+    <string name="overlay_band_no_ftp">FTP not set</string>
+    <string name="overlay_band_legend" formatted="false">Example FTP: 200 W. Blue &lt;55% · green 55–90% · yellow &gt;90–120% · red &gt;120%. Live rides use the FTP saved at ride start.</string>
 </resources>

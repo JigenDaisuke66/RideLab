@@ -6,6 +6,20 @@ large power, recent power bars and heart-rate/cadence with short traces.
 No FTP zone or ERG-stability claims are fabricated. Null slots remain empty; true zero
 power has a baseline mark. Traces split on nulls and gaps over three seconds.
 
+Power color extension: the service's overlay loop loads the existing ride FTP snapshot
+once per session/overlay activation through the repository. No global FTP fallback is
+used. The original seven-zone calculator is grouped for this four-color display only:
+Z1 (<55%) blue, Z2/Z3 (55–90%) green, Z4/Z5 (>90–120%) yellow, Z6/Z7 (>120%) red.
+Yellow explicitly means threshold/high intensity, rather than a strict single zone.
+Null/invalid FTP leaves bars neutral with an FTP-not-set label; null/negative power
+leaves a slot empty. The chart has fifteen one-second slots, keeping timestamp gaps
+empty and true zero as a baseline mark. Each bar retains its own measured power color.
+Current-band text is localized; analysis formulas and seven-zone history are unchanged.
+Settings use the clearly labelled example FTP of 200 W and show the legend. No demo
+FTP/measurements are saved or passed into the real ride. Check blue/green/yellow/red
+by setting FTP before starting different rides; modifying FTP during a ride must not
+recolor its history. Verify an unset-FTP ride remains neutral after changing settings.
+
 Only size (60–140%) and transparency (0–80%, including text) are user controls now.
 The same scale applies to fonts, spacing and both dimensions, with proportional screen fitting.
 Existing transparency persists. The new scale_percent key falls back to legacy width_percent,

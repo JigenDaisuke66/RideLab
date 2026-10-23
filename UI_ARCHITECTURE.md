@@ -39,6 +39,11 @@ Ownership:
   OverlayReadout still uses the service RideState clock, including pauses. No timer owner changed.
   Short power bars and HR/cadence traces use real bounded history. They do not claim FTP zones
   or ERG acceptance. Legacy OverlayPanel/OverlayTrendView rendering has been removed.
+  The requested power-band extension now projects the saved ride FTP into CapsuleView:
+  overlayPowerBand groups the existing seven zones into four display colors, and
+  recentOverlayPower retains fifteen time slots with gaps. Missing FTP stays neutral.
+  The service's overlay loop reads that session snapshot once, through the repository;
+  Canvas never queries Room or settings, and global FTP changes do not recolor a ride.
 - ui/theme/RideLabComponents: keep existing RideLabCard, MetricTile, StatusPill and
   SettingRow. Extraction solely for renaming these would not reduce duplication.
 - HistoryViewModel owns repository queries, analytics orchestration, deletion and

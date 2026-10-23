@@ -82,7 +82,14 @@ class RideRecordingService : Service() {
         }
         overlayJob = scope.launch {
             try {
+                var displaySession: Long? = null
+                var displayFtp: Int? = null
                 while (isActive && rideState.value.ongoing) {
+                    val id = rideState.value.sessionId
+                    if (id != displaySession) {
+                        displayFtp = id?.let { repository.analyticsSession(it)?.analyticsFtpWatts }
+                        displaySession = id
+                    }
                     if (!Settings.canDrawOverlays(this@RideRecordingService)) {
                         overlayWindow?.hide(); mutableOverlay.value = RideOverlayState.PERMISSION_REQUIRED; break
                     }
@@ -91,7 +98,7 @@ class RideRecordingService : Service() {
                     val interactive = getSystemService(PowerManager::class.java).isInteractive
                     if (locked || !interactive) overlayWindow?.hide()
                     else if (overlayWindow?.show(liveSnapshot(SystemClock.elapsedRealtime()), rideState.value,
-                            keepScreenOn = rideState.value.phase == RidePhase.ACTIVE) != true) {
+                            keepScreenOn = rideState.value.phase == RidePhase.ACTIVE, ftpWatts = displayFtp) != true) {
                         mutableOverlay.value = RideOverlayState.FAILED
                         break
                     }

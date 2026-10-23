@@ -492,4 +492,10 @@
     <string name="capsule_size">整体大小：%1$d%%</string>
     <string name="capsule_preview">样式预览（示例数据，可左右滑动）</string>
     <string name="capsule_recent">最近功率</string>
+    <string name="overlay_band_recovery">恢复 / 热身</string>
+    <string name="overlay_band_aerobic">有氧</string>
+    <string name="overlay_band_threshold">阈值 / 高强度</string>
+    <string name="overlay_band_anaerobic">无氧 / 冲刺</string>
+    <string name="overlay_band_no_ftp">未设置 FTP</string>
+    <string name="overlay_band_legend" formatted="false">示例 FTP：200 W。蓝 &lt;55% · 绿 55–90% · 黄 &gt;90–120% · 红 &gt;120%。实际骑行使用开始时保存的 FTP。</string>
 </resources>

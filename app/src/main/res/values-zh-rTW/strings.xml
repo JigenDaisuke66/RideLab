@@ -492,4 +492,10 @@
     <string name="capsule_size">整體大小：%1$d%%</string>
     <string name="capsule_preview">預覽（範例資料，可左右滑動）</string>
     <string name="capsule_recent">近期功率</string>
+    <string name="overlay_band_recovery">恢復 / 熱身</string>
+    <string name="overlay_band_aerobic">有氧</string>
+    <string name="overlay_band_threshold">閾值 / 高強度</string>
+    <string name="overlay_band_anaerobic">無氧 / 衝刺</string>
+    <string name="overlay_band_no_ftp">未設定 FTP</string>
+    <string name="overlay_band_legend" formatted="false">範例 FTP：200 W。藍 &lt;55% · 綠 55–90% · 黃 &gt;90–120% · 紅 &gt;120%。實際騎行使用開始時保存的 FTP。</string>
 </resources>

@@ -490,4 +490,10 @@
     <string name="capsule_size">Tamanho geral: %1$d%%</string>
     <string name="capsule_preview">Prévia (exemplo; deslize na horizontal)</string>
     <string name="capsule_recent">Potência recente</string>
+    <string name="overlay_band_recovery">Recuperação / aquecimento</string>
+    <string name="overlay_band_aerobic">Aeróbico</string>
+    <string name="overlay_band_threshold">Limiar / alta intensidade</string>
+    <string name="overlay_band_anaerobic">Anaeróbico / sprint</string>
+    <string name="overlay_band_no_ftp">FTP não definido</string>
+    <string name="overlay_band_legend" formatted="false">FTP de exemplo: 200 W. Azul &lt;55% · verde 55–90% · amarelo &gt;90–120% · vermelho &gt;120%. O pedal usa o FTP salvo no início.</string>
 </resources>

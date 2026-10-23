@@ -490,4 +490,10 @@
     <string name="capsule_size">全体サイズ：%1$d%%</string>
     <string name="capsule_preview">プレビュー（サンプル・左右にスクロール）</string>
     <string name="capsule_recent">直近のパワー</string>
+    <string name="overlay_band_recovery">回復 / ウォームアップ</string>
+    <string name="overlay_band_aerobic">有酸素</string>
+    <string name="overlay_band_threshold">閾値 / 高強度</string>
+    <string name="overlay_band_anaerobic">無酸素 / スプリント</string>
+    <string name="overlay_band_no_ftp">FTP 未設定</string>
+    <string name="overlay_band_legend" formatted="false">サンプル FTP：200 W。青 &lt;55%・緑 55–90%・黄 &gt;90–120%・赤 &gt;120%。実際の走行は開始時に保存した FTP を使用します。</string>
 </resources>

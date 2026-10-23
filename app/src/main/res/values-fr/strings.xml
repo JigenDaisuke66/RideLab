@@ -490,4 +490,10 @@
     <string name="capsule_size">Taille globale : %1$d%%</string>
     <string name="capsule_preview">Aperçu (exemple ; défilement horizontal)</string>
     <string name="capsule_recent">Puissance récente</string>
+    <string name="overlay_band_recovery">Récupération / échauffement</string>
+    <string name="overlay_band_aerobic">Aérobie</string>
+    <string name="overlay_band_threshold">Seuil / haute intensité</string>
+    <string name="overlay_band_anaerobic">Anaérobie / sprint</string>
+    <string name="overlay_band_no_ftp">FTP non défini</string>
+    <string name="overlay_band_legend" formatted="false">FTP d’exemple : 200 W. Bleu &lt;55% · vert 55–90% · jaune &gt;90–120% · rouge &gt;120%. La sortie utilise le FTP enregistré au départ.</string>
 </resources>
