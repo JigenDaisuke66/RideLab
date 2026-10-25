@@ -1,7 +1,11 @@
 package com.isaac.ridelab.ui.screen
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.automirrored.rounded.DirectionsBike
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -34,7 +38,7 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     startRide: () -> Unit, scan: () -> Unit, appSettings: () -> Unit, bluetoothSettings: () -> Unit,
     language: (String) -> Unit, enableOverlay: () -> Unit = {}, exportCsv: (Long, Long) -> Unit = { _, _ -> },
     startWorkout: (com.isaac.ridelab.workout.WorkoutId) -> Unit = devices::startWorkout,
-    appearanceModel: AppearanceViewModel) {
+    appearanceModel: AppearanceViewModel, settingsExtras: @Composable () -> Unit = {}) {
     val overlayPreferences by appearanceModel.overlayPreferences.collectAsState()
     val appearance by appearanceModel.state.collectAsState()
     val selectedLanguage by appearanceModel.language.collectAsState()
@@ -79,9 +83,9 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
     }
     Scaffold(topBar = {
         if (destination == Destination.RIDE) {
-            Column(Modifier.statusBarsPadding().padding(horizontal = 16.dp)) {
-                OverlayControl(overlay, ready && ride.ongoing,
-                    enableOverlay, { devices.setOverlay(false) }, overlayPreferences, appearanceModel::saveOverlay)
+            Column(Modifier.statusBarsPadding().padding(horizontal = 24.dp)) {
+                RideToolbar(overlay, ready && ride.ongoing, overlayPreferences,
+                    enableOverlay, { devices.setOverlay(false) }, appearanceModel::saveOverlay)
             }
         }
     }, bottomBar = {
@@ -115,7 +119,8 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
                 Destination.SETTINGS -> SettingsDestination(
                     SettingsUiState(ftpState, overlay, ready && ride.ongoing, appearance, selectedLanguage, overlayPreferences),
                     SettingsActions(ftp::save, ftp::saveWeight, language, enableOverlay,
-                        { devices.setOverlay(false) }, appearanceModel::onAction, appearanceModel::saveOverlay), modifier)
+                        { devices.setOverlay(false) }, appearanceModel::onAction, appearanceModel::saveOverlay), modifier,
+                    extras = settingsExtras)
             }
         }
     }
@@ -123,28 +128,10 @@ fun AppShell(devices: DevicesViewModel, history: HistoryViewModel, ftp: FtpViewM
 
 @Composable
 private fun NavigationGlyph(destination: Destination) {
-    val color = LocalContentColor.current
-    Canvas(Modifier.size(24.dp)) {
-        val w = size.width; val h = size.height
-        val stroke = 2.dp.toPx()
-        when (destination) {
-            Destination.HOME -> {
-                val p = Path().apply { moveTo(w*.1f,h*.45f); lineTo(w*.5f,h*.1f); lineTo(w*.9f,h*.45f); lineTo(w*.9f,h*.9f); lineTo(w*.1f,h*.9f); close() }
-                drawPath(p,color,style=Stroke(stroke))
-            }
-            Destination.RIDE -> {
-                val p = Path().apply { moveTo(w*.3f,h*.1f); lineTo(w*.85f,h*.5f); lineTo(w*.3f,h*.9f); close() }
-                drawPath(p,color,style=Stroke(stroke))
-            }
-            Destination.HISTORY -> {
-                drawCircle(color, w*.4f, style=Stroke(stroke))
-                drawLine(color,Offset(w*.5f,h*.25f),Offset(w*.5f,h*.5f),stroke)
-                drawLine(color,Offset(w*.5f,h*.5f),Offset(w*.7f,h*.65f),stroke)
-            }
-            Destination.SETTINGS -> {
-                for (f in listOf(.25f,.5f,.75f)) drawLine(color,Offset(w*.1f,h*f),Offset(w*.9f,h*f),stroke)
-                drawCircle(color,stroke,Offset(w*.35f,h*.25f)); drawCircle(color,stroke,Offset(w*.65f,h*.5f)); drawCircle(color,stroke,Offset(w*.4f,h*.75f))
-            }
-        }
-    }
+    Icon(when (destination) {
+        Destination.HOME -> Icons.Rounded.Home
+        Destination.RIDE -> Icons.AutoMirrored.Rounded.DirectionsBike
+        Destination.HISTORY -> Icons.Rounded.History
+        Destination.SETTINGS -> Icons.Rounded.Settings
+    }, contentDescription = null, modifier = Modifier.size(24.dp))
 }

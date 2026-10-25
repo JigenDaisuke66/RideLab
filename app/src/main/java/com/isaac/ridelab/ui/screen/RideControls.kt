@@ -3,6 +3,8 @@ package com.isaac.ridelab.ui.screen
 import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -107,43 +109,38 @@ internal fun RideControls(
             }
         }
 
-        if (state.ongoing) {
-            Button(onClick = { if (state.phase == RidePhase.PAUSED) resume() else pause() },
-                enabled = ready, modifier = Modifier.fillMaxWidth().height(48.dp), shape = MaterialTheme.shapes.medium) {
-                Text(stringResource(if (state.phase == RidePhase.PAUSED) R.string.ride_resume else R.string.ride_pause))
-            }
-            if (state.phase == RidePhase.PAUSED) Text(stringResource(R.string.ride_pause_hint),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Button(
-            onClick = {
-                if (state.ongoing) confirmEnd = true else {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                    start()
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (state.ongoing) {
+                Button(onClick = { if (state.phase == RidePhase.PAUSED) resume() else pause() },
+                    enabled = ready, modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                    shape = MaterialTheme.shapes.medium) {
+                    Text(stringResource(if (state.phase == RidePhase.PAUSED) R.string.ride_resume else R.string.ride_pause),
+                        textAlign = TextAlign.Center)
                 }
-            },
-            enabled = ready && state.phase !in setOf(RidePhase.STARTING, RidePhase.STOPPING),
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 52.dp),
-            shape = MaterialTheme.shapes.medium,
-            colors = if (state.ongoing) {
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            } else {
-                ButtonDefaults.buttonColors()
             }
-        ) {
-            Text(
-                text = stringResource(
-                    if (state.ongoing) R.string.ride_end else R.string.ride_start
-                ),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            Button(
+                onClick = {
+                    if (state.ongoing) confirmEnd = true else {
+                        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                        start()
+                    }
+                },
+                enabled = ready && state.phase !in setOf(RidePhase.STARTING, RidePhase.STOPPING),
+                modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = if (state.ongoing) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.error)
+                } else ButtonDefaults.buttonColors()
+            ) {
+                Text(stringResource(if (state.ongoing) R.string.ride_end else R.string.ride_start),
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center)
+            }
         }
+        if (state.phase == RidePhase.PAUSED) Text(stringResource(R.string.ride_pause_hint),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         state.error?.let { error ->
             Spacer(Modifier.height(8.dp))

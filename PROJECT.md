@@ -226,6 +226,11 @@ changing business logic.
 
 ## Non-goals for V1
 
+An explicitly requested optional AI-services setup experiment now adds independently
+saved provider profiles and an explicit short connection probe. It adds no ride-data
+upload, coaching, chat, trainer tools or mandatory network/backend dependency. The
+offline ride path is unchanged. See AI_SERVICES.md for presets, storage and limitations.
+
 No social feed.
 No cloud sync.
 No route/map system.

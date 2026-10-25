@@ -4,6 +4,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -16,6 +18,10 @@ import com.isaac.ridelab.R
 fun HistoryBackupControls(model: HistoryViewModel) {
     val state by model.backup.collectAsState()
     var confirm by rememberSaveable { mutableStateOf(false) }
+    var menu by remember { mutableStateOf(false) }
+    var acknowledged by rememberSaveable { mutableStateOf("") }
+    val resultKey = "${state.phase}:${state.added}:${state.skipped}"
+    LaunchedEffect(state.phase) { if (state.phase == BackupPhase.BUSY) acknowledged = "" }
     val labels = com.isaac.ridelab.export.CsvArchiveLabels(
         androidx.compose.ui.res.stringArrayResource(R.array.ride_csv_headers).toList(),
         listOf(stringResource(R.string.csv_archive_file),
@@ -31,29 +37,37 @@ fun HistoryBackupControls(model: HistoryViewModel) {
     val restore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
         if (it != null) model.backupHistory(it, restore = true)
     }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(modifier = Modifier.fillMaxWidth(), enabled = state.phase != BackupPhase.BUSY,
-            onClick = {
+    Box {
+        IconButton(enabled = state.phase != BackupPhase.BUSY, onClick = { menu = true }) {
+            if (state.phase == BackupPhase.BUSY) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            else Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.ui_data_management))
+        }
+        DropdownMenu(menu, onDismissRequest = { menu = false }) {
+            DropdownMenuItem(text = { Text(stringResource(R.string.csv_archive_export)) }, onClick = {
+                menu = false
                 try { csv.launch("RideLab-CSV-${java.time.LocalDate.now()}.zip") }
                 catch (error: Exception) { model.backupFailed(error) }
-            }) { Text(stringResource(R.string.csv_archive_export)) }
-        Text(stringResource(R.string.csv_archive_help), style = MaterialTheme.typography.bodySmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(modifier = Modifier.weight(1f), enabled = state.phase != BackupPhase.BUSY,
-                onClick = {
-                    try { export.launch("RideLab-${java.time.LocalDate.now()}.ridelab") }
-                    catch (error: Exception) { model.backupFailed(error) }
-                }) { Text(stringResource(R.string.backup_export)) }
-            OutlinedButton(modifier = Modifier.weight(1f), enabled = state.phase != BackupPhase.BUSY,
-                onClick = { confirm = true }) { Text(stringResource(R.string.backup_restore)) }
+            })
+            DropdownMenuItem(text = { Text(stringResource(R.string.backup_export)) }, onClick = {
+                menu = false
+                try { export.launch("RideLab-${java.time.LocalDate.now()}.ridelab") }
+                catch (error: Exception) { model.backupFailed(error) }
+            })
+            DropdownMenuItem(text = { Text(stringResource(R.string.backup_restore)) },
+                onClick = { menu = false; confirm = true })
         }
-        when (state.phase) {
-            BackupPhase.BUSY -> { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(stringResource(R.string.backup_busy)) }
-            BackupPhase.EXPORTED -> Text(stringResource(R.string.backup_exported, state.added))
-            BackupPhase.RESTORED -> Text(stringResource(R.string.backup_restored, state.added, state.skipped))
-            BackupPhase.FAILED -> Text(stringResource(R.string.backup_failed), color = MaterialTheme.colorScheme.error)
-            else -> Unit
-        }
+    }
+    if (state.phase in setOf(BackupPhase.EXPORTED, BackupPhase.RESTORED, BackupPhase.FAILED) && acknowledged != resultKey) {
+        AlertDialog(onDismissRequest = { acknowledged = resultKey },
+            title = { Text(stringResource(R.string.ui_data_management)) },
+            text = { Text(when (state.phase) {
+                BackupPhase.EXPORTED -> stringResource(R.string.backup_exported, state.added)
+                BackupPhase.RESTORED -> stringResource(R.string.backup_restored, state.added, state.skipped)
+                else -> stringResource(R.string.backup_failed)
+            }) },
+            confirmButton = { TextButton(onClick = { acknowledged = resultKey }) {
+                Text(stringResource(R.string.erg_confirm))
+            } })
     }
     if (confirm) AlertDialog(
         onDismissRequest = { confirm = false },

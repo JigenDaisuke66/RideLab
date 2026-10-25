@@ -2,6 +2,10 @@ package com.isaac.ridelab.ui.screen
 
 import android.os.SystemClock
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Speed
+import com.isaac.ridelab.ui.theme.RideLabCard
+import com.isaac.ridelab.ui.theme.MetricValueText
 import android.view.HapticFeedbackConstants
 import com.isaac.ridelab.ui.theme.MetricTile
 import com.isaac.ridelab.ui.theme.StatusPill
@@ -40,7 +49,17 @@ private fun LiveMetric(
     value: String,
     modifier: Modifier = Modifier
 ) {
-    MetricTile(stringResource(title), value, modifier)
+    RideLabCard(modifier) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (title == R.string.ui_heart_rate) Icons.Rounded.FavoriteBorder else Icons.Rounded.Speed,
+                contentDescription = null, modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(title), style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(8.dp))
+        MetricValueText(value, style = MaterialTheme.typography.headlineMedium)
+    }
 }
 
 @Composable
@@ -103,7 +122,7 @@ fun RideScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+            Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                 if (ride.ongoing && workout.phase in setOf(WorkoutPhase.ACTIVE, WorkoutPhase.PAUSED))
                     WorkoutActions(workout, trainer.control.canWorkout, pauseWorkout, resumeWorkout, skipWorkout, endWorkout)
                 else RideControls(ride, controlsReady && workout.phase != WorkoutPhase.PREPARING, start, end, appSettings,
@@ -115,97 +134,17 @@ fun RideScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             Spacer(Modifier.height(8.dp))
 
-            /* ---------- Header ---------- */
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    StatusPill(
-                        text = when (ride.phase) {
-                            RidePhase.ACTIVE -> stringResource(R.string.ride_active)
-                            RidePhase.PAUSED -> stringResource(R.string.ride_paused)
-                            RidePhase.STARTING -> stringResource(R.string.ride_starting)
-                            RidePhase.STOPPING -> stringResource(R.string.ride_stopping)
-                            RidePhase.ERROR -> stringResource(R.string.ride_error)
-                            else -> stringResource(R.string.ride_idle)
-                        },
-                        active = ride.phase == RidePhase.ACTIVE
-                    )
-                }
-
-                Text(
-                    text = elapsed,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            /* ---------- Main Power ---------- */
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 120.dp),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.ui_power),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(Modifier.height(8.dp))
-
-                    if (live.trainerPowerWatts != null) {
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(
-                                text = live.trainerPowerWatts.toString(),
-                                fontSize = 72.sp,
-                                lineHeight = 76.sp,
-                                fontWeight = FontWeight.Black,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = stringResource(R.string.ui_watts),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 12.dp, start = 8.dp)
-                            )
-                        }
-                    } else {
-                        Text(
-                            text = noData,
-                            fontSize = 64.sp,
-                            fontWeight = FontWeight.Light,
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-                    }
-                }
-            }
-
+            RideHeader(ride, elapsed)
             Spacer(Modifier.height(8.dp))
+            RidePowerCard(live.trainerPowerWatts, noData)
+            Spacer(Modifier.height(16.dp))
 
             /* ---------- Heart rate + cadence ---------- */
             Row(
@@ -231,35 +170,8 @@ fun RideScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            /* ---------- Compact connection status ---------- */
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = stringResource(
-                        R.string.history_field,
-                        stringResource(R.string.role_trainer),
-                        stringResource(friendlyConnection(trainer.connection))
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Text(
-                    text = stringResource(
-                        R.string.history_field,
-                        stringResource(R.string.ui_heart_rate),
-                        stringResource(friendlyConnection(hr.connection))
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
+            com.isaac.ridelab.ui.ride.LiveRideCharts(liveTrend)
+            Spacer(Modifier.height(16.dp))
 
             /* ---------- ERG ---------- */
             if (workout.definition != null) {
@@ -281,10 +193,64 @@ fun RideScreen(
                 send = send
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
-            com.isaac.ridelab.ui.ride.LiveRideCharts(liveTrend)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.history_field, stringResource(R.string.role_trainer),
+                    stringResource(friendlyConnection(trainer.connection))),
+                    modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.history_field, stringResource(R.string.ui_heart_rate),
+                    stringResource(friendlyConnection(hr.connection))),
+                    modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            Spacer(Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+private fun RideHeader(ride: RideState, elapsed: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.weight(1f)) {
+            StatusPill(stringResource(when (ride.phase) {
+                RidePhase.ACTIVE -> R.string.ride_active
+                RidePhase.PAUSED -> R.string.ride_paused
+                RidePhase.STARTING -> R.string.ride_starting
+                RidePhase.STOPPING -> R.string.ride_stopping
+                RidePhase.ERROR -> R.string.ride_error
+                else -> R.string.ride_idle
+            }), ride.phase == RidePhase.ACTIVE)
+        }
+        Text(elapsed, style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace)
+    }
+}
+
+@Composable
+private fun RidePowerCard(watts: Int?, noData: String) {
+    Column(Modifier.fillMaxWidth().heightIn(min = 144.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)) {
+        Text(stringResource(R.string.ui_power), style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (watts != null) {
+            BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                val fontScale = LocalDensity.current.fontScale
+                val fontSize = minOf(92f, maxWidth.value / fontScale / (watts.toString().length * .64f + 1f)).sp
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(watts.toString(), Modifier.alignByBaseline(), fontSize = fontSize,
+                        lineHeight = fontSize * 1.08f, fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurface)
+                    Text(stringResource(R.string.ui_watts), Modifier.alignByBaseline(),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        } else Text(noData, style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -320,31 +286,51 @@ internal fun ErgControls(
             confirmButton = { TextButton(enabled = valid != null && ready, onClick = { valid?.let(edit); dialog = false }) { Text(stringResource(R.string.erg_confirm)) } },
             dismissButton = { TextButton(onClick = { dialog = false }) { Text(stringResource(R.string.erg_cancel)) } })
     }
-    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = .08f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.ui_erg), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.ui_requested_target,
                 state.requestedWatts?.let { stringResource(R.string.power_value, it) } ?: stringResource(R.string.history_no_data)),
-                style = MaterialTheme.typography.bodySmall)
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                FilledTonalIconButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); profile?.let { edit(adjustedErgTarget(target, -5, it)) } }, enabled = ready && target > (profile?.minErgWatts ?: 0), modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.fec_minus))
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val inline = maxWidth >= 264.dp && LocalDensity.current.fontScale <= 1.25f
+                val applyButton: @Composable (Modifier) -> Unit = { applyModifier ->
+                    Button(
+                        onClick = { view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK); rememberApplied(target); send(target) },
+                        enabled = enabled, modifier = applyModifier.heightIn(min = 48.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp), shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(stringResource(R.string.ui_apply_target), fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+                    }
                 }
-                OutlinedButton(onClick = { input = target.toString(); dialog = true }, enabled = ready, modifier = Modifier.weight(1f).padding(horizontal = 8.dp).heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.power_value, target), style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        FilledTonalIconButton(
+                            onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); profile?.let { edit(adjustedErgTarget(target, -5, it)) } },
+                            enabled = ready && target > (profile?.minErgWatts ?: 0), modifier = Modifier.size(48.dp)
+                        ) { Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.fec_minus)) }
+                        OutlinedButton(onClick = { input = target.toString(); dialog = true }, enabled = ready,
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp)) {
+                            Text(stringResource(R.string.power_value, target), style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, maxLines = 1)
+                        }
+                        FilledTonalIconButton(
+                            onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); profile?.let { edit(adjustedErgTarget(target, 5, it)) } },
+                            enabled = ready && target < (profile?.maxErgWatts ?: 0), modifier = Modifier.size(48.dp)
+                        ) { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.fec_plus)) }
+                        if (inline) applyButton(Modifier.width(84.dp))
+                    }
+                    if (!inline) applyButton(Modifier.fillMaxWidth())
                 }
-                FilledTonalIconButton(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK); profile?.let { edit(adjustedErgTarget(target, 5, it)) } }, enabled = ready && target < (profile?.maxErgWatts ?: 0), modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.fec_plus))
-                }
-            }
-            Button(onClick = { view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK); rememberApplied(target); send(target) }, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), shape = MaterialTheme.shapes.medium) {
-                Text(stringResource(R.string.ui_apply_target), fontWeight = FontWeight.Bold)
             }
             if (preference.failed) Text(stringResource(R.string.erg_preference_error))
-            TrainerControlSummary(state)
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) { TrainerControlSummary(state) }
             if (profile != null && !profile.accepts(target)) Text(stringResource(R.string.control_invalid_target))
         }
     }

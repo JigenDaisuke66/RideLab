@@ -33,7 +33,19 @@ internal fun OverlayControl(state: com.isaac.ridelab.ui.overlay.RideOverlayState
         TextButton(onClick = { help = true }) { Text(stringResource(R.string.ui_help)) }
         }
     }
-    if (settings) AlertDialog(onDismissRequest = { settings = false },
+    if (settings) OverlaySettingsDialog(preferences, save) { settings = false }
+    if (help) AlertDialog(onDismissRequest = { help = false },
+        title = { Text(stringResource(R.string.overlay_title)) }, text = { Text(note) },
+        confirmButton = { TextButton(onClick = { help = false }) { Text(stringResource(R.string.erg_confirm)) } })
+}
+
+@Composable
+internal fun OverlaySettingsDialog(
+    preferences: com.isaac.ridelab.data.repository.OverlayPreferences,
+    save: (com.isaac.ridelab.data.repository.OverlayPreferences) -> Unit,
+    dismiss: () -> Unit,
+) {
+    AlertDialog(onDismissRequest = dismiss,
         title = { Text(stringResource(R.string.overlay_adjust)) },
         text = { Column(Modifier.verticalScroll(rememberScrollState())) {
             com.isaac.ridelab.ui.overlay.CapsulePreview(preferences)
@@ -42,8 +54,5 @@ internal fun OverlayControl(state: com.isaac.ridelab.ui.overlay.RideOverlayState
             Slider(preferences.transparency.toFloat(), { save(preferences.copy(transparency = it.toInt())) }, valueRange = 0f..80f)
             Text(stringResource(R.string.capsule_size, preferences.size))
             Slider(preferences.size.toFloat(), { save(preferences.copy(size = it.toInt())) }, valueRange = 60f..140f)
-        } }, confirmButton = { TextButton(onClick = { settings = false }) { Text(stringResource(R.string.erg_confirm)) } })
-    if (help) AlertDialog(onDismissRequest = { help = false },
-        title = { Text(stringResource(R.string.overlay_title)) }, text = { Text(note) },
-        confirmButton = { TextButton(onClick = { help = false }) { Text(stringResource(R.string.erg_confirm)) } })
+        } }, confirmButton = { TextButton(onClick = dismiss) { Text(stringResource(R.string.erg_confirm)) } })
 }

@@ -2,6 +2,11 @@ package com.isaac.ridelab.ui.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.rotate
+import androidx.compose.material.icons.rounded.DirectionsBike
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.platform.LocalView
 import android.view.HapticFeedbackConstants
@@ -138,6 +143,7 @@ fun HistoryScreen(
                     )
                 },
                 actions = {
+                    backupControls()
                     if (selectedId != null && state.rides.any { it.session.id == selectedId }) {
                         TextButton(enabled = !deleting, onClick = { deleteFailed = false; pendingDelete = selectedId }) {
                             Text(stringResource(R.string.history_delete), color = MaterialTheme.colorScheme.error)
@@ -165,10 +171,9 @@ fun HistoryScreen(
         Crossfade(targetState = selectedId, animationSpec = tween(180), label = "HistoryContent", modifier = Modifier.padding(innerPadding)) { currentSelectedId ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (currentSelectedId == null) item { backupControls() }
                 when {
                     state.loading -> item { LoadingView(R.string.history_loading) }
 
@@ -256,9 +261,7 @@ fun HistoryScreen(
                     }
 
                     state.rides.isEmpty() -> item {
-                        Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.history_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        HistoryEmptyState()
                     }
 
                     // 列表展示
@@ -278,67 +281,10 @@ fun HistoryScreen(
                                     month.rides.size, monthExpanded, true) { toggleGroup(monthKey) }
                             }
                             if (monthExpanded) items(month.rides, key = { "ride-${it.session.id}" }) { entry ->
-                                Card(
-                                    onClick = { selectedId = entry.session.id },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(20.dp),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(20.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = date(entry.session.startTimeEpochMillis),
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Spacer(Modifier.height(6.dp))
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = elapsedStr(entry.session.durationMillis),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontFamily = FontFamily.Monospace,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                StatusPill(stringResource(if (entry.session.status == StoredRideStatus.ABORTED) R.string.history_aborted else R.string.history_completed),
-                                                    entry.session.status == StoredRideStatus.COMPLETED)
-                                            }
-                                            Spacer(Modifier.height(8.dp))
-                                            Text(stringResource(R.string.ui_history_summary,
-                                                entry.averagePower?.let { stringResource(R.string.history_watts, it) } ?: stringResource(R.string.history_no_data),
-                                                entry.averageHeartRate?.let { stringResource(R.string.history_bpm, it) } ?: stringResource(R.string.history_no_data)),
-                                                style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                        Box {
-                                            var menuOpen by remember { mutableStateOf(false) }
-                                            IconButton(enabled = !deleting, onClick = { menuOpen = true }) {
-                                                Icon(Icons.Rounded.MoreVert,
-                                                    contentDescription = stringResource(R.string.history_more_actions),
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                                                DropdownMenuItem(
-                                                    text = { Text(stringResource(R.string.history_delete), color = MaterialTheme.colorScheme.error) },
-                                                    enabled = !deleting,
-                                                    onClick = {
-                                                        menuOpen = false
-                                                        deleteFailed = false
-                                                        pendingDelete = entry.session.id
-                                                    })
-                                            }
-                                        }
-                                    }
-                                }
+                                HistoryRideRow(entry, date(entry.session.startTimeEpochMillis),
+                                    elapsedStr(entry.session.durationMillis), deleting, Modifier.animateItem(),
+                                    open = { selectedId = entry.session.id },
+                                    delete = { deleteFailed = false; pendingDelete = entry.session.id })
                             }
                         }
                     }
@@ -348,25 +294,66 @@ fun HistoryScreen(
     }
 }
 
+
+@Composable
+private fun HistoryRideRow(entry: com.isaac.ridelab.data.model.RideHistoryEntry,
+    date: String, duration: String, deleting: Boolean, modifier: Modifier,
+    open: () -> Unit, delete: () -> Unit) {
+    RideLabCard(modifier.fillMaxWidth(), onClick = open) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(date, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            var menu by remember { mutableStateOf(false) }
+            Box {
+                IconButton(enabled = !deleting, onClick = { menu = true }) {
+                    Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.history_more_actions),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                DropdownMenu(menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.history_delete),
+                        color = MaterialTheme.colorScheme.error) }, enabled = !deleting,
+                        onClick = { menu = false; delete() })
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(duration, Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+            StatusPill(stringResource(if (entry.session.status == StoredRideStatus.ABORTED)
+                R.string.history_aborted else R.string.history_completed),
+                entry.session.status == StoredRideStatus.COMPLETED)
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(stringResource(R.string.ui_history_summary,
+            entry.averagePower?.let { stringResource(R.string.history_watts, it) }
+                ?: stringResource(R.string.history_no_data),
+            entry.averageHeartRate?.let { stringResource(R.string.history_bpm, it) }
+                ?: stringResource(R.string.history_no_data)),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
 // ========== 通用基础组件 ==========
 
 @Composable
 private fun HistoryGroupHeader(title: String, count: Int, expanded: Boolean,
     isMonth: Boolean, onClick: () -> Unit) {
+    val rotation by animateFloatAsState(if (expanded) 180f else 0f, tween(180), label = "HistoryChevron")
     val description = stringResource(if (expanded) R.string.history_group_expanded else R.string.history_group_collapsed)
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth()
         .padding(start = if (isMonth) 12.dp else 0.dp)
         .semantics { stateDescription = description },
         shape = RoundedCornerShape(12.dp),
-        color = if (isMonth) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant) {
+        color = MaterialTheme.colorScheme.background) {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(title, Modifier.weight(1f), fontWeight = FontWeight.Bold,
-                style = if (isMonth) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge)
+                style = if (isMonth) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge)
             Text(stringResource(R.string.history_group_count, count),
                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, contentDescription = null)
+            Icon(Icons.Rounded.ExpandMore, contentDescription = null, modifier = Modifier.rotate(rotation))
         }
     }
 }
@@ -415,23 +402,52 @@ private fun StatBox(
 }
 
 @Composable
+private fun HistoryEmptyState() {
+    RideLabCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(72.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.DirectionsBike, contentDescription = null,
+                        modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+            Text(stringResource(R.string.history_empty), style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.ui_history_empty_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        }
+    }
+}
+
+@Composable
 private fun LoadingView(textRes: Int) {
-    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(modifier = Modifier.size(36.dp))
-            Spacer(Modifier.height(16.dp))
-            Text(stringResource(textRes), color = MaterialTheme.colorScheme.onSurfaceVariant)
+    RideLabCard(Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(vertical = 16.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
+            Text(stringResource(textRes), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
 private fun ErrorView(textRes: Int, onRetry: () -> Unit, retryTextRes: Int) {
-    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(stringResource(textRes), color = MaterialTheme.colorScheme.error)
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = onRetry) {
+    RideLabCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Icon(Icons.Rounded.ErrorOutline, contentDescription = null,
+                modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.error)
+            Text(stringResource(textRes), color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            FilledTonalButton(onClick = onRetry) {
                 Text(stringResource(retryTextRes))
             }
         }

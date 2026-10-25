@@ -51,6 +51,37 @@ Ownership:
 - RideRecordingService exclusively owns BLE, workout timing and recording. Untouched.
 
 Where to add features:
+Optional AI connection setup lives in ui/ai. AiSettingsRoute collects its separate
+ViewModel; AiSettingsCard renders immutable state and dispatches typed edits. The
+controller/store/probe own configuration, encrypted persistence and explicit network
+requests. MainActivity supplies this route through an optional settings content slot
+in AppShell/SettingsDestination, preserving existing ride/settings callbacks. There
+is no BLE, Room, ride state or trainer tool reference in this feature. New providers
+belong in ai/AiProvider and their wire protocol adapter, never Compose. See AI_SERVICES.md.
+
+Home/History/Settings companion polish keeps screen/action contracts intact. Home puts
+device readiness before Start and uses compact profile values. HistoryBackupControls
+is composed exactly once in toolbar actions (including detail mode) so document-picker
+launchers survive menu dismissal. Its menu changes presentation only; existing export/
+restore methods and result state remain authoritative. Settings appearance/language
+dialogs are local UI state; native names, preference actions and save/cancel paths stay.
+Data management is centralized in History without a new settings navigation contract.
+See HOME_HISTORY_SETTINGS_VERIFICATION.md for callback and document-picker checks.
+
+The selected professional-meter Ride layout uses RideToolbar for compact overlay
+actions. It reuses OverlaySettingsDialog from the existing settings control without
+moving permissions or preference writes into the renderer. LiveRideCharts now selects
+one existing series in a compact plot; selection is saveable presentation-only state.
+RideControls/ErgControls only rearrange existing actions with a narrow/large-font fallback.
+All public signatures and service/ViewModel paths remain as before; see RIDE_METER_VERIFICATION.md.
+
+The presentation polish adds MetricValueText for baseline-aligned, already-localized
+values while preserving complete accessibility text. RideHeader/RidePowerCard and
+SettingsSection/LanguageOption are private layout helpers. Existing screen and shared
+component signatures, state sources and event paths remain unchanged. Use shared
+RideLabCard/MetricTile/StatusPill/SettingRow for the same surface/spacing hierarchy.
+See UI_POLISH_VERIFICATION.md for callback, navigation and visual smoke checks.
+
 Ride page live curves use a bounded five-minute LiveRideTrend in DevicesViewModel,
 sampling existing fresh sensor state once per second while the Activity is visible.
 RideRoute passes immutable chart state to LiveRideCharts. This UI buffer is not
