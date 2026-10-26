@@ -8,7 +8,7 @@ import com.isaac.ridelab.ai.HttpAiConnectionProbe
 
 class AiSettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val controller = AiSettingsController(viewModelScope,
-        EncryptedAiSettingsStore(application), HttpAiConnectionProbe())
+        (application as com.isaac.ridelab.RideLabApplication).aiSettingsStore, HttpAiConnectionProbe())
     val state = controller.state
     fun edit(action: AiSettingsAction) = controller.edit(action)
     fun save() = controller.save()

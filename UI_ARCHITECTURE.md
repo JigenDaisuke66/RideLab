@@ -56,8 +56,15 @@ ViewModel; AiSettingsCard renders immutable state and dispatches typed edits. Th
 controller/store/probe own configuration, encrypted persistence and explicit network
 requests. MainActivity supplies this route through an optional settings content slot
 in AppShell/SettingsDestination, preserving existing ride/settings callbacks. There
-is no BLE, Room, ride state or trainer tool reference in this feature. New providers
+is no BLE, Room, ride state or trainer tool reference in the settings component. New providers
 belong in ai/AiProvider and their wire protocol adapter, never Compose. See AI_SERVICES.md.
+The requested analysis extension has a separate AiAnalysisRoute/immutable state and
+ViewModel/controller. AiRideDataRepository is the only SQL data adapter: a bounded
+OPEN_READONLY handle on the existing Room file plus bound current-profile values.
+Existing repositories/calculators provide exact metrics. AI has no write or trainer
+tools. Instructions live in assets/ai_skills; native tool protocols and budgets live
+in ai, never in Compose. Saved credentials are reused without passing them into the
+analysis renderer. See AI_ANALYSIS.md for disclosure, data dictionary and verification.
 
 Home/History/Settings companion polish keeps screen/action contracts intact. Home puts
 device readiness before Start and uses compact profile values. HistoryBackupControls

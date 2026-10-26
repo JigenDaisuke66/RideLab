@@ -51,6 +51,13 @@ freeze active elapsed time/sampling and workout progression, without changing ER
 
 Compose is presentation only.
 
+Optional AI analysis is explicitly user-started and read-only. Keep SQL execution in
+AiRideDataRepository with its native read-only handle, SELECT guard, cancellation and
+result limits. Reuse current settings and historical snapshots without backfilling.
+Use existing analytics calculators; model instructions/skills are not new formulas.
+Never expose API keys, file/network tools, writes or trainer control through SQL/tools.
+Do not automatically upload rides or start analysis on restoration. See AI_ANALYSIS.md.
+
 For UI work, follow UI_ARCHITECTURE.md. Keep screen rendering separate from
 route/ViewModel wiring. Reuse existing service state rather than a second mutable
 ride model. Settings render immutable state and dispatch typed preference actions;

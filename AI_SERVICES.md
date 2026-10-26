@@ -1,9 +1,12 @@
-# AI services: optional connection setup
+# AI services: optional connection setup and analysis
 
-This first increment adds provider configuration and an explicit model connection probe.
-It does not implement chat, ride analysis, MCP, tool execution or trainer control. The
-offline ride functionality, BLE ownership, workouts, recording, Room and exports are
-unchanged. No account, backend or AI configuration is required to ride.
+Provider configuration and the explicit connection probe are now joined by the
+user-requested read-only SQL analysis screen. See **AI_ANALYSIS.md** for the current
+data interface, four bundled analyst skills, permissions and token budgets. No MCP,
+SQL writes, trainer tools or automatic coaching are implemented. Offline riding,
+BLE ownership, workouts, recording, Room schema and exports are unchanged. No account,
+backend or AI configuration is required to ride. The probe-specific behavior below
+still applies to Test connection; starting analysis separately sends queried ride data.
 
 ## Open-source evaluation (2026-10-25)
 
@@ -57,6 +60,10 @@ Official references checked:
 [LM Studio](https://lmstudio.ai/docs/developer/openai-compat).
 These are protocol presets, not a claim that every model/account/subscription works.
 Chat website subscriptions or coding-plan endpoints are not interchangeable with API keys.
+Kimi now has explicit .ai / .cn chips (https://api.moonshot.cn/v1 for China).
+They change only the editable base URL; the model/key remain in the draft and must
+match the account region. Save remembers the selected URL. The regions do not gain
+shared account credentials merely because the app can select both endpoints.
 
 ## State, storage and networking
 

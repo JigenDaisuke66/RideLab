@@ -9,6 +9,9 @@ class RideLabApplication : Application() {
     }
     val weightSettings by lazy { com.isaac.ridelab.data.repository.WeightSettings(this) }
     val ftpSettings by lazy { com.isaac.ridelab.data.repository.FtpSettings(this) }
+    val aiSettingsStore by lazy { com.isaac.ridelab.ai.EncryptedAiSettingsStore(this) }
+    val aiRideData by lazy { com.isaac.ridelab.data.repository.AiRideDataRepository(
+        rideDatabase, rideRepository, ftpSettings::read, weightSettings::read) }
     val rampReview by lazy { com.isaac.ridelab.workout.RampResultReview(ftpSettings::save) }
     val rideRepository by lazy { com.isaac.ridelab.data.repository.RoomRideRepository(rideDatabase.rides(), ftpSettings::read, weightSettings::read) }
     override fun onCreate() {

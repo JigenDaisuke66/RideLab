@@ -6,6 +6,21 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AiSettingsControllerTest {
+    @Test fun switchingKimiRegionKeepsKeyAndModelAndRestoresSavedRegion() = runBlocking {
+        val store = Store()
+        val probe = AiConnectionProbe { _, _ -> fail("No automatic request"); AiProbeResult() }
+        val controller = AiSettingsController(this, store, probe); yield()
+        controller.edit(AiSettingsAction.Provider(AiProvider.KIMI))
+        setup(controller, "kimi-model")
+        controller.edit(AiSettingsAction.Endpoint(KimiRegion.CHINA.baseUrl))
+        assertEquals("key", controller.state.value.configuration.apiKey)
+        controller.save(); yield()
+        val restored = AiSettingsController(this, store, probe); yield()
+        assertEquals(KimiRegion.CHINA.baseUrl, restored.state.value.configuration.baseUrl)
+        assertEquals("kimi-model", restored.state.value.configuration.model)
+        restored.edit(AiSettingsAction.Endpoint(KimiRegion.INTERNATIONAL.baseUrl))
+        assertEquals("key", restored.state.value.configuration.apiKey)
+    }
     private class Store(var value: AiPreferences = AiPreferences()) : AiSettingsStore {
         var writes = 0
         var failRead = false

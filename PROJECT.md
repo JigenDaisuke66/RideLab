@@ -226,17 +226,19 @@ changing business logic.
 
 ## Non-goals for V1
 
-An explicitly requested optional AI-services setup experiment now adds independently
-saved provider profiles and an explicit short connection probe. It adds no ride-data
-upload, coaching, chat, trainer tools or mandatory network/backend dependency. The
-offline ride path is unchanged. See AI_SERVICES.md for presets, storage and limitations.
+The explicitly requested optional AI feature includes encrypted saved provider profiles,
+connection tests and user-started read-only SQL cycling analysis, including current and
+historical FTP/weight. Required query results go to the selected endpoint only during
+analysis. Four bundled analyst presets reuse existing metrics with bounded queries and
+token budgets. No SQL writes, trainer tools or mandatory network/backend dependency.
+The offline ride path is unchanged. See AI_SERVICES.md and AI_ANALYSIS.md.
 
 No social feed.
 No cloud sync.
 No route/map system.
 No virtual world.
 No Zwift clone.
-No AI coaching.
+No automatic real-time AI coaching or AI trainer control.
 No online account requirement.
 
 Current experimental FE-C trainer profile: ThinkRider X2 Max supports ERG targets 50–2000 W. TrainerErgProfile controls UI, restored preferences and controller validation independently of FE-C field encoding limits. Apply remains explicit; no restored target is auto-sent. See ERG_TARGET_VERIFICATION.md.

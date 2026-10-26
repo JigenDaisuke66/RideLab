@@ -20,9 +20,12 @@ import com.isaac.ridelab.ui.theme.RideLabCard
 import com.isaac.ridelab.ui.theme.SettingRow
 
 @Composable
-internal fun AiSettingsRoute(model: AiSettingsViewModel) {
+internal fun AiSettingsRoute(model: AiSettingsViewModel, analysis: AiAnalysisViewModel? = null) {
     val ui by model.state.collectAsState()
-    AiSettingsCard(ui, model::edit, model::save, model::test, model::forget)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AiSettingsCard(ui, model::edit, model::save, model::test, model::forget)
+        if (analysis != null) AiAnalysisRoute(analysis)
+    }
 }
 
 /** Presentation only. Draft secrets stay in ViewModel memory, never rememberSaveable/Bundle. */
@@ -43,6 +46,17 @@ internal fun AiSettingsCard(ui: AiSettingsUiState, edit: (AiSettingsAction) -> U
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             val enabled = !ui.busy && !ui.storageFailed
             AiProviderPicker(ui.configuration.provider, enabled) { edit(AiSettingsAction.Provider(it)) }
+            if (ui.configuration.provider == AiProvider.KIMI) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(ui.configuration.baseUrl.trimEnd('/') == KimiRegion.INTERNATIONAL.baseUrl,
+                        { edit(AiSettingsAction.Endpoint(KimiRegion.INTERNATIONAL.baseUrl)) }, enabled = enabled,
+                        label = { Text(stringResource(R.string.ai_kimi_ai)) })
+                    FilterChip(ui.configuration.baseUrl.trimEnd('/') == KimiRegion.CHINA.baseUrl,
+                        { edit(AiSettingsAction.Endpoint(KimiRegion.CHINA.baseUrl)) }, enabled = enabled,
+                        label = { Text(stringResource(R.string.ai_kimi_cn)) })
+                }
+                Text(stringResource(R.string.ai_kimi_hint), style = MaterialTheme.typography.bodySmall)
+            }
             OutlinedTextField(ui.configuration.baseUrl, { edit(AiSettingsAction.Endpoint(it)) },
                 label = { Text(stringResource(R.string.ai_endpoint)) }, enabled = enabled,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),

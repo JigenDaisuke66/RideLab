@@ -4,6 +4,10 @@ import java.net.URI
 
 enum class AiProtocol { CHAT_COMPLETIONS, ANTHROPIC_MESSAGES, GEMINI }
 
+enum class KimiRegion(val baseUrl: String) {
+    INTERNATIONAL("https://api.moonshot.ai/v1"), CHINA("https://api.moonshot.cn/v1")
+}
+
 /** API transport presets, not model capabilities or permission to control a trainer. */
 enum class AiProvider(val protocol: AiProtocol, val baseUrl: String, val requiresKey: Boolean = true) {
     OPENAI(AiProtocol.CHAT_COMPLETIONS, "https://api.openai.com/v1"),
