@@ -189,6 +189,7 @@
     <string name="analytics_ftp_saved">使用本次骑行保存的 FTP；新骑行在开始时保存。</string>
     <string name="analytics_coverage">NP 仅使用连续有效的 30 秒窗口；TSS 使用完整骑行时长。缺失数据可能影响结果的代表性。</string>
     <string name="ui_home">首页</string>
+    <string name="ui_ai">AI</string>
     <string name="ui_ride">骑行</string>
     <string name="ui_connected">已连接</string>
     <string name="ui_disconnected">未连接</string>

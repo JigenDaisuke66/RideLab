@@ -189,6 +189,7 @@
     <string name="analytics_ftp_saved">使用本次騎乘保存的 FTP；新騎乘在開始時保存。</string>
     <string name="analytics_coverage">NP 僅使用連續有效的 30 秒窗口；TSS 使用完整騎乘時長。缺失資料可能影響結果的代表性。</string>
     <string name="ui_home">首頁</string>
+    <string name="ui_ai">AI</string>
     <string name="ui_ride">騎乘</string>
     <string name="ui_connected">已連線</string>
     <string name="ui_disconnected">未連線</string>

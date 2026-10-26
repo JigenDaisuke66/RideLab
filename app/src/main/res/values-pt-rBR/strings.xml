@@ -190,6 +190,7 @@
     <string name="analytics_ftp_saved">Usa o FTP salvo desta pedalada. Novas pedaladas salvam o valor ao iniciar.</string>
     <string name="analytics_coverage">NP usa janelas válidas e contínuas de 30 segundos; TSS usa a duração total. Dados ausentes podem afetar a representatividade.</string>
     <string name="ui_home">Início</string>
+    <string name="ui_ai">IA</string>
     <string name="ui_ride">Pedalar</string>
     <string name="ui_connected">Conectado</string>
     <string name="ui_disconnected">Desconectado</string>

@@ -15,38 +15,32 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.isaac.ridelab.R
 import com.isaac.ridelab.ai.analysis.*
 import com.isaac.ridelab.ui.theme.RideLabCard
-import com.isaac.ridelab.ui.theme.SettingRow
 
 @Composable
-internal fun AiAnalysisRoute(model: AiAnalysisViewModel) {
+internal fun AiAnalysisRoute(model: AiAnalysisViewModel, close: () -> Unit,
+    settings: @Composable () -> Unit = {}) {
     val ui by model.state.collectAsState()
-    var open by rememberSaveable { mutableStateOf(false) }
     val languageTag = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].toLanguageTag()
-    RideLabCard(Modifier.fillMaxWidth()) {
-        SettingRow(stringResource(R.string.ai_analysis_title), stringResource(R.string.ai_analysis_entry), { open = true })
-    }
-    if (open) Dialog(onDismissRequest = { open = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        AiAnalysisScreen(ui, model::question, model::skill, { model.analyze(languageTag) }, model::cancel,
-            model::clear, { open = false })
-    }
+    AiAnalysisScreen(ui, model::question, model::skill, { model.analyze(languageTag) }, model::cancel,
+        model::clear, close, settings)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AiAnalysisScreen(ui: AiAnalysisUiState, question: (String) -> Unit, skill: (AiAnalysisSkill) -> Unit,
-    analyze: () -> Unit, cancel: () -> Unit, clear: () -> Unit, close: () -> Unit) {
+    analyze: () -> Unit, cancel: () -> Unit, clear: () -> Unit, close: () -> Unit,
+    settings: @Composable () -> Unit = {}) {
     Scaffold(modifier = Modifier.fillMaxSize().imePadding(), topBar = {
-        TopAppBar(title = { Text(stringResource(R.string.ai_analysis_title)) }, navigationIcon = {
+        TopAppBar(windowInsets = WindowInsets(0, 0, 0, 0), title = { Text(stringResource(R.string.ai_analysis_title)) }, navigationIcon = {
             IconButton(onClick = close) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.ai_close)) }
         })
     }) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            settings()
             Text(stringResource(R.string.ai_analysis_privacy), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             SkillPicker(ui.skill, !ui.running, skill)

@@ -35,7 +35,7 @@ Bluetooth Cycling Power Service.
 
 ## Main screens
 
-Round 1 uses a four-tab Material 3 shell: Home, Ride, History, Settings. Home provides friendly device status/selection, FTP and latest completed ride. Ride emphasizes large live power with BPM/cadence/time and explicit bounded ERG Apply controls. Technical diagnostics remain internal. See UI_ROUND1_VERIFICATION.md.
+The Material 3 shell has five tabs: Home, Ride, History, AI, Settings. AI opens the existing read-only analysis page directly and includes provider configuration; it never starts analysis on navigation. Home provides friendly device status/selection, FTP and latest completed ride. Ride emphasizes large live power with BPM/cadence/time and explicit bounded ERG Apply controls. Technical diagnostics remain internal. See UI_ROUND1_VERIFICATION.md.
 
 ### Home
 

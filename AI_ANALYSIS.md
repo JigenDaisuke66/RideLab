@@ -6,21 +6,21 @@ exported MCP/HTTP server and not an AI permission to operate Android or the trai
 
 ## Using it
 
-1. Settings > AI services: select the provider, correct base URL, full model ID and
+1. Bottom navigation > AI > AI services: select the provider, correct base URL, full model ID and
    API key. Test if desired, then **Save configuration** once. Keys are encrypted
    by Android Keystore; they are restored across launches, not backed up/reinstalled.
 2. Kimi offers International .ai / China .cn. Switching keeps the model/key text;
    use a key valid for that account region and save. Existing .ai configurations
    are preserved. This is one Kimi profile storing the last saved endpoint, not two
    separately stored region accounts.
-3. Settings > AI ride analysis: choose a skill and enter a question, then Start.
+3. On the AI tab, choose a skill and enter a question, then Start.
    Analysis uses the **last saved provider/configuration**, not an unsaved settings
    draft. Opening/typing/restoring settings never sends data or starts analysis.
 4. Expand Query evidence to inspect SQL/metric-tool requests, returned row counts,
    truncation, cache hits and errors. Reports are selectable plain text.
 5. Each question is independent. Results survive rotation through ViewModel, but
    are not persisted to Room and disappear on process death or explicit Clear.
-   Closing the screen leaves an in-flight run in that ViewModel; Stop cancels it.
+   Switching tabs or returning Home leaves an in-flight run in that ViewModel; Stop cancels it.
 
 Starting analysis permits the selected endpoint to receive the question and required
 SQL/metric results, including all ride records, current/historical FTP and weight.

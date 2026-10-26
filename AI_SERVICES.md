@@ -68,7 +68,8 @@ shared account credentials merely because the app can select both endpoints.
 ## State, storage and networking
 
 - MainActivity creates an Activity-scoped AiSettingsViewModel. AppShell forwards
-  an optional settings content slot; no existing ride callback is redirected.
+  an independent AI bottom-tab content slot containing analysis and provider settings;
+  no existing ride callback is redirected.
 - AiSettingsRoute collects immutable state. AiSettingsCard renders it and emits
   typed field edits plus Save/Test/Forget. Draft keys are never put in a Bundle.
 - AiSettingsController owns loaded profiles, validation, save/test results and
@@ -126,7 +127,7 @@ callbacks/disabled input and Keystore encrypted round-trip/tamper rejection. Tho
 device tests are compile-checked only; no APK or real API credentials are used.
 
 Manual acceptance (pending):
-1. Open Settings > AI services while no BLE devices are connected. Check all seven
+1. Open the AI bottom tab > AI services while no BLE devices are connected. Check all seven
    languages, a small screen/large font and the provider menu.
 2. Select a provider; enter the account's correct region URL, chat model ID and key.
    Opening/editing must produce no traffic. Tap Test: spinner, then real success or

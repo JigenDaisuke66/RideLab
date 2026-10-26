@@ -190,6 +190,7 @@
     <string name="analytics_ftp_saved">このライドの保存済み FTP を使用します。新しいライドは開始時の値を保存します。</string>
     <string name="analytics_coverage">NP は連続した有効な30秒窓から算出し、TSS はライド全体の時間を使います。欠損は結果の代表性に影響します。</string>
     <string name="ui_home">ホーム</string>
+    <string name="ui_ai">AI</string>
     <string name="ui_ride">ライド</string>
     <string name="ui_connected">接続済み</string>
     <string name="ui_disconnected">未接続</string>

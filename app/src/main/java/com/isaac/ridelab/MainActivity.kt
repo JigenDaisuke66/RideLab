@@ -114,7 +114,11 @@ class MainActivity : ComponentActivity() {
                     bluetoothSettings = { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
                     language = ::selectLanguage, enableOverlay = ::enableOverlay, exportCsv = ::exportCsv,
                     startWorkout = ::onStartWorkout, appearanceModel = appearanceModel,
-                    settingsExtras = { com.isaac.ridelab.ui.ai.AiSettingsRoute(aiModel, aiAnalysis) })
+                    aiContent = { close ->
+                        com.isaac.ridelab.ui.ai.AiAnalysisRoute(aiAnalysis, close) {
+                            com.isaac.ridelab.ui.ai.AiSettingsRoute(aiModel)
+                        }
+                    })
             }
         }
     }

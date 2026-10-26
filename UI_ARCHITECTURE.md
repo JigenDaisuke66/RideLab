@@ -54,8 +54,11 @@ Where to add features:
 Optional AI connection setup lives in ui/ai. AiSettingsRoute collects its separate
 ViewModel; AiSettingsCard renders immutable state and dispatches typed edits. The
 controller/store/probe own configuration, encrypted persistence and explicit network
-requests. MainActivity supplies this route through an optional settings content slot
-in AppShell/SettingsDestination, preserving existing ride/settings callbacks. There
+requests. MainActivity supplies the independent AI bottom-tab content slot in AppShell.
+AiAnalysisRoute renders the analysis page directly, with AiSettingsRoute as its provider
+configuration card. General Settings no longer hosts AI entry points. Activity-scoped
+ViewModels retain drafts/results and in-flight analysis across tab changes; navigation
+never starts, retries or cancels a request. Existing ride/settings callbacks are preserved. There
 is no BLE, Room, ride state or trainer tool reference in the settings component. New providers
 belong in ai/AiProvider and their wire protocol adapter, never Compose. See AI_SERVICES.md.
 The requested analysis extension has a separate AiAnalysisRoute/immutable state and

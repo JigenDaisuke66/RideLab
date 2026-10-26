@@ -190,6 +190,7 @@
     <string name="analytics_ftp_saved">Se usa el FTP guardado de esta salida. Las nuevas guardan el valor al inicio.</string>
     <string name="analytics_coverage">NP usa ventanas válidas y continuas de 30 segundos; TSS usa la duración total. La falta de datos puede afectar la representatividad.</string>
     <string name="ui_home">Inicio</string>
+    <string name="ui_ai">IA</string>
     <string name="ui_ride">Pedalear</string>
     <string name="ui_connected">Conectado</string>
     <string name="ui_disconnected">Desconectado</string>

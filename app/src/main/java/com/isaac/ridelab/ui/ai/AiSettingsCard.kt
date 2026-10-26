@@ -20,11 +20,10 @@ import com.isaac.ridelab.ui.theme.RideLabCard
 import com.isaac.ridelab.ui.theme.SettingRow
 
 @Composable
-internal fun AiSettingsRoute(model: AiSettingsViewModel, analysis: AiAnalysisViewModel? = null) {
+internal fun AiSettingsRoute(model: AiSettingsViewModel) {
     val ui by model.state.collectAsState()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AiSettingsCard(ui, model::edit, model::save, model::test, model::forget)
-        if (analysis != null) AiAnalysisRoute(analysis)
     }
 }
 

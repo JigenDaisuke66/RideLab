@@ -189,6 +189,7 @@
     <string name="analytics_ftp_saved">Uses the saved FTP for this ride; new rides save it at Start ride.</string>
     <string name="analytics_coverage">NP uses valid continuous 30-second windows; TSS uses full ride duration. Missing data may affect how representative the results are.</string>
     <string name="ui_home">Home</string>
+    <string name="ui_ai">AI</string>
     <string name="ui_ride">Ride</string>
     <string name="ui_connected">Connected</string>
     <string name="ui_disconnected">Disconnected</string>

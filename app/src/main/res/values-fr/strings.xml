@@ -190,6 +190,7 @@
     <string name="analytics_ftp_saved">Utilise le FTP enregistré pour cette sortie. Les nouvelles sorties le conservent au départ.</string>
     <string name="analytics_coverage">NP utilise des fenêtres valides et continues de 30 secondes ; TSS utilise la durée totale. Les données manquantes peuvent affecter la représentativité.</string>
     <string name="ui_home">Accueil</string>
+    <string name="ui_ai">IA</string>
     <string name="ui_ride">Rouler</string>
     <string name="ui_connected">Connecté</string>
     <string name="ui_disconnected">Déconnecté</string>
