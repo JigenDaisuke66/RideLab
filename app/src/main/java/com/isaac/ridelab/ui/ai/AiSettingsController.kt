@@ -57,7 +57,7 @@ class AiSettingsController(
         val config = current.configuration
         val changed = when (action) {
             is AiSettingsAction.Provider -> preferences.configuration(action.value)
-            is AiSettingsAction.Endpoint -> config.copy(baseUrl = action.value.take(2048))
+            is AiSettingsAction.Endpoint -> config.copy(baseUrl = AiEndpointPolicy.baseUrl(action.value.take(2048)))
             is AiSettingsAction.Model -> config.copy(model = action.value.take(200))
             is AiSettingsAction.Key -> config.copy(apiKey = action.value.take(8192))
             is AiSettingsAction.LocalHttp -> config.copy(allowLocalHttp = action.value)
@@ -83,7 +83,7 @@ class AiSettingsController(
         scope.launch {
             val result = try { probe.test(current.configuration, prompt)
             } catch (error: CancellationException) { throw error
-            } catch (_: Exception) { AiProbeResult(AiProblem.NETWORK) }
+            } catch (error: Exception) { AiProbeResult(AiProblem.NETWORK, diagnostic = error.javaClass.simpleName) }
             mutable.value = current.copy(operation = AiSettingsOperation.IDLE, result = result)
         }
     }

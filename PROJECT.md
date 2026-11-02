@@ -231,7 +231,11 @@ connection tests and user-started read-only SQL cycling analysis, including curr
 historical FTP/weight. Required query results go to the selected endpoint only during
 analysis. Four bundled analyst presets reuse existing metrics with bounded queries and
 token budgets. No SQL writes, trainer tools or mandatory network/backend dependency.
-The offline ride path is unchanged. See AI_SERVICES.md and AI_ANALYSIS.md.
+The offline ride path is unchanged. AI analysis now defaults to a bounded local
+full-history summary (completed rides, historical FTP, monthly/yearly and 7/28/90-day statistics, up to 12 recent details) followed by
+one plain model request. It does not require server tool calling. The original Tools
+mode remains selectable; neither mode can write data or control the trainer.
+See AI_SERVICES.md and AI_ANALYSIS.md.
 
 No social feed.
 No cloud sync.

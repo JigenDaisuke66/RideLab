@@ -86,31 +86,69 @@ shared account credentials merely because the app can select both endpoints.
   Explicitly confirmed Reset can replace all AI settings. Forget normally removes
   only the selected provider. Errors never expose raw response text or credentials.
 - INTERNET is a normal permission; no new runtime prompt. Target SDK remains 36.
-  Network security config defaults to HTTPS, with HTTP exceptions only for localhost,
-  127.0.0.1, Android emulator host 10.0.2.2 and *.local names. The controller additionally
-  requires explicit Allow local HTTP and Ollama/LM Studio/Custom selection. Ordinary
-  numeric LAN addresses require HTTPS; never enable cleartext globally. No certificate
-  validation bypass or redirects. The user-supplied endpoint receives its supplied key.
-- A physical phone's 127.0.0.1 is the phone, **not the PC**. For a PC server use an
+  The user subsequently authorized the application-level cleartext opt-in needed for
+  variable private IPv4 hosts. Android network_security_config now permits cleartext at
+  the platform layer: this is broader than the app policy and future network code MUST
+  reuse AiHttpTransport. Configuration and the actual transport both require explicit
+  Allow local HTTP and Ollama/LM Studio/Custom selection. HTTP hosts are restricted to
+  RFC1918 IPv4 (10/8, 172.16/12, 192.168/16), existing loopback, or .local names whose
+  resolved addresses are all private/loopback. Public HTTP is rejected. Cloud presets
+  remain HTTPS-only. Certificate validation and redirect rejection are unchanged.
+- A physical phone's 127.0.0.1 is the phone, **not the PC**. For a PC server use
+  http://192.168.0.4:8001/v1 (if this is the server's real address/port), or an
   actually resolvable PC-name.local, enable LAN listening/firewall access, and use the
   same trusted LAN. This depends on the device/network's mDNS support. Alternatively
   use an HTTPS server with a trusted certificate. Merely typing name.local does not
   configure or advertise the PC. Local models must already be installed and loaded.
-- Explicit Test sends only a short localized "reply OK" probe. No ride/profile/sample
-  data is read or sent. A real provider generation may incur API charges. Three wire
-  adapters use the selected model and a 256-output-token budget, no tools, streaming
-  or temperature assumption; OpenAI uses max_completion_tokens and store=false.
+- The earlier single-IP exception has been replaced by private IPv4 validation. Android
+  domain-config cannot express subnet ranges; see
+  [Android network security configuration](https://developer.android.com/privacy-and-security/security-config).
+  Manual check: select Custom, enter http://192.168.0.4:8001/v1 and the exact model ID
+  reported by the server, enable Allow local HTTP, explicitly Test and Save. No API key is
+  required unless the server itself requires authentication. Disabling HTTP must disable
+  Test/Save again. A physical phone must be on the same reachable LAN; the PC server must
+  listen on its LAN interface and its firewall must permit the configured port.
+- Pasting http://192.168.0.4:8001/v1/models now visibly normalizes the draft to
+  http://192.168.0.4:8001/v1. Only a URL ending in /v1/models (optionally with a
+  trailing slash) is normalized, without a query, fragment or embedded credentials.
+  Query parameters such as utm_source remain invalid, rather than being silently
+  discarded. Probe and analysis both build /v1/chat/completions from the same base;
+  they never post chat requests to /v1/models/chat/completions. No model-list fetch,
+  connection, save or analysis starts from pasting/restoring an address. Existing
+  saved hosts/ports are not changed automatically; explicit Save persists edits.
+  AiWireRequest carries explicit local-HTTP consent from the validated provider;
+  AiHttpTransport rechecks the endpoint before opening any connection or sending
+  headers. Analysis propagates the same consent. See AI_COMPATIBLE_API_VERIFICATION.md
+  for the current custom-vLLM fix, actual-server evidence and APK/device test results.
+  Implementation files: new ai/AiEndpointPolicy.kt; ai/AiProvider.kt, AiWireProtocol.kt,
+  AiAnalysisWire.kt, AiHttpTransport.kt; ui/ai/AiSettingsController.kt; seven endpoint-hint
+  resource translations. Focused regressions are in AiEndpointPolicyTest,
+  AiSettingsControllerTest, AiHttpTransportTest, AiWireProtocolTest and HttpAiAnalysisTest.
+- Explicit Test for Custom first sends GET /models and parses data[].id exactly, then
+  POST /chat/completions with the selected ID. A missing ID returns MODEL_NOT_FOUND
+  with the available IDs; it is never guessed from the model root/name. Other presets
+  retain their existing chat-only probe. No ride/profile/sample data is read or sent.
+  Local-provider probes allow 2048 output tokens and request standard SSE; other
+  providers retain 256 and non-streaming. A normal JSON response is still accepted.
+  There is no hardcoded Qwen ID/address/key or vendor-specific thinking switch.
+  The UI shows the actual assistant reply; reasoning alone is never a successful answer.
 - Success requires a nonempty assistant text, not just HTTP 200 or reasoning/tool-only
   output. Some reasoning models need a larger budget or other parameters and may fail
-  this small probe. No automatic parameter fallback or retries. Failures retain typed
-  authentication/rate/HTTP/network/timeout/response states and a status code when known.
-- Connect timeout 10 s; read timeout 30 s; body reading has an additional 30 s deadline
-  and 64 KiB limit. Cancellation prevents stale results; blocking network stages finish
-  at their socket timeout. No polling/background work, ride services or GATT objects.
+  the bounded probe. No automatic parameter fallback or retries. Failures distinguish
+  cleartext rejection, connection refusal, timeout, authentication, rate limits, HTTP,
+  missing models, malformed JSON/incomplete SSE, output limit, empty text and reasoning
+  only. Known HTTP status and redacted network exception chains are preserved. Error
+  bodies are bounded and used only for classification, not displayed/logged raw.
+- Connect timeout 10 s; local probes use the existing 120 s per-request analysis budget;
+  other probes retain a 30 s read/60 s request budget. JSON bodies remain capped at
+  64 KiB and SSE assembly remains bounded. No ride services or GATT objects are used.
 
-## Verification
+## Initial configuration-phase verification (historical)
 
-Run only unit tests and compile checks, not assemble/bundle/package APK tasks:
+The original configuration phase ran unit tests and compile checks only. The later
+custom-vLLM task explicitly requests an APK and Android execution; its current results
+and build commands are documented in AI_COMPATIBLE_API_VERIFICATION.md.
+Original focused command:
 
 ```text
 :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin :app:testDebugUnitTest
@@ -126,7 +164,7 @@ loopback HTTP responses/redirect rejection/bounded bodies. Android tests cover U
 callbacks/disabled input and Keystore encrypted round-trip/tamper rejection. Those
 device tests are compile-checked only; no APK or real API credentials are used.
 
-Manual acceptance (pending):
+Physical-phone acceptance (pending; current emulator results are in the linked verification):
 1. Open the AI bottom tab > AI services while no BLE devices are connected. Check all seven
    languages, a small screen/large font and the provider menu.
 2. Select a provider; enter the account's correct region URL, chat model ID and key.
@@ -137,9 +175,12 @@ Manual acceptance (pending):
    Change fields without saving, switch away/back: stored values restored.
 4. Wrong key should show authentication failure; wrong model/endpoint should fail,
    not report success from a 200 login page. Never send real keys to an untrusted URL.
-5. With Ollama/LM Studio on a PC, configure its working .local address and opt in to
+5. With Ollama/LM Studio/Custom on a PC, configure its working .local address or
+   http://192.168.0.4:8000/v1 and opt in to
    HTTP. Confirm an installed model responds. Disable HTTP opt-in: Test is disabled.
-   Check a non-local HTTP host/IP is rejected. Use HTTPS if .local is unavailable.
+   Check other RFC1918 LAN IPs pass validation only with consent. Public HTTP host/IPs
+   and cloud-provider HTTP URLs must remain rejected. Disabling consent blocks both
+   model-list and chat requests before transmission.
 6. Forget A with confirmation: B remains. Cancel forget: unchanged. Check credentials
    do not appear in Logcat, CSV, .ridelab or Android backup. Keystore tests need device execution.
 7. During an active trainer/HR ride, open settings, test a connection, close, background

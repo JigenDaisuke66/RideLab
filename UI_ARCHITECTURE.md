@@ -69,6 +69,14 @@ tools. Instructions live in assets/ai_skills; native tool protocols and budgets 
 in ai, never in Compose. Saved credentials are reused without passing them into the
 analysis renderer. See AI_ANALYSIS.md for disclosure, data dictionary and verification.
 
+Analysis now defaults to the COMPATIBLE enum mode. AiCompatibilitySummary performs
+paged full-history reads via RideHistorySummaryProvider through the existing data adapter and reuses AiRideMetrics;
+AiAnalysisEngine then uses startPlain on the same model adapter for one ordinary
+request. Compose only renders mode/scope/evidence and forwards selection. The TOOLS
+mode and its guarded model-directed queries remain intact. No second Room owner,
+network module, service state or persistence mechanism is introduced. Mode choice
+is ViewModel presentation state; it never triggers reads/uploads by itself.
+
 Home/History/Settings companion polish keeps screen/action contracts intact. Home puts
 device readiness before Start and uses compact profile values. HistoryBackupControls
 is composed exactly once in toolbar actions (including detail mode) so document-picker

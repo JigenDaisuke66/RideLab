@@ -3,6 +3,7 @@ package com.isaac.ridelab.ui.ai
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -98,6 +99,14 @@ internal fun AiSettingsCard(ui: AiSettingsUiState, edit: (AiSettingsAction) -> U
                 if (result.problem != null) result.httpStatus?.let {
                     Text(stringResource(R.string.ai_http_status, it), style = MaterialTheme.typography.bodySmall)
                 }
+                if (result.models.isNotEmpty()) Text(stringResource(R.string.ai_models_found,
+                    result.models.take(20).joinToString(", ")), style = MaterialTheme.typography.bodySmall)
+                result.reply?.let { reply ->
+                    Text(stringResource(R.string.ai_probe_reply), style = MaterialTheme.typography.labelLarge)
+                    SelectionContainer { Text(reply, style = MaterialTheme.typography.bodyMedium) }
+                }
+                result.diagnostic?.let { Text(stringResource(R.string.ai_error_detail, it),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             OutlinedButton(onClick = { test(prompt) }, enabled = enabled && ui.configuration.problem() == null,
                 modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.ai_test)) }
@@ -162,4 +171,11 @@ internal fun problemTitle(problem: AiProblem?): Int = when (problem) {
     AiProblem.RATE_LIMIT -> R.string.ai_error_rate
     AiProblem.HTTP -> R.string.ai_error_http
     AiProblem.RESPONSE -> R.string.ai_error_response
+    AiProblem.CLEARTEXT -> R.string.ai_error_cleartext
+    AiProblem.CONNECTION_REFUSED -> R.string.ai_error_refused
+    AiProblem.MODEL_NOT_FOUND -> R.string.ai_error_model_missing
+    AiProblem.JSON -> R.string.ai_error_json
+    AiProblem.OUTPUT_LIMIT -> R.string.ai_error_output_limit
+    AiProblem.EMPTY_RESPONSE -> R.string.ai_error_empty
+    AiProblem.REASONING_ONLY -> R.string.ai_error_reasoning_only
 }

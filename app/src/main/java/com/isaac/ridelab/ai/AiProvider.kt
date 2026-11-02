@@ -1,7 +1,5 @@
 package com.isaac.ridelab.ai
 
-import java.net.URI
-
 enum class AiProtocol { CHAT_COMPLETIONS, ANTHROPIC_MESSAGES, GEMINI }
 
 enum class KimiRegion(val baseUrl: String) {
@@ -44,16 +42,13 @@ data class AiPreferences(
     fun configuration(provider: AiProvider = selected) = configurations[provider] ?: AiConfiguration(provider)
 }
 
-enum class AiProblem { URL, LOCAL_HTTP, MODEL, KEY, STORAGE, NETWORK, TIMEOUT, AUTH, RATE_LIMIT, HTTP, RESPONSE }
+enum class AiProblem { URL, LOCAL_HTTP, MODEL, KEY, STORAGE, NETWORK, TIMEOUT, AUTH, RATE_LIMIT, HTTP, RESPONSE,
+    CLEARTEXT, CONNECTION_REFUSED, MODEL_NOT_FOUND, JSON, OUTPUT_LIMIT, EMPTY_RESPONSE, REASONING_ONLY }
 
-/** HTTP exceptions must match network_security_config; cloud providers always require HTTPS. */
+/** Cloud providers require HTTPS; local HTTP is restricted and explicitly authorized. */
 fun AiConfiguration.problem(): AiProblem? {
-    val uri = try { URI(baseUrl.trim()) } catch (_: Exception) { return AiProblem.URL }
-    if (uri.scheme !in listOf("https", "http") || uri.host.isNullOrBlank() || uri.rawUserInfo != null ||
-        uri.rawQuery != null || uri.rawFragment != null || uri.port !in -1..65535 || uri.port == 0 ||
-        uri.rawPath.orEmpty().contains('%') || uri.path.orEmpty().split('/').any { it == "." || it == ".." }) return AiProblem.URL
-    if (uri.scheme == "http" && (!provider.permitsLocalHttp || !allowLocalHttp || !isLocalHttpHost(uri.host)))
-        return AiProblem.LOCAL_HTTP
+    AiEndpointPolicy.problem(AiEndpointPolicy.baseUrl(baseUrl).trim(),
+        provider.permitsLocalHttp && allowLocalHttp)?.let { return it }
     if (model.isBlank() || model.length > 200 || model.any { it.isWhitespace() || it.isISOControl() } ||
         model.contains("..") || model.any { it !in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.:/@" }) return AiProblem.MODEL
     if ((provider.requiresKey && apiKey.isBlank()) || apiKey.length > 8192 ||
@@ -61,10 +56,8 @@ fun AiConfiguration.problem(): AiProblem? {
     return null
 }
 
-private fun isLocalHttpHost(host: String): Boolean = host.lowercase() in setOf("localhost", "127.0.0.1", "10.0.2.2") ||
-    (host.lowercase().endsWith(".local") && host.length > 6)
-
-data class AiProbeResult(val problem: AiProblem? = null, val httpStatus: Int? = null)
+data class AiProbeResult(val problem: AiProblem? = null, val httpStatus: Int? = null,
+    val reply: String? = null, val models: List<String> = emptyList(), val diagnostic: String? = null)
 
 interface AiSettingsStore {
     suspend fun read(): AiPreferences

@@ -15,7 +15,7 @@ class AiHttpTransportTest {
         start()
     }
     private fun request(server: HttpServer) = AiWireRequest("http://127.0.0.1:${server.address.port}/v1/chat/completions",
-        mapOf("Content-Type" to "application/json"), "{}")
+        mapOf("Content-Type" to "application/json"), "{}", allowLocalHttp = true)
     private fun HttpExchange.reply(body: String) {
         val bytes = body.toByteArray(); sendResponseHeaders(200, bytes.size.toLong()); responseBody.write(bytes)
     }
@@ -23,6 +23,20 @@ class AiHttpTransportTest {
         assertEquals(30_000, AiHttpTimeouts().readMillis)
         assertEquals(120_000, AiHttpTimeouts.ANALYSIS.readMillis)
         assertEquals(120_000L, AiHttpTimeouts.ANALYSIS.requestMillis)
+    }
+    @Test fun missingConsentAndNonLocalHttpAreRejectedBeforeConnecting() = runBlocking {
+        var calls = 0
+        val peer = server { calls++; it.reply("unexpected") }
+        try {
+            val request = AiWireRequest("http://127.0.0.1:${peer.address.port}/v1/chat/completions",
+                mapOf("Authorization" to "Bearer synthetic-key"), "{}")
+            assertEquals(AiProblem.LOCAL_HTTP, AiHttpTransport().execute(request).problem)
+            assertEquals(0, calls)
+            listOf("http://example.com/v1/chat/completions", "http://198.51.100.1:8001/v1/chat/completions").forEach {
+                assertEquals(AiProblem.LOCAL_HTTP, AiHttpTransport().execute(
+                    AiWireRequest(it, emptyMap(), "{}", allowLocalHttp = true)).problem)
+            }
+        } finally { peer.stop(0) }
     }
     @Test fun slowFirstByteCanOutliveProbeStyleBudgetButFitAnalysisBudget() = runBlocking {
         val peer = server { Thread.sleep(180); it.reply("{\"ok\":true}") }
@@ -58,8 +72,15 @@ class AiHttpTransportTest {
             it.responseHeaders.add("Content-Type", "text/event-stream"); it.sendResponseHeaders(200, 0)
             it.responseBody.write("data: {\"choices\":[{\"delta\":{\"content\":\"partial\"}}]}\n\n".toByteArray())
         }
-        try { assertEquals(AiProblem.RESPONSE, AiHttpTransport().execute(request(peer)).problem) }
+        try { assertEquals(AiProblem.JSON, AiHttpTransport().execute(request(peer)).problem) }
         finally { peer.stop(0) }
+    }
+    @Test fun transportFailuresKeepDistinctCauses() {
+        assertEquals(AiProblem.CLEARTEXT, AiHttpTransport.networkProblem(java.net.UnknownServiceException(
+            "CLEARTEXT communication not permitted by network security policy")))
+        assertEquals(AiProblem.CONNECTION_REFUSED, AiHttpTransport.networkProblem(java.net.ConnectException("ECONNREFUSED")))
+        assertEquals(AiProblem.TIMEOUT, AiHttpTransport.networkProblem(java.net.SocketTimeoutException("read timed out")))
+        assertEquals(AiProblem.NETWORK, AiHttpTransport.networkProblem(java.net.UnknownHostException("host.invalid")))
     }
     @Test fun keepalivesDoNotExtendTheOverallRequestDeadlineForever() = runBlocking {
         val peer = server {

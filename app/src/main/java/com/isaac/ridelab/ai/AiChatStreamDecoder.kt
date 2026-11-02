@@ -37,6 +37,7 @@ internal class AiChatStreamDecoder {
                 val delta = choice.optJSONObject("delta") ?: JSONObject()
                 (delta.opt("content") as? String)?.let { append(text, it) }
                 (delta.opt("reasoning_content") as? String)?.let { append(reasoning, it) }
+                if (delta.opt("reasoning_content") !is String) (delta.opt("reasoning") as? String)?.let { append(reasoning, it) }
                 val fragments = delta.optJSONArray("tool_calls") ?: JSONArray()
                 for (j in 0 until fragments.length()) {
                     val fragment = fragments.getJSONObject(j)

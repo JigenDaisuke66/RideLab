@@ -14,6 +14,31 @@ import org.junit.Test
 class AiAnalysisUiTest {
     @get:Rule val compose = createComposeRule()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+    @Test fun compatibilityModeAndScopeAreVisibleAndSwitchingDoesNotStartAnalysis() {
+        var requests = 0
+        var selection: com.isaac.ridelab.ai.analysis.AiAnalysisMode? = null
+        compose.setContent { RideLabTheme {
+            AiAnalysisScreen(AiAnalysisUiState(question = "q"), {}, {}, { requests++ }, {}, {}, {}, mode = { selection = it })
+        } }
+        compose.onNodeWithText(context.getString(R.string.ai_mode_compatible)).assertIsSelected()
+        compose.onNodeWithText(context.getString(R.string.ai_compatible_scope)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.ai_mode_tools)).performClick()
+        compose.runOnIdle {
+            assertEquals(com.isaac.ridelab.ai.analysis.AiAnalysisMode.TOOLS, selection)
+            assertEquals(0, requests)
+        }
+    }
+    @Test fun completedSummaryShowsActualCountsWithoutStartingAnotherRequest() {
+        var requests = 0
+        val answer = com.isaac.ridelab.ai.analysis.AiAnalysisAnswer("Synthetic report", emptyList(),
+            com.isaac.ridelab.ai.analysis.AiTokenUsage(), 1,
+            com.isaac.ridelab.ai.analysis.AiSummaryBasis(130, 12, 2, null, null))
+        compose.setContent { RideLabTheme {
+            AiAnalysisScreen(AiAnalysisUiState(answer = answer), {}, {}, { requests++ }, {}, {}, {})
+        } }
+        compose.onNodeWithText(context.getString(R.string.ai_history_basis, 130, 12, 2)).performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { assertEquals(0, requests) }
+    }
     @Test fun bottomNavigationSelectsAiOnceAndReflectsSelection() {
         val selections = mutableListOf<Destination>()
         compose.setContent { RideLabTheme { AppNavigationBar(Destination.AI, selections::add) } }

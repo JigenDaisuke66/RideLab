@@ -71,7 +71,7 @@ class AiAnalysisWireTest {
         try { wire(AiProvider.OPENAI).parse(200, """{"choices":[{"finish_reason":"length","message":{"content":"partial"}}]}"""); fail()
         } catch (error: AiAnalysisException) { assertEquals(AiAnalysisError.OUTPUT_LIMIT, error.reason) }
         try { wire(AiProvider.GEMINI).parse(200, "not json"); fail()
-        } catch (error: AiAnalysisException) { assertEquals(AiProblem.RESPONSE, error.apiProblem) }
+        } catch (error: AiAnalysisException) { assertEquals(AiProblem.JSON, error.apiProblem) }
     }
     @Test fun requestsAreBoundedAndNoCredentialsEnterMessageBody() {
         for (provider in listOf(AiProvider.OPENAI, AiProvider.ANTHROPIC, AiProvider.GEMINI)) {

@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
-    <!-- Explicit local-AI opt-in is ALSO required by AiConfiguration.problem(). -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain>localhost</domain>
-        <domain>127.0.0.1</domain>
-        <domain>10.0.2.2</domain>
-        <domain includeSubdomains="true">local</domain>
-    </domain-config>
+    <!-- The user authorized application-level cleartext configuration if needed for arbitrary
+         RFC1918 LAN IPv4 endpoints. Android cannot express subnet ranges in domain-config.
+         This platform opt-in is broader than the application policy: AiEndpointPolicy and
+         AiHttpTransport enforce private IPv4/loopback, explicit local HTTP consent and
+         no redirects before sending. .local names must resolve to private/loopback addresses.
+         Cloud providers remain HTTPS-only. All new networking must reuse the same gate. -->
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

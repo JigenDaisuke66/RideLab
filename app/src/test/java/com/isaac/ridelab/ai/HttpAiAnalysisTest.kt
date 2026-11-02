@@ -52,7 +52,8 @@ class HttpAiAnalysisTest {
                 object : AiModelConversation {
                     override suspend fun next(allowTools: Boolean): AiAnalysisReply {
                         val native = wire.request(allowTools)
-                        val local = AiWireRequest("http://127.0.0.1:${server.address.port}/v1/chat/completions", native.headers, native.body)
+                        val local = AiWireRequest("http://127.0.0.1:${server.address.port}/v1/chat/completions",
+                            native.headers, native.body, allowLocalHttp = true)
                         val response = AiHttpTransport(AiHttpTimeouts(readMillis = 2000, requestMillis = 3000)).execute(local)
                         assertNull(response.problem)
                         return wire.parse(response.status!!, response.body)

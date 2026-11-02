@@ -31,6 +31,7 @@ class AiAnalysisControllerTest {
             }
         }
         val controller = AiAnalysisController(this, Store(), AiAnalysisEngine(model, data), { loaded = it; "selected skill only" })
+        controller.mode(AiAnalysisMode.TOOLS)
         assertEquals(0, calls)
         controller.skill(AiAnalysisSkill.FTP_EVIDENCE); controller.question("Analyze FTP")
         controller.analyze("zh-CN"); controller.analyze("zh-CN"); yield()
@@ -56,6 +57,7 @@ class AiAnalysisControllerTest {
             override fun addResults(reply: AiAnalysisReply, results: List<String>) = Unit
         } }
         val controller = AiAnalysisController(this, Store(), AiAnalysisEngine(model, data), { "skill" })
+        controller.mode(AiAnalysisMode.TOOLS)
         controller.question("question"); controller.analyze("en"); started.await()
         controller.cancel(); controller.analyze("en"); yield()
         assertFalse(controller.state.value.running)
@@ -72,6 +74,7 @@ class AiAnalysisControllerTest {
             override fun addResults(reply: AiAnalysisReply, results: List<String>) = Unit
         } }
         val controller = AiAnalysisController(this, Store(), AiAnalysisEngine(model, data), { "skill" })
+        controller.mode(AiAnalysisMode.TOOLS)
         controller.question("q"); controller.analyze("zh-CN"); yield()
         assertEquals(2, requests); assertEquals(2, controller.state.value.requestIndex)
         assertEquals(1, controller.state.value.traces.size)
@@ -85,9 +88,24 @@ class AiAnalysisControllerTest {
             override fun addResults(reply: AiAnalysisReply, results: List<String>) = Unit
         } }
         val controller = AiAnalysisController(this, Store(), AiAnalysisEngine(model, data), { "skill" }, timeoutMillis = 30)
+        controller.mode(AiAnalysisMode.TOOLS)
         controller.question("q"); controller.analyze("en")
         delay(100)
         assertEquals(1, requests); assertEquals(AiAnalysisError.TIME_LIMIT, controller.state.value.error)
         assertNull(controller.state.value.apiProblem); assertFalse(controller.state.value.running)
+    }
+    @Test fun compatibilityIsDefaultAndModeSwitchingNeverReadsOrSends() = runBlocking {
+        var reads = 0
+        val source = object : AiRideData {
+            override suspend fun query(sql: String): String { reads++; error("Must not read") }
+            override suspend fun metrics(sessionId: Long): String { reads++; error("Must not read") }
+        }
+        val model = AiAnalysisModel { _, _, _ -> error("Must not send") }
+        val controller = AiAnalysisController(this, Store(), AiAnalysisEngine(model, source), { "skill" })
+        assertEquals(AiAnalysisMode.COMPATIBLE, controller.state.value.mode)
+        controller.question("question")
+        controller.mode(AiAnalysisMode.TOOLS); controller.mode(AiAnalysisMode.COMPATIBLE)
+        assertEquals("question", controller.state.value.question)
+        assertEquals(0, reads)
     }
 }

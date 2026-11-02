@@ -10,6 +10,7 @@ import java.time.ZoneId
 data class AiAnalysisUiState(
     val question: String = "",
     val skill: AiAnalysisSkill = AiAnalysisSkill.RIDE_REVIEW,
+    val mode: AiAnalysisMode = AiAnalysisMode.COMPATIBLE,
     val running: Boolean = false,
     val cancelling: Boolean = false,
     val provider: AiProvider? = null,
@@ -18,6 +19,7 @@ data class AiAnalysisUiState(
     val error: AiAnalysisError? = null,
     val apiProblem: AiProblem? = null,
     val httpStatus: Int? = null,
+    val diagnostic: String? = null,
     val requestIndex: Int = 0,
     val generatingReport: Boolean = false,
     val elapsedSeconds: Long = 0,
@@ -37,12 +39,16 @@ class AiAnalysisController(
     private var job: Job? = null
     fun question(value: String) { if (!state.value.running) mutable.value = state.value.copy(question = value.take(2000)) }
     fun skill(value: AiAnalysisSkill) { if (!state.value.running) mutable.value = state.value.copy(skill = value) }
+    fun mode(value: AiAnalysisMode) {
+        if (!state.value.running && state.value.mode != value) mutable.value = state.value.copy(mode = value,
+            answer = null, traces = emptyList(), error = null, apiProblem = null, httpStatus = null, diagnostic = null)
+    }
 
     fun analyze(languageTag: String) {
         val current = state.value
         if (current.running || job?.isCompleted == false || current.question.isBlank()) return
         mutable.value = current.copy(running = true, cancelling = false, answer = null, traces = emptyList(),
-            error = null, apiProblem = null, httpStatus = null, provider = null,
+            error = null, apiProblem = null, httpStatus = null, diagnostic = null, provider = null,
             requestIndex = 0, generatingReport = false, elapsedSeconds = 0)
         job = scope.launch {
             val start = System.nanoTime()
@@ -61,11 +67,19 @@ class AiAnalysisController(
                     throw AiAnalysisException(AiAnalysisError.CONFIGURATION, configuration.problem())
                 mutable.value = mutable.value.copy(provider = configuration.provider)
                 val answer = withTimeout(timeoutMillis) {
-                    val instructions = AiAnalysisInstructions.system(skillText(current.skill), languageTag, now(), zone())
-                    engine.analyze(configuration, instructions, current.question.trim(), onRequest = { index, allowTools ->
+                    val time = now()
+                    val timezone = zone()
+                    val skill = skillText(current.skill)
+                    val request: (Int, Boolean) -> Unit = { index, allowTools ->
                         mutable.value = mutable.value.copy(requestIndex = index, generatingReport = !allowTools)
-                    }) { traces ->
-                        mutable.value = mutable.value.copy(traces = traces)
+                    }
+                    val progress: (List<AiToolTrace>) -> Unit = { traces -> mutable.value = mutable.value.copy(traces = traces) }
+                    when (current.mode) {
+                        AiAnalysisMode.COMPATIBLE -> engine.analyzeCompatible(configuration,
+                            AiAnalysisInstructions.compatible(skill, languageTag, time, timezone), current.question.trim(),
+                            time, timezone, request, progress)
+                        AiAnalysisMode.TOOLS -> engine.analyze(configuration,
+                            AiAnalysisInstructions.system(skill, languageTag, time, timezone), current.question.trim(), request, progress)
                     }
                 }
                 mutable.value = mutable.value.copy(answer = answer)
@@ -75,7 +89,8 @@ class AiAnalysisController(
                 mutable.value = mutable.value.copy(error = AiAnalysisError.CANCELLED)
                 throw error
             } catch (error: AiAnalysisException) {
-                mutable.value = mutable.value.copy(error = error.reason, apiProblem = error.apiProblem, httpStatus = error.httpStatus)
+                mutable.value = mutable.value.copy(error = error.reason, apiProblem = error.apiProblem,
+                    httpStatus = error.httpStatus, diagnostic = error.diagnostic)
             } catch (_: Exception) {
                 mutable.value = mutable.value.copy(error = AiAnalysisError.INTERNAL)
             } finally { ticker.cancel(); mutable.value = mutable.value.copy(running = false, cancelling = false) }

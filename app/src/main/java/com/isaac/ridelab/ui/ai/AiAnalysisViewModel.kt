@@ -19,6 +19,7 @@ class AiAnalysisViewModel(application: Application) : AndroidViewModel(applicati
     val state = controller.state
     fun question(value: String) = controller.question(value)
     fun skill(value: AiAnalysisSkill) = controller.skill(value)
+    fun mode(value: com.isaac.ridelab.ai.analysis.AiAnalysisMode) = controller.mode(value)
     fun analyze(languageTag: String) = controller.analyze(languageTag)
     fun cancel() = controller.cancel()
     fun clear() = controller.clear()

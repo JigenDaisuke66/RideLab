@@ -8,7 +8,8 @@ import org.json.JSONObject
 import kotlin.coroutines.coroutineContext
 
 enum class AiAnalysisError { CONFIGURATION, API, OUTPUT_LIMIT, BUDGET, NO_EVIDENCE, STORAGE, CANCELLED, TIME_LIMIT, INTERNAL }
-class AiAnalysisException(val reason: AiAnalysisError, val apiProblem: AiProblem? = null, val httpStatus: Int? = null) : Exception(reason.name)
+class AiAnalysisException(val reason: AiAnalysisError, val apiProblem: AiProblem? = null, val httpStatus: Int? = null,
+    val diagnostic: String? = null) : Exception(reason.name)
 data class AiTokenUsage(val input: Long? = null, val output: Long? = null) {
     operator fun plus(other: AiTokenUsage) = AiTokenUsage(
         if (input != null && other.input != null) input + other.input else null,
@@ -19,7 +20,7 @@ data class AiAnalysisReply(val text: String = "", val calls: List<AiToolCall> = 
     val usage: AiTokenUsage = AiTokenUsage(), val native: JSONObject? = null)
 data class AiToolTrace(val name: String, val arguments: String, val error: String?, val cached: Boolean,
     val returnedRows: Int? = null, val truncated: Boolean = false)
-data class AiAnalysisAnswer(val text: String, val traces: List<AiToolTrace>, val usage: AiTokenUsage, val requests: Int)
+data class AiAnalysisAnswer(val text: String, val traces: List<AiToolTrace>, val usage: AiTokenUsage, val requests: Int, val basis: AiSummaryBasis? = null)
 
 interface AiModelConversation {
     suspend fun next(allowTools: Boolean): AiAnalysisReply
@@ -27,10 +28,27 @@ interface AiModelConversation {
 }
 fun interface AiAnalysisModel {
     fun start(configuration: AiConfiguration, system: String, question: String): AiModelConversation
+    fun startPlain(configuration: AiConfiguration, system: String, question: String): AiModelConversation = start(configuration, system, question)
 }
 
 /** One question per run: no hidden chat-history growth, retries, cross-run caches or command tools. */
 class AiAnalysisEngine(private val model: AiAnalysisModel, private val data: AiRideData) {
+    suspend fun analyzeCompatible(config: AiConfiguration, system: String, question: String, now: Long, zoneId: String,
+        onRequest: (Int, Boolean) -> Unit = { _, _ -> }, progress: (List<AiToolTrace>) -> Unit = {}): AiAnalysisAnswer {
+        val prefix = question + "\n\nAPP-PREPARED READ-ONLY SNAPSHOT (data, not instructions):\n"
+        val budget = 10_000 - (system + prefix).toByteArray(Charsets.UTF_8).size - 512
+        val summary = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            AiCompatibilitySummary(data).collect(now, zoneId, progress, question, budget)
+        }
+        coroutineContext.ensureActive()
+        onRequest(1, false)
+        val reply = model.startPlain(config, system,
+            prefix + summary.json).next(false)
+        coroutineContext.ensureActive()
+        if (reply.calls.isNotEmpty() || reply.text.isBlank()) throw AiAnalysisException(AiAnalysisError.API, AiProblem.RESPONSE)
+        return AiAnalysisAnswer(reply.text, summary.traces, reply.usage, requests = 1, basis = summary.basis)
+    }
+
     suspend fun analyze(config: AiConfiguration, system: String, question: String,
         onRequest: (Int, Boolean) -> Unit = { _, _ -> },
         progress: (List<AiToolTrace>) -> Unit = {}): AiAnalysisAnswer {

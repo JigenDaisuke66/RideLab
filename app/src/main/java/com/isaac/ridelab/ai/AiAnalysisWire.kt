@@ -5,7 +5,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** Native tool envelopes, preserving reasoning_content / thought signatures during tool replay. */
-internal class AiAnalysisWire(private val config: AiConfiguration, private val system: String, question: String) {
+internal class AiAnalysisWire(private val config: AiConfiguration, private val system: String, question: String,
+    private val toolsEnabled: Boolean = true) {
     private val messages = JSONArray()
     init {
         when (config.provider.protocol) {
@@ -24,11 +25,11 @@ internal class AiAnalysisWire(private val config: AiConfiguration, private val s
         when (config.provider.protocol) {
             AiProtocol.CHAT_COMPLETIONS -> {
                 body.put("messages", messages).put(if (config.provider == AiProvider.OPENAI) "max_completion_tokens" else "max_tokens", 2048)
-                if (allowTools) body.put("tools", tools(AiProtocol.CHAT_COMPLETIONS))
+                if (toolsEnabled && allowTools) body.put("tools", tools(AiProtocol.CHAT_COMPLETIONS))
                 if (config.provider == AiProvider.KIMI) {
                     body.put("stream", true).put("stream_options", JSONObject().put("include_usage", true))
                     // Keep tool definitions and complete assistant reasoning during final-turn replay.
-                    body.put("tools", tools(AiProtocol.CHAT_COMPLETIONS)).put("tool_choice", if (allowTools) "auto" else "none")
+                    if (toolsEnabled) body.put("tools", tools(AiProtocol.CHAT_COMPLETIONS)).put("tool_choice", if (allowTools) "auto" else "none")
                     if (config.model.lowercase(java.util.Locale.ROOT).startsWith("kimi-k3")) {
                         // K3 always thinks; its documented default is max. Bounded data analysis uses low.
                         body.remove("max_tokens")
@@ -38,22 +39,22 @@ internal class AiAnalysisWire(private val config: AiConfiguration, private val s
             }
             AiProtocol.ANTHROPIC_MESSAGES -> {
                 body.put("messages", messages).put("system", system).put("max_tokens", 2048)
-                if (allowTools) body.put("tools", tools(AiProtocol.ANTHROPIC_MESSAGES))
+                if (toolsEnabled && allowTools) body.put("tools", tools(AiProtocol.ANTHROPIC_MESSAGES))
             }
             AiProtocol.GEMINI -> {
                 body.put("contents", messages).put("systemInstruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", system))))
                 body.put("generationConfig", JSONObject().put("maxOutputTokens", 2048))
-                if (allowTools) body.put("tools", JSONArray().put(JSONObject().put("functionDeclarations", tools(AiProtocol.GEMINI))))
+                if (toolsEnabled && allowTools) body.put("tools", JSONArray().put(JSONObject().put("functionDeclarations", tools(AiProtocol.GEMINI))))
             }
         }
         if (body.toString().length > 60_000) throw AiAnalysisException(AiAnalysisError.BUDGET)
         return AiWireRequest(base.url, if (config.provider == AiProvider.KIMI)
-            base.headers + ("Accept" to "text/event-stream") else base.headers, body.toString())
+            base.headers + ("Accept" to "text/event-stream") else base.headers, body.toString(), base.allowLocalHttp)
     }
 
     fun parse(status: Int, body: String): AiAnalysisReply {
         if (status !in 200..299) {
-            val failure = AiWireProtocol.response(config.provider.protocol, status, "")
+            val failure = AiWireProtocol.response(config.provider.protocol, status, body)
             throw AiAnalysisException(AiAnalysisError.API, failure.problem, status)
         }
         try {
@@ -111,7 +112,8 @@ internal class AiAnalysisWire(private val config: AiConfiguration, private val s
             check(calls.size <= 6)
             return AiAnalysisReply(text.toString(), calls, usage, native)
         } catch (error: AiAnalysisException) { throw error
-        } catch (_: Exception) { throw AiAnalysisException(AiAnalysisError.API, AiProblem.RESPONSE, status) }
+        } catch (error: Exception) { throw AiAnalysisException(AiAnalysisError.API, AiProblem.JSON, status,
+            diagnostic = error.javaClass.simpleName) }
     }
 
     fun addResults(reply: AiAnalysisReply, results: List<String>) {
@@ -159,10 +161,19 @@ enum class AiRequestPhase { STARTED, FINISHED, CANCELLED }
 data class AiRequestDiagnostic(val provider: AiProvider, val request: Int, val phase: AiRequestPhase,
     val elapsedMillis: Long = 0, val httpStatus: Int? = null, val problem: AiProblem? = null)
 
-class HttpAiAnalysisModel(private val diagnostic: (AiRequestDiagnostic) -> Unit = {}) : AiAnalysisModel {
+class HttpAiAnalysisModel(private val toolsEnabled: Boolean = true,
+    private val diagnostic: (AiRequestDiagnostic) -> Unit = {}) : AiAnalysisModel {
     override fun start(configuration: AiConfiguration, system: String, question: String): AiModelConversation {
+        return conversation(configuration, system, question, toolsEnabled)
+    }
+
+    override fun startPlain(configuration: AiConfiguration, system: String, question: String): AiModelConversation {
+        return conversation(configuration, system, question, enableTools = false)
+    }
+
+    private fun conversation(configuration: AiConfiguration, system: String, question: String, enableTools: Boolean): AiModelConversation {
         configuration.problem()?.let { throw AiAnalysisException(AiAnalysisError.CONFIGURATION, it) }
-        val wire = AiAnalysisWire(configuration, system, question)
+        val wire = AiAnalysisWire(configuration, system, question, enableTools)
         return object : AiModelConversation {
             private var request = 0
             override suspend fun next(allowTools: Boolean): AiAnalysisReply {
@@ -173,7 +184,7 @@ class HttpAiAnalysisModel(private val diagnostic: (AiRequestDiagnostic) -> Unit 
                     val response = AiHttpTransport(AiHttpTimeouts.ANALYSIS).execute(wire.request(allowTools))
                     diagnostic(AiRequestDiagnostic(configuration.provider, index, AiRequestPhase.FINISHED,
                         (System.nanoTime() - start) / 1_000_000, response.status, response.problem))
-                    response.problem?.let { throw AiAnalysisException(AiAnalysisError.API, it, response.status) }
+                    response.problem?.let { throw AiAnalysisException(AiAnalysisError.API, it, response.status, response.diagnostic) }
                     return wire.parse(response.status ?: 0, response.body)
                 } catch (error: kotlinx.coroutines.CancellationException) {
                     diagnostic(AiRequestDiagnostic(configuration.provider, index, AiRequestPhase.CANCELLED,

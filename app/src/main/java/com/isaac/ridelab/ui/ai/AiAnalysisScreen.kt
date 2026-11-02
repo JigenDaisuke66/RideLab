@@ -25,14 +25,14 @@ internal fun AiAnalysisRoute(model: AiAnalysisViewModel, close: () -> Unit,
     val ui by model.state.collectAsState()
     val languageTag = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].toLanguageTag()
     AiAnalysisScreen(ui, model::question, model::skill, { model.analyze(languageTag) }, model::cancel,
-        model::clear, close, settings)
+        model::clear, close, settings, model::mode)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AiAnalysisScreen(ui: AiAnalysisUiState, question: (String) -> Unit, skill: (AiAnalysisSkill) -> Unit,
     analyze: () -> Unit, cancel: () -> Unit, clear: () -> Unit, close: () -> Unit,
-    settings: @Composable () -> Unit = {}) {
+    settings: @Composable () -> Unit = {}, mode: (AiAnalysisMode) -> Unit = {}) {
     Scaffold(modifier = Modifier.fillMaxSize().imePadding(), topBar = {
         TopAppBar(windowInsets = WindowInsets(0, 0, 0, 0), title = { Text(stringResource(R.string.ai_analysis_title)) }, navigationIcon = {
             IconButton(onClick = close) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.ai_close)) }
@@ -41,7 +41,8 @@ internal fun AiAnalysisScreen(ui: AiAnalysisUiState, question: (String) -> Unit,
         Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             settings()
-            Text(stringResource(R.string.ai_analysis_privacy), style = MaterialTheme.typography.bodySmall,
+            AnalysisModePicker(ui.mode, !ui.running, mode)
+            Text(stringResource(if (ui.mode == AiAnalysisMode.COMPATIBLE) R.string.ai_compatible_privacy else R.string.ai_analysis_privacy), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             SkillPicker(ui.skill, !ui.running, skill)
             Text(stringResource(skillDescription(ui.skill)), style = MaterialTheme.typography.bodySmall,
@@ -49,11 +50,13 @@ internal fun AiAnalysisScreen(ui: AiAnalysisUiState, question: (String) -> Unit,
             OutlinedTextField(ui.question, question, enabled = !ui.running, modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.ai_analysis_question)) },
                 placeholder = { Text(stringResource(R.string.ai_analysis_example)) }, minLines = 2, maxLines = 5)
-            Text(stringResource(R.string.ai_analysis_budget), style = MaterialTheme.typography.bodySmall,
+            Text(stringResource(if (ui.mode == AiAnalysisMode.COMPATIBLE) R.string.ai_compatible_budget else R.string.ai_analysis_budget), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (ui.running) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
                 Text(if (ui.cancelling) stringResource(R.string.ai_analysis_cancelling)
+                    else if (ui.mode == AiAnalysisMode.COMPATIBLE && ui.requestIndex == 0) stringResource(R.string.ai_compatible_running)
+                    else if (ui.mode == AiAnalysisMode.COMPATIBLE) stringResource(R.string.ai_compatible_report_wait, ui.elapsedSeconds)
                     else if (ui.requestIndex == 0) stringResource(R.string.ai_analysis_running)
                     else stringResource(if (ui.generatingReport) R.string.ai_analysis_report_wait else R.string.ai_analysis_model_wait,
                         ui.requestIndex, ui.elapsedSeconds))
@@ -71,8 +74,14 @@ internal fun AiAnalysisScreen(ui: AiAnalysisUiState, question: (String) -> Unit,
                     else stringResource(analysisError(error)), color = MaterialTheme.colorScheme.error)
                 ui.apiProblem?.takeIf { !requestTimedOut }?.let { Text(stringResource(problemTitle(it)), color = MaterialTheme.colorScheme.error) }
                 ui.httpStatus?.let { Text(stringResource(R.string.ai_http_status, it)) }
+                ui.diagnostic?.let { Text(stringResource(R.string.ai_error_detail, it),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             ui.answer?.let { answer ->
+                answer.basis?.let { basis ->
+                    Text(stringResource(R.string.ai_history_basis, basis.rides, basis.recent, basis.ftpChanges),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 RideLabCard(Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.ai_analysis_report), style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold)
@@ -85,11 +94,26 @@ internal fun AiAnalysisScreen(ui: AiAnalysisUiState, question: (String) -> Unit,
                     else stringResource(R.string.ai_analysis_tokens_unknown, answer.requests),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            if (ui.traces.isNotEmpty()) QueryTraces(ui.traces)
+            if (ui.traces.isNotEmpty()) QueryTraces(ui.traces, ui.mode)
             if (ui.answer != null || ui.error != null || ui.traces.isNotEmpty()) TextButton(onClick = clear, enabled = !ui.running) {
                 Text(stringResource(R.string.ai_analysis_clear))
             }
         }
+    }
+}
+
+@Composable
+private fun AnalysisModePicker(selected: AiAnalysisMode, enabled: Boolean, select: (AiAnalysisMode) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.ai_analysis_mode), style = MaterialTheme.typography.labelLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            AiAnalysisMode.entries.forEach { option ->
+                FilterChip(selected == option, { select(option) }, enabled = enabled, modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(if (option == AiAnalysisMode.COMPATIBLE) R.string.ai_mode_compatible else R.string.ai_mode_tools)) })
+            }
+        }
+        if (selected == AiAnalysisMode.COMPATIBLE) Text(stringResource(R.string.ai_compatible_scope),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -108,10 +132,11 @@ private fun SkillPicker(selected: AiAnalysisSkill, enabled: Boolean, select: (Ai
 }
 
 @Composable
-private fun QueryTraces(traces: List<AiToolTrace>) {
+private fun QueryTraces(traces: List<AiToolTrace>, mode: AiAnalysisMode) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth().animateContentSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        TextButton(onClick = { expanded = !expanded }) { Text(stringResource(R.string.ai_analysis_queries, traces.size)) }
+        TextButton(onClick = { expanded = !expanded }) { Text(stringResource(
+            if (mode == AiAnalysisMode.COMPATIBLE) R.string.ai_compatible_evidence else R.string.ai_analysis_queries, traces.size)) }
         if (expanded) traces.forEachIndexed { index, trace ->
             RideLabCard(Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.ai_analysis_query_number, index + 1,

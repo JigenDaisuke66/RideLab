@@ -37,4 +37,39 @@ class AiSettingsUiTest {
         compose.onNodeWithText(context.getString(R.string.ai_save)).assertIsNotEnabled()
         compose.onNodeWithText(context.getString(R.string.ai_test)).performScrollTo().assertIsNotEnabled()
     }
+
+    @Test fun requestedLanServerEnablesExplicitTestAndSave() {
+        var tests = 0
+        var saves = 0
+        compose.setContent { RideLabTheme {
+            AiSettingsCard(AiSettingsUiState(AiConfiguration(AiProvider.CUSTOM,
+                "http://192.168.0.4:8001/v1", "qwen-local", allowLocalHttp = true), AiSettingsOperation.IDLE),
+                {}, { saves++ }, { tests++ }, {})
+        } }
+        compose.onNodeWithText(context.getString(R.string.ai_title)).performClick()
+        compose.runOnIdle { assertEquals(0, tests); assertEquals(0, saves) }
+        compose.onNodeWithText(context.getString(R.string.ai_save)).assertIsEnabled().performClick()
+        compose.onNodeWithText(context.getString(R.string.ai_test)).performScrollTo().assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, tests); assertEquals(1, saves) }
+    }
+
+    @Test fun requestedLanServerWithoutConsentKeepsActionsDisabled() {
+        compose.setContent { RideLabTheme {
+            AiSettingsCard(AiSettingsUiState(AiConfiguration(AiProvider.CUSTOM,
+                "http://192.168.0.4:8001/v1", "qwen-local"), AiSettingsOperation.IDLE), {}, {}, {}, {})
+        } }
+        compose.onNodeWithText(context.getString(R.string.ai_title)).performClick()
+        compose.onNodeWithText(context.getString(R.string.ai_save)).assertIsNotEnabled()
+        compose.onNodeWithText(context.getString(R.string.ai_test)).performScrollTo().assertIsNotEnabled()
+    }
+    @Test fun successfulTestShowsActualAssistantReplyAndExactServerModel() {
+        compose.setContent { RideLabTheme {
+            AiSettingsCard(AiSettingsUiState(AiConfiguration(AiProvider.CUSTOM,
+                "http://192.168.0.4:8001/v1", "qwen-local", allowLocalHttp = true), AiSettingsOperation.IDLE,
+                result = AiProbeResult(reply = "OK", models = listOf("qwen-local"))), {}, {}, {}, {})
+        } }
+        compose.onNodeWithText(context.getString(R.string.ai_title)).performClick()
+        compose.onNodeWithText("OK").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.ai_models_found, "qwen-local")).performScrollTo().assertIsDisplayed()
+    }
 }

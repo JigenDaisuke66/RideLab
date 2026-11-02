@@ -4,7 +4,159 @@ Implemented as an optional, user-started feature on top of AI_SERVICES.md. Physi
 provider/device verification remains pending. This is an in-app analyst, not an
 exported MCP/HTTP server and not an AI permission to operate Android or the trainer.
 
+The custom vLLM compatibility correction adds bounded SSE reasoning-field support,
+private IPv4 HTTP validation at the actual network boundary and distinct transport/
+model/JSON errors without changing tools, SQL, analytics or automatic behavior.
+See AI_COMPATIBLE_API_VERIFICATION.md for current build and device verification.
+
 ## Using it
+
+### Compatible analysis: full-history local summary (2026-10-30)
+
+Default Compatible mode performs local read-only statistics first, then exactly one
+ordinary model request using the selected saved provider. No model tools, SQL,
+retries, automatic cloud fallback, raw per-second samples, names, device addresses
+or keys enter its summary. Opening the page/restoring configuration never uploads.
+Tools mode below remains available and unchanged. Seven UI languages are preserved.
+
+#### Data flow and existing calculators
+
+AiAnalysisEngine -> RideHistorySummaryProvider -> existing AiRideDataRepository.
+The provider reads a completed-session high-water ID, pages metadata in batches of
+50 using guarded SELECT, and calls existing ride_metrics once per session. That
+adapter reads one ride at a time through the existing RoomRideRepository and uses
+AiRideMetrics / TrainingAnalytics / PowerAnalysisCalculator / RideInsightsCalculator /
+CyclingEnergyCalculator. No DAO, schema, settings, recording or BLE changes.
+The work runs on Dispatchers.Default; repository I/O and cancellation remain in
+existing adapters. No second database or persisted analytics cache is introduced.
+
+Only COMPLETED sessions starting by the analysis time contribute. ACTIVE/ABORTED
+are excluded. Late finishing/deleted/restored data during analysis is not an atomic
+snapshot; the high-water ID bounds the scan, and each read retains existing limits.
+Truncated or failed metadata aborts before networking rather than claiming complete
+history. Individual unavailable metrics remain explicitly partial: ride counts/time
+still count and analysis_scope.metric_failures discloses the affected count.
+The existing 36,000-samples-per-ride metrics ceiling remains; no partial raw ride is
+passed to a calculator. Overall analysis still has the existing five-minute deadline.
+Very large histories may need more local preparation than that budget permits.
+
+#### Statistics and their denominators
+
+- Lifetime count, active duration, average ride duration, first/last start times.
+- Sensor means are weighted by NON-NULL sample counts, not means of ride means.
+  AiRideMetrics now includes those counts and existing coverage interval millis.
+  Wire metrics retain the existing three-decimal precision. Real zero remains valid.
+- Maximum trainer power; mean HR; duration-weighted power/HR interval coverage.
+- IF is the arithmetic mean of calculable ride IFs, with a valid-ride count.
+  TSS, work, estimated kcal and recorded distance are sums of available calculator
+  outputs, each accompanied by its valid-ride count. They may be incomplete totals.
+- Distance is existing valid-speed-interval integration, not fabricated route distance.
+  No ascent fields or HR-zone calculator/threshold profile exist; these are unsupported.
+- Seven power-zone durations and percentages use each ride's historical FTP and the
+  existing calculator. Percentages use classified power duration, not whole ride time.
+  Missing FTP/power cannot produce zones. Monthly/yearly/period totals retain zone time.
+- No max-HR estimate, fat-burning score, eFTP, new analytics formula or new zones.
+
+FTP history uses ride-start snapshots only. Current settings remain in user_profile,
+never fill a missing ride snapshot and never rewrite history. Sorted known snapshot
+changes are compact [first_observed_epoch_ms, watts] pairs; repeated equal known
+values collapse even across missing rides. This is a sparse observation series,
+NOT an edit/test log or evidence that FTP remained constant between observations.
+Missing/valid ride counts and coverage are explicit. last_valid_observation_ms is
+known; last_setting_update remains null because the app has no such audit log or
+source metadata. Do not infer FTP improvements from a single ordinary ride.
+
+#### Selection, trends and wire structure
+
+Every analysis retains lifetime and FTP history. Independent 7/28/90-day views include
+today and the previous N-1 local dates, bounded by now. Monthly/yearly buckets use
+ride START in the device timezone; rides crossing midnight are assigned once by start.
+Current/boundary periods may be partial. The overlapping rolling views MUST NOT be
+added together. Empty unrecorded periods do not prove rest; no rides outside RideLab
+can be inferred. All monthly rows sum to lifetime totals before compression.
+
+Simple local rules recognize ISO YYYY-MM-DD, latest ride, current year and common
+7/28/90-day phrases in supported languages. Recognized dates produce selected-period
+statistics and the latest matching ride detail. Other date records still contribute
+to those totals. Specialty FTP/power/HR terms set analysis_scope.focus. Unknown wording
+falls back explicitly to all_history; it does not invent a date interpretation. This
+is deliberately not an NLP parser/Agent and does not support every language phrasing
+or arbitrary date range. Default recent_rides contains the newest 12 COMPLETED rides;
+latest_ride always retains complete existing metrics even if recent detail is reduced.
+
+Wire sections (illustrative shape, not production fixture data):
+
+```json
+{
+  "analysis_scope": {"completed_rides": 0, "recent_details": 0, "raw_samples_included": false, "selection": "all_history"},
+  "user_profile": {"columns": ["ftpWatts", "bodyWeightKg"], "rows": [[null, null]]},
+  "lifetime_statistics": {"rides": 0, "duration_ms": 0, "avg_power_w": null},
+  "ftp_history": {"changes": [], "missing_rides": 0, "last_setting_update": null},
+  "monthly_trends": {"columns": [], "rows": []},
+  "yearly_trends": {"columns": [], "rows": []},
+  "recent_periods": {"columns": [], "rows": []},
+  "selected_period": {"rides": 0},
+  "selected_ride": null,
+  "recent_rides": [],
+  "latest_ride": null
+}
+```
+
+Actual statistics include denominators, valid counts, coverage and zones. Trends use
+columns/rows tables to avoid repeating field names. The UI shows actual completed,
+retained-recent and FTP-change counts after analysis; summary evidence includes date
+bounds, selected scope, compression and partial metrics information.
+
+#### Context budget
+
+No new dependency or remote tokenizer. The entire system prompt + question + summary
+is bounded using a deliberately conservative UTF-8 byte estimate, with 512 reserved
+for message framing, within 10,000 input units. Existing 2,048 output-token cap remains;
+there is no accumulated conversation. Byte counts overestimate common byte-based
+model tokenizers; this is NOT a measured token count for arbitrary custom templates.
+A 16K server retains additional headroom; smaller model limits can still reject input.
+
+Compression is deterministic and always yields valid JSON:
+1. Column/row trend encoding and compact recent-ride metric subsets.
+2. If needed, replace monthly detail with already independently aggregated yearly
+   totals (never averages of averages or arbitrary merged/truncated rows).
+3. Reduce oldest recent detail, retaining latest_ride and selected_ride.
+4. Lifetime and sparse known FTP changes are NEVER removed. If essentials still
+   exceed the budget, fail locally with BUDGET; no request or cloud fallback.
+
+Prompts restrict the model to supplied data, disallow invented FTP/records or revised
+calculator results, distinguish facts/estimates/inference, require reporting conflicts,
+and forbid equating IF with fat-burning efficiency or estimated max HR with a safe HR.
+Selected skills remain interpretive guidance; no tool-oriented wording grants access.
+
+#### Changed files for full-history increment
+
+- New ai/analysis/RideHistorySummaryProvider.kt (provider, additive totals, local rules).
+- ai/analysis/AiCompatibilitySummary.kt (integration, compression, typed display basis).
+- ai/analysis/AiAnalysisEngine.kt, AiAnalysisSkill.kt, AiRideMetrics.kt.
+- ui/ai/AiAnalysisScreen.kt and seven res/values*/strings.xml files.
+- New test/ai/RideHistorySummaryTest.kt; updated AiCompatibleAnalysisTest.kt,
+  HttpAiCompatibleAnalysisTest.kt; androidTest/AiAnalysisUiTest.kt.
+- AI_ANALYSIS.md, PROJECT.md, UI_ARCHITECTURE.md.
+
+No dependency, network transport, provider fallback, Room schema, BLE, service,
+recording, workout or analytics-calculator change. Prior uncommitted API corrections
+remain in the working tree and are separate from this increment.
+
+Verification: 98 focused AI/localization tests discovered; 97 passed, zero failures/errors, one opt-in real-endpoint test skipped. Debug application and Android UI-test source compilation passed. No APK/AAB generated. Verification uses synthetic histories only, including 130 and 1,000 rides. Tests cover
+all-history versus 12 recent records, null/zero weighted means, missing FTP, overlapping
+periods, monthly reconciliation, dates/year/latest rules, compression and essential
+preservation, metadata truncation, cancellation, one plain HTTP request, old Tools
+behavior and seven-language resources. Android UI tests are compilation checks only;
+no APK/AAB, deployment, physical-phone or real-model run in this increment.
+
+Manual follow-up from Android Studio: select Compatible and the saved local provider;
+ask for all-history trends, latest ride, 7/28/90 days, and a known ISO date. Compare
+counts and durations to history, inspect scope/evidence, verify missing historical FTP
+stays absent after changing current FTP, then select Tools on a tool-capable server.
+Check cancellation, all tabs and no unsolicited requests on entering the AI page.
+
+### Tool analysis
 
 1. Bottom navigation > AI > AI services: select the provider, correct base URL, full model ID and
    API key. Test if desired, then **Save configuration** once. Keys are encrypted
@@ -13,7 +165,7 @@ exported MCP/HTTP server and not an AI permission to operate Android or the trai
    use a key valid for that account region and save. Existing .ai configurations
    are preserved. This is one Kimi profile storing the last saved endpoint, not two
    separately stored region accounts.
-3. On the AI tab, choose a skill and enter a question, then Start.
+3. On the AI tab, select Tools, choose a skill and enter a question, then Start.
    Analysis uses the **last saved provider/configuration**, not an unsaved settings
    draft. Opening/typing/restoring settings never sends data or starts analysis.
 4. Expand Query evidence to inspect SQL/metric-tool requests, returned row counts,

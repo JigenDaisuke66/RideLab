@@ -7,6 +7,20 @@ import org.junit.Test
 class AiWireProtocolTest {
     private fun config(provider: AiProvider) = AiConfiguration(provider, model = "test-model", apiKey = "test-key")
 
+    @Test fun requestedLanServerUsesTheSameEndpointForProbeAndAnalysis() {
+        val config = AiConfiguration(AiProvider.CUSTOM, "http://192.168.0.4:8001/v1/models",
+            "qwen35", allowLocalHttp = true)
+        val probe = AiWireProtocol.request(config, "probe")
+        val analysis = AiAnalysisWire(config, "system", "question").request(true)
+        assertEquals("http://192.168.0.4:8001/v1/chat/completions", probe.url)
+        assertEquals(probe.url, analysis.url)
+        assertFalse(probe.headers.containsKey("Authorization"))
+        assertFalse(analysis.headers.containsKey("Authorization"))
+        assertEquals("qwen35", JSONObject(analysis.body).getString("model"))
+        assertTrue(probe.allowLocalHttp)
+        assertTrue(analysis.allowLocalHttp)
+    }
+
     @Test fun compatibleProvidersKeepTheirBasePathsAndBearerAuthentication() {
         AiProvider.entries.filter { it.protocol == AiProtocol.CHAT_COMPLETIONS && it.requiresKey }.forEach {
             val request = AiWireProtocol.request(config(it).copy(baseUrl = it.baseUrl + "/"), "test \"quoted\"\n你好")
@@ -59,13 +73,26 @@ class AiWireProtocolTest {
             AiProtocol.GEMINI to """{"candidates":[{"content":{"parts":[{"thought":true,"text":"thinking"},{"text":"OK"}]}}]}""",
         )
         valid.forEach { (protocol, body) -> assertNull(AiWireProtocol.response(protocol, 200, body).problem) }
-        listOf("{}", "not json", "<html>OK</html>", """{"error":{"message":"failed"}}""").forEach { body ->
-            AiProtocol.entries.forEach { assertEquals(AiProblem.RESPONSE, AiWireProtocol.response(it, 200, body).problem) }
+        listOf("{}", "not json", "<html>OK</html>").forEach { body ->
+            AiProtocol.entries.forEach { assertEquals(AiProblem.JSON, AiWireProtocol.response(it, 200, body).problem) }
         }
-        assertEquals(AiProblem.RESPONSE, AiWireProtocol.response(AiProtocol.CHAT_COMPLETIONS, 200,
+        assertEquals(AiProblem.RESPONSE, AiWireProtocol.response(AiProtocol.CHAT_COMPLETIONS, 200, """{"error":{"message":"failed"}}""").problem)
+        assertEquals(AiProblem.EMPTY_RESPONSE, AiWireProtocol.response(AiProtocol.CHAT_COMPLETIONS, 200,
             """{"choices":[{"message":{"content":null,"tool_calls":[]}}]}""").problem)
-        assertEquals(AiProblem.RESPONSE, AiWireProtocol.response(AiProtocol.GEMINI, 200,
+        assertEquals(AiProblem.EMPTY_RESPONSE, AiWireProtocol.response(AiProtocol.GEMINI, 200,
             """{"candidates":[{"content":{"parts":[{"thought":true,"text":"thinking"}]}}]}""").problem)
+    }
+
+    @Test fun reasoningBudgetAndMissingModelsAreNotReportedAsJsonOrNetworkFailures() {
+        fun reply(finish: String, content: String, reasoning: String = "thinking") =
+            """{"choices":[{"finish_reason":"$finish","message":{"content":$content,"reasoning":"$reasoning"}}]}"""
+        assertEquals(AiProblem.OUTPUT_LIMIT, AiWireProtocol.response(AiProtocol.CHAT_COMPLETIONS, 200, reply("length", "null")).problem)
+        assertEquals(AiProblem.REASONING_ONLY, AiWireProtocol.response(AiProtocol.CHAT_COMPLETIONS, 200, reply("stop", "null")).problem)
+        val good = AiWireProtocol.response(AiProtocol.CHAT_COMPLETIONS, 200, reply("stop", "\"OK\""))
+        assertNull(good.problem); assertEquals("OK", good.reply)
+        assertEquals(listOf("qwen-local"), AiWireProtocol.modelIds("""{"data":[{"id":"qwen-local","root":"other-name"}]}"""))
+        assertEquals(AiProblem.MODEL_NOT_FOUND, AiWireProtocol.httpProblem(404,
+            """{"error":{"message":"The model qwen does not exist"}}"""))
     }
 
     @Test fun failuresKeepStructuredStatusWithoutExposingServerErrorOrKeys() {

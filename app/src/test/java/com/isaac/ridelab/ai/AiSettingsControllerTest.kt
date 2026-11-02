@@ -6,6 +6,27 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AiSettingsControllerTest {
+    @Test fun pastedModelListBecomesBaseUrlAndPersistsOnlyAfterExplicitSave() = runBlocking {
+        val store = Store()
+        var requests = 0
+        val controller = AiSettingsController(this, store, AiConnectionProbe { config, _ ->
+            requests++
+            assertEquals("http://192.168.0.4:8001/v1", config.baseUrl)
+            AiProbeResult()
+        }); yield()
+        controller.edit(AiSettingsAction.Provider(AiProvider.CUSTOM))
+        controller.edit(AiSettingsAction.Endpoint("http://192.168.0.4:8001/v1/models"))
+        controller.edit(AiSettingsAction.Model("qwen35"))
+        controller.edit(AiSettingsAction.LocalHttp(true))
+        assertEquals("http://192.168.0.4:8001/v1", controller.state.value.configuration.baseUrl)
+        assertEquals(0, requests); assertEquals(0, store.writes)
+        controller.test("probe"); yield()
+        assertEquals(1, requests); assertEquals(0, store.writes)
+        controller.save(); yield()
+        val restored = AiSettingsController(this, store, AiConnectionProbe { _, _ -> error("No automatic request") }); yield()
+        assertEquals("http://192.168.0.4:8001/v1", restored.state.value.configuration.baseUrl)
+        assertEquals(1, requests); assertEquals(1, store.writes)
+    }
     @Test fun switchingKimiRegionKeepsKeyAndModelAndRestoresSavedRegion() = runBlocking {
         val store = Store()
         val probe = AiConnectionProbe { _, _ -> fail("No automatic request"); AiProbeResult() }
